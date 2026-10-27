@@ -1,3 +1,7 @@
+import {
+  compiledIdentity,
+  assertRuntimeRegion,
+} from "../../../packages/hosted-runtime/src/runtime-identity.ts";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { preparePrivateCache } from "../../../packages/hosted-runtime/src/private-cache.ts";
@@ -24,6 +28,8 @@ interface V2Event {
 }
 let prepared: Promise<ReturnType<typeof createApi>> | undefined;
 async function runtime() {
+  const identity = compiledIdentity();
+  assertRuntimeRegion(identity);
   if (process.env.PRISM_DATA_MODE === "synthetic") {
     if (process.env.PRISM_RUNTIME_EMULATION !== "1")
       throw new Error(
@@ -59,6 +65,10 @@ async function runtime() {
       quota: new MemoryQuotaStore(),
       sessions: new MemorySessionStore(),
       buildId: process.env.PRISM_BUILD_ID,
+      identity,
+      mcpAllowedOrigins: (process.env.PRISM_MCP_ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .filter(Boolean),
     });
   const secretId = process.env.PRISM_ACCESS_SECRET_ARN,
     table = process.env.PRISM_QUOTA_TABLE;
@@ -76,6 +86,10 @@ async function runtime() {
       table,
     ),
     buildId: process.env.PRISM_BUILD_ID,
+    identity,
+    mcpAllowedOrigins: (process.env.PRISM_MCP_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .filter(Boolean),
   });
 }
 export async function handler(event: V2Event) {

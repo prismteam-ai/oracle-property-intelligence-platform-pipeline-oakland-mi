@@ -2,7 +2,12 @@
 export async function authenticatedSmoke(
   base: string,
   code: string,
-  options: { transport?: typeof fetch; timeoutMs?: number } = {},
+  options: {
+    transport?: typeof fetch;
+    timeoutMs?: number;
+    mcp?: boolean;
+    expectedHealth?: Record<string, string>;
+  } = {},
 ) {
   const transport = options.transport ?? fetch,
     timeout = options.timeoutMs ?? 10000;
@@ -42,9 +47,12 @@ export async function authenticatedSmoke(
     }
   }
   const health = await request("/api/health"),
-    h = JSON.parse(health.text) as { snapshotId?: unknown };
+    h = JSON.parse(health.text) as Record<string, unknown>;
   if (typeof h.snapshotId !== "string" || !h.snapshotId)
     throw new Error("Snapshot health identity missing");
+  for (const [key, value] of Object.entries(options.expectedHealth ?? {}))
+    if (h[key] !== value)
+      throw new Error(`Hosted health ${key} differs from pinned release`);
   const login = await request("/api/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -66,6 +74,85 @@ export async function authenticatedSmoke(
       limit: 1,
     }),
   });
+  if (options.mcp) {
+    const rpc = async (
+      id: number,
+      method: string,
+      params: Record<string, unknown>,
+    ) => {
+      const r = await request("/api/mcp", {
+        method: "POST",
+        headers: {
+          cookie,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+      });
+      const message = JSON.parse(r.text) as {
+        id?: number;
+        error?: unknown;
+        result?: Record<string, unknown>;
+      };
+      if (message.id !== id || message.error || !message.result)
+        throw new Error("MCP protocol smoke failed");
+      return message.result;
+    };
+    const initialized = await rpc(1, "initialize", {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "prism-p3-bounded-smoke", version: "1" },
+    });
+    if (!initialized.protocolVersion)
+      throw new Error("MCP initialization missing");
+    const listed = await rpc(2, "tools/list", {}),
+      tools = listed.tools as { name: string }[];
+    if (
+      !Array.isArray(tools) ||
+      JSON.stringify(tools.map((t) => t.name).sort()) !==
+        JSON.stringify([
+          "property_evidence",
+          "search_properties",
+          "snapshot_status",
+        ])
+    )
+      throw new Error("MCP bounded tool list changed");
+    const called = await rpc(3, "tools/call", {
+        name: "snapshot_status",
+        arguments: { snapshotId: h.snapshotId },
+      }),
+      status = called.structuredContent as Record<string, unknown>;
+    if (
+      called.isError ||
+      status?.snapshotId !== h.snapshotId ||
+      status?.digest !== h.snapshotDigest
+    )
+      throw new Error("MCP snapshot proof differs from health");
+    const searched = await rpc(4, "tools/call", {
+        name: "search_properties",
+        arguments: {
+          snapshotId: h.snapshotId,
+          lat: 42.66,
+          lng: -83.29,
+          radiusMeters: 1609.344,
+          includeUnknown: true,
+          limit: 1,
+        },
+      }),
+      evidence = searched.structuredContent as {
+        snapshotId?: string;
+        rows?: unknown[];
+        queryHash?: string;
+      };
+    if (
+      searched.isError ||
+      evidence?.snapshotId !== h.snapshotId ||
+      !Array.isArray(evidence.rows) ||
+      evidence.rows.length > 1 ||
+      !/^[a-f0-9]{64}$/.test(evidence.queryHash ?? "")
+    )
+      throw new Error("MCP bounded search proof failed");
+  }
   await request("/api/session", { method: "DELETE", headers: { cookie } });
   return {
     health: true,
@@ -73,5 +160,18 @@ export async function authenticatedSmoke(
     coverage: true,
     query: true,
     logout: true,
+    mcp: options.mcp ? true : "not_requested",
+    identity: {
+      head: h.head,
+      tree: h.tree,
+      buildId: h.buildId,
+      contractVersion: h.contractVersion,
+      contractSha256: h.contractSha256,
+      stage: h.stage,
+      region: h.region,
+      snapshotId: h.snapshotId,
+      snapshotDigest: h.snapshotDigest,
+      dataMode: h.dataMode,
+    },
   };
 }

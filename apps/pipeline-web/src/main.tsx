@@ -5,7 +5,89 @@ import type {
   QueryInput,
   SearchResponse,
 } from "../../../packages/contracts/src/index.ts";
+import type { SourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
+import type { RuntimeIdentity } from "../../../packages/hosted-runtime/src/release.ts";
 import "./style.css";
+declare const __PRISM_UI_IDENTITY__: RuntimeIdentity;
+const uiIdentity = __PRISM_UI_IDENTITY__;
+const roofBasis = (basis: string) =>
+  basis === "built_year" ? "building year proxy" : basis.replaceAll("_", " ");
+function MunicipalSource({
+  sourceId,
+  recordId,
+}: {
+  sourceId: string;
+  recordId: string;
+}) {
+  const [source, setSource] = useState<SourceContext | null>(null),
+    [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setSource(null);
+    setFailed(false);
+    const abort = new AbortController(),
+      page = recordId.match(/:page:(\d+)/)?.[1];
+    let active = true;
+    void get<{ source: SourceContext }>(
+      `source-context?sourceId=${encodeURIComponent(sourceId)}${page ? `&page=${page}` : ""}`,
+      abort.signal,
+    )
+      .then((v) => {
+        if (active) setSource(v.source);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+      abort.abort();
+    };
+  }, [sourceId, recordId]);
+  if (!source)
+    return (
+      <p className="muted">
+        {failed
+          ? "Report context unavailable. No additional source facts inferred."
+          : "Loading report context…"}
+      </p>
+    );
+  return (
+    <div className="source-context">
+      <p>
+        <a
+          href={source.pageUrl ?? source.officialReportUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {source.visibleTitle}
+          {source.page ? ` · page ${source.page}` : ""}
+        </a>{" "}
+        ·{" "}
+        <a
+          href={source.officialLandingPageUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Official report page
+        </a>
+      </p>
+      <p>
+        Retrieved {source.sourceObservedAt}. Declared report period: not stated
+        in reviewed headers.
+      </p>
+      <p>
+        Observed sale dates: {source.observedSaleDateRange.from}–
+        {source.observedSaleDateRange.to}. This range is not the declared report
+        period.
+      </p>
+      <p>{source.exactPinMatchMethod}.</p>
+      <p>
+        Low-confidence building year proxy. Roof replacement and condition are
+        unverified. Reported sales are partial history and do not establish
+        ten-year ownership.
+      </p>
+    </div>
+  );
+}
 interface Run {
   id: string;
   at: string;
@@ -79,6 +161,13 @@ interface Health {
   addressCount?: number;
   buildId: string;
   accessMode: string;
+  dataMode?: "synthetic" | "real-public" | "protected-real";
+  head?: string;
+  tree?: string;
+  stage?: string;
+  region?: string;
+  contractVersion?: string;
+  contractSha256?: string;
 }
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   const r = await fetch(`/api/${path}`, { signal });
@@ -607,6 +696,13 @@ function App() {
             data-snapshot-id={result?.snapshotId ?? snapshot}
             data-snapshot-digest={health?.snapshotDigest ?? ""}
             data-build-id={health?.buildId ?? ""}
+            data-head={health?.head ?? ""}
+            data-tree={health?.tree ?? ""}
+            data-stage={health?.stage ?? ""}
+            data-region={health?.region ?? ""}
+            data-ui-head={uiIdentity.head}
+            data-ui-tree={uiIdentity.tree}
+            data-ui-build-id={uiIdentity.buildId}
             aria-busy={loading}
           >
             <div className="section-heading">
@@ -787,8 +883,7 @@ function App() {
                           {p.roof.ageYears !== null ? " years" : ""}
                         </strong>
                         <small>
-                          {p.roof.basis.replaceAll("_", " ")} ·{" "}
-                          {p.roof.confidence}
+                          {roofBasis(p.roof.basis)} · {p.roof.confidence}
                         </small>
                       </td>
                       <td>
@@ -947,7 +1042,10 @@ function App() {
         )}
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
-          <span>P2 · Verified snapshot / {health?.buildId ?? "loading"}</span>
+          <span>
+            P3 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
+            {health?.dataMode ?? health?.mode ?? "loading"}
+          </span>
         </footer>
       </main>
       {selected && (
@@ -998,8 +1096,8 @@ function App() {
               <dt>Roof evidence</dt>
               <dd>
                 {selected.roof.ageYears ?? "Unknown"} years ·{" "}
-                {selected.roof.basis.replaceAll("_", " ")} ·{" "}
-                {selected.roof.confidence} confidence
+                {roofBasis(selected.roof.basis)} · {selected.roof.confidence}{" "}
+                confidence
               </dd>
               <dt>As of</dt>
               <dd>{selected.roof.asOf}</dd>
@@ -1025,6 +1123,12 @@ function App() {
                       {p.recordId} · {p.observedAt}
                     </p>
                     <code>{p.digest}</code>
+                    {health?.dataMode === "protected-real" && (
+                      <MunicipalSource
+                        sourceId={p.sourceId}
+                        recordId={p.recordId}
+                      />
+                    )}
                   </article>
                 ))}
               </>

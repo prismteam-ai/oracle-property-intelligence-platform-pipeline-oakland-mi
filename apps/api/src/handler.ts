@@ -1,3 +1,7 @@
+import { sourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
+import { serveMcpFetch } from "../../../packages/mcp-adapter/src/server.ts";
+import { compiledIdentity } from "../../../packages/hosted-runtime/src/runtime-identity.ts";
+import { type RuntimeIdentity } from "../../../packages/hosted-runtime/src/release.ts";
 import { type SessionStore } from "../../../packages/hosted-runtime/src/sessions.ts";
 import { createHash } from "node:crypto";
 import {
@@ -48,6 +52,8 @@ export interface ApiOptions {
   local?: boolean;
   clock?: () => number;
   buildId?: string;
+  identity?: RuntimeIdentity;
+  mcpAllowedOrigins?: readonly string[];
 }
 export function createApi(options: ApiOptions) {
   const clock = options.clock ?? Date.now;
@@ -81,13 +87,26 @@ export function createApi(options: ApiOptions) {
       };
       if (req.method === "GET" && url.pathname === "/api/health")
         return send(200, {
-          contractVersion: CONTRACT_VERSION,
           snapshotId: s.snapshotId,
           mode: s.mode,
           snapshotDigest: s.digest,
           count: s.count,
           addressCount: s.addressCount,
-          buildId: options.buildId ?? "local-p2",
+          ...(options.identity ?? compiledIdentity()),
+          contractVersion: CONTRACT_VERSION,
+          buildId:
+            options.identity?.buildId ??
+            options.buildId ??
+            compiledIdentity().buildId,
+          dataMode:
+            s.mode === "synthetic"
+              ? "synthetic"
+              : (s.manifest as { protectedView?: boolean }).protectedView
+                ? "protected-real"
+                : "real-public",
+          publicSnapshotId:
+            (s.manifest as { publicSnapshotId?: string }).publicSnapshotId ??
+            s.snapshotId,
           accessMode: options.local ? "local" : "review",
           engine: "DuckDB immutable snapshot",
           upstreamMcp: false,
@@ -156,6 +175,31 @@ export function createApi(options: ApiOptions) {
         windowSeconds: 60,
         nowMs: clock(),
       });
+      if (url.pathname === "/api/mcp") {
+        const origin = req.headers.origin ?? req.headers.Origin;
+        if (origin && !(options.mcpAllowedOrigins ?? []).includes(origin))
+          throw new AccessError(403, "MCP origin rejected");
+        const headers = Object.fromEntries(
+          Object.entries(req.headers).filter(([, v]) => v !== undefined),
+        ) as Record<string, string>;
+        const response = await serveMcpFetch(
+          s,
+          new Request("https://oracle.invalid/api/mcp", {
+            method: req.method,
+            headers,
+            ...(req.method === "POST" ? { body: req.body ?? "{}" } : {}),
+          }),
+        );
+        return {
+          statusCode: response.status,
+          headers: {
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            ...Object.fromEntries(response.headers),
+          },
+          body: await response.text(),
+        };
+      }
       if (req.method === "POST" && url.pathname === "/api/search")
         return send(200, await s.search(QuerySchema.parse(json())));
       if (req.method === "GET" && url.pathname.startsWith("/api/properties/"))
@@ -166,6 +210,40 @@ export function createApi(options: ApiOptions) {
             url.searchParams.get("snapshotId") ?? "",
           ),
         );
+      if (req.method === "GET" && url.pathname === "/api/source-context") {
+        if (
+          options.local ||
+          !(s.manifest as { protectedView?: boolean }).protectedView
+        )
+          throw new AccessError(
+            403,
+            "Protected source context requires the hosted evaluator view",
+          );
+        const keys = [...url.searchParams.keys()];
+        if (
+          keys.some((k) => !["sourceId", "page"].includes(k)) ||
+          new Set(keys).size !== keys.length
+        )
+          throw new AccessError(400, "Source metadata parameters rejected");
+        const source = sourceContext(
+          url.searchParams.get("sourceId") ?? "",
+          url.searchParams.has("page")
+            ? Number(url.searchParams.get("page"))
+            : undefined,
+        );
+        if (!source)
+          return send(404, {
+            code: "INVALID_INPUT",
+            message: "Source metadata unavailable",
+          });
+        return send(200, {
+          version: "1",
+          contractVersion: CONTRACT_VERSION,
+          snapshotId: s.snapshotId,
+          digest: s.digest,
+          source,
+        });
+      }
       if (req.method === "GET" && url.pathname === "/api/runs")
         return send(200, s.runs);
       if (req.method === "GET" && url.pathname === "/api/coverage")

@@ -20,7 +20,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
     detail: async () => ({}),
     coverage: [],
     runs: [],
-    manifest: {},
+    manifest: { protectedView: true },
     close() {},
   } as unknown as ActiveSnapshot;
   const api = createApi({
@@ -35,7 +35,22 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
     sessions: new MemorySessionStore(),
   });
   const request = { method: "GET", path: "/api/health", headers: {} };
-  expect((await api(request)).statusCode).toBe(200);
+  const health = await api(request);
+  expect(health.statusCode).toBe(200);
+  expect(JSON.parse(health.body)).toMatchObject({
+    region: "us-east-1",
+    stage: "local",
+    contractVersion: "0.2.1",
+    dataMode: "synthetic",
+  });
+  expect(
+    (
+      await api({
+        ...request,
+        path: "/api/source-context?sourceId=official-novi-residential-sales-pdf",
+      })
+    ).statusCode,
+  ).toBe(401);
   expect((await api({ ...request, path: "/api/runs" })).statusCode).toBe(401);
   const issued = await api({
     ...request,
@@ -66,6 +81,41 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
     ).statusCode,
   ).toBe(400);
   expect(searches).toBe(0);
+  const context = await api({
+    ...authorized,
+    path: "/api/source-context?sourceId=official-novi-residential-sales-pdf&page=2",
+  });
+  expect(context.statusCode).toBe(200);
+  expect(context.headers["Cache-Control"]).toBe("no-store");
+  expect(JSON.parse(context.body)).toMatchObject({
+    version: "1",
+    contractVersion: "0.2.1",
+    snapshotId: "fixture",
+    source: {
+      declaredReportPeriod: null,
+      semanticBasis: "building_year_proxy",
+      page: 2,
+      pageUrl:
+        "https://www.cityofnovi.org/media/w1efyceh/residential-non-condo-401-sales.pdf#page=2",
+      partialHistory: true,
+      yearBuiltIsRoofAge: false,
+      tenYearTenureInference: false,
+    },
+  });
+  expect(JSON.parse(context.body).source).not.toHaveProperty("observations");
+  for (const suffix of [
+    "page=19",
+    "page=2.5",
+    "sql=SELECT1",
+    "sourceId=unknown",
+  ]) {
+    const path = suffix.startsWith("sourceId")
+      ? `/api/source-context?${suffix}`
+      : `/api/source-context?sourceId=official-novi-residential-sales-pdf&${suffix}`;
+    expect(
+      (await api({ ...authorized, path })).statusCode,
+    ).toBeGreaterThanOrEqual(400);
+  }
   expect(
     (await api({ ...authorized, method: "DELETE", path: "/api/session" }))
       .statusCode,

@@ -1,6 +1,6 @@
-# Oracle Studio — P2 local verification
+# Oracle Studio — P3 local verification and staging preparation
 
-The assignment README remains unchanged. P2 has a genuine Node HTTP/Lambda handler, complete selected official GIS layers, an optional protected operational read model, and local AWS Runtime Interface Emulator proof. Deployment, live model inference and public publication require separate authorization and are not performed by these checks.
+The assignment README remains unchanged. The accepted P2 baseline has a genuine Node HTTP/Lambda handler, complete selected official GIS layers, an optional protected operational read model, and local AWS Runtime Interface Emulator proof. Deployment, live model inference and public publication require separate authorization and are not performed by these checks.
 
 Use Node 24 and pinned pnpm 11.25.0. Install dependencies without lifecycle scripts. Build the measured Lambda ZIP **before** synthesizing CDK: the template references that exact archive.
 
@@ -16,7 +16,7 @@ pnpm cdk:synth
 pnpm cdk:check
 ```
 
-The package command creates ignored `oracle-lambda.zip` and `dist-lambda/package-report.json`. The ZIP has canonical file order, modes and timestamps. CDK uses that ZIP directly; the emulator verifies its digest, extracts it to a temporary directory and mounts those exact bytes read-only. Native DuckDB comes from the pinned Linux x64 glibc package; no install hooks compile or fetch native code.
+The package command creates ignored `oracle-lambda.zip` and `dist-lambda/package-report.json`. The ZIP has canonical file order, modes and timestamps. CDK references that exact ZIP by digest in a dedicated pre-existing S3 asset bucket; the emulator verifies its digest, extracts it to a temporary directory and mounts those exact bytes read-only. Native DuckDB comes from the pinned Linux x64 glibc package; no install hooks compile or fetch native code.
 
 ## Public real-data workspace
 
@@ -78,6 +78,8 @@ That proof returns only counts, hashes and test status. It does not persist priv
 
 The emulator checks native `SELECT 42`, authenticated stored sessions, strict queries, logout/revocation and malformed-input rejection. Real protected checks include source-backed built-year proxies, partial reported-sale events, null verified transfer dates and rejected tenure claims. Zero out-of-state results are not proof of owner absence when source postal-state coverage is unknown. Local emulation does not establish deployed Lambda/CDN behavior or live AWS persistence.
 
-## Future operation gates
+## Guarded staging operation
 
-`pnpm deploy`, `pnpm smoke`, `pnpm evidence`, `pnpm rotate-access` and `pnpm destroy` print dry-run plans by default. They grant no account, billing, inference, publication or remote Git permission. Hosted execution requires a future explicit approval, reviewed exact artifacts/account/region/cost/retention, and the script's execution flag. Read [the runtime runbook](docs/architecture/P2_HOSTED_RUNTIME.md) for the signed-session protocol, S3 manifest pinning, private companion conditions and retained-resource teardown.
+`pnpm deploy`, `pnpm smoke`, `pnpm evidence`, `pnpm rotate-access` and `pnpm destroy` print dry-run plans by default. They grant no account, billing, inference, publication or remote Git permission. Hosted execution is reserved to the authorized lead operator. It requires exact clean HEAD/tree, measured staging ZIP, reviewed account/bucket/region/cost/retention and the script's explicit execution gate. Read [the P3 staging runbook](docs/architecture/P3_STAGING.md) and [the access/runtime design](docs/architecture/P2_HOSTED_RUNTIME.md) for the signed-session protocol, S3 manifest pinning, private companion conditions and retained-resource teardown.
+
+P3 freezes deployment to `us-east-1` and rejects mixed ambient regions. Health reports compiled HEAD/tree, contract digest, build ID, stage, region, public/protected mode and snapshot identity. The frontend records its own compiled source identity. `/api/mcp` uses the same evaluator session and read quota; smoke checks discovery and an actual snapshot-status tool call. The public snapshot and contract 0.2.1 remain byte-identical.

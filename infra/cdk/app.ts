@@ -1,3 +1,14 @@
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  STAGING_REGION,
+  validatedRegion,
+  APPROVED_PUBLIC_MANIFEST_SHA256,
+  APPROVED_PRIVATE_MANIFEST_SHA256,
+  type RuntimeIdentity,
+} from "../../packages/hosted-runtime/src/release.ts";
+import { CfnAPIKey } from "aws-cdk-lib/aws-location";
+import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import {
   App,
   Stack,
@@ -6,6 +17,7 @@ import {
   RemovalPolicy,
   Duration,
   Size,
+  BootstraplessSynthesizer,
 } from "aws-cdk-lib";
 import { Runtime, Function, Code, Architecture } from "aws-cdk-lib/aws-lambda";
 import { HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
@@ -34,26 +46,83 @@ import {
   TreatMissingData,
 } from "aws-cdk-lib/aws-cloudwatch";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
-const app = new App({ outdir: process.env.CDK_OUTDIR ?? "cdk.out" }),
-  stack = new Stack(app, "PrismOracleReview", {
-    env: { region: "us-east-2" },
-    description:
-      "P2 evaluator read plane; local synth only until separately authorized deployment",
-  });
-Tags.of(stack).add("Project", "prism-assessment");
-Tags.of(stack).add("Stage", "review");
-Tags.of(stack).add("Retention", "human-reviewed-14-day-window");
-const prefix = String(
-    app.node.tryGetContext("snapshotPrefix") ?? "accepted/review/",
+const app = new App({ outdir: process.env.CDK_OUTDIR ?? "cdk.out" });
+const region = validatedRegion(
+  String(
+    app.node.tryGetContext("deploymentRegion") ??
+      process.env.PRISM_DEPLOY_REGION ??
+      STAGING_REGION,
   ),
-  manifestDigest = String(
-    app.node.tryGetContext("snapshotManifestSha256") ?? "0".repeat(64),
+  [process.env.AWS_REGION, process.env.AWS_DEFAULT_REGION],
+);
+const stage = String(
+  app.node.tryGetContext("stage") ?? process.env.PRISM_RELEASE_STAGE ?? "local",
+);
+if (!["local", "p3-review"].includes(stage))
+  throw new Error("Unrecognized deployment stage");
+const account =
+  app.node.tryGetContext("deploymentAccount") ??
+  process.env.PRISM_EXPECTED_ACCOUNT_ID;
+if (account !== undefined && !/^\d{12}$/.test(String(account)))
+  throw new Error("Exact account context required");
+const archive = readFileSync("oracle-lambda.zip"),
+  archiveDigest = createHash("sha256").update(archive).digest("hex"),
+  report = JSON.parse(
+    readFileSync("dist-lambda/package-report.json", "utf8"),
+  ) as { zipSha256: string; identity: RuntimeIdentity };
+if (report.zipSha256 !== archiveDigest)
+  throw new Error("Measured Lambda ZIP changed before synthesis");
+if (
+  stage === "p3-review" &&
+  (report.identity?.stage !== stage ||
+    report.identity?.region !== region ||
+    report.identity?.sourceDirty ||
+    !account)
+)
+  throw new Error(
+    "Staging synthesis requires a clean measured staging build and private account pin",
+  );
+const assetBucketName = String(
+    app.node.tryGetContext("deploymentAssetBucket") ??
+      process.env.PRISM_DEPLOY_ASSET_BUCKET ??
+      "prism-p3-local-synth-assets",
+  ),
+  assetPrefix = String(
+    app.node.tryGetContext("deploymentAssetPrefix") ?? "prism-p3/oracle/",
   );
 if (
-  !/^([A-Za-z0-9_.-]+\/)+$/.test(prefix) ||
-  !/^[a-f0-9]{64}$/.test(manifestDigest)
+  assetPrefix !== "prism-p3/oracle/" ||
+  !/^prism-p3-[a-z0-9][a-z0-9.-]{1,52}[a-z0-9]$/.test(assetBucketName)
 )
-  throw new Error("Invalid immutable snapshot deployment parameters");
+  throw new Error("Exact task asset namespace required");
+const stack = new Stack(app, "PrismOracleReview", {
+  env: { region, ...(account ? { account: String(account) } : {}) },
+  synthesizer: new BootstraplessSynthesizer(),
+  description:
+    "P3 bounded evaluator read plane; deployment status is verified through hosted evidence",
+});
+Tags.of(stack).add("Project", "prism-assessment");
+Tags.of(stack).add("Phase", "P3");
+Tags.of(stack).add("Stage", stage);
+Tags.of(stack).add("Retention", "human-reviewed-14-day-window");
+const prefix = String(
+    app.node.tryGetContext("snapshotPrefix") ??
+      "accepted/oakland-real-71c0ba7aafadd0e4301b/",
+  ),
+  manifestDigest = String(
+    app.node.tryGetContext("snapshotManifestSha256") ??
+      APPROVED_PUBLIC_MANIFEST_SHA256,
+  );
+if (
+  prefix !== "accepted/oakland-real-71c0ba7aafadd0e4301b/" ||
+  manifestDigest !== APPROVED_PUBLIC_MANIFEST_SHA256
+)
+  throw new Error("P3 preserves the exact accepted public baseline");
+const assetBucket = Bucket.fromBucketName(
+  stack,
+  "ExplicitDeploymentAssets",
+  assetBucketName,
+);
 const site = new Bucket(stack, "StaticSite", {
   blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
   encryption: BucketEncryption.S3_MANAGED,
@@ -62,14 +131,15 @@ const site = new Bucket(stack, "StaticSite", {
 });
 const enablePrivate = app.node.tryGetContext("enableProtectedView") === "true",
   privatePrefix = String(
-    app.node.tryGetContext("privateSnapshotPrefix") ?? "operational/review/",
+    app.node.tryGetContext("privateSnapshotPrefix") ??
+      "operational/oakland-real-71c0ba7aafadd0e4301b/",
   ),
   privateDigest = String(app.node.tryGetContext("privateManifestSha256") ?? "");
 if (
   enablePrivate &&
-  (!/^([A-Za-z0-9_.-]+\/)+$/.test(privatePrefix) ||
+  (privatePrefix !== "operational/oakland-real-71c0ba7aafadd0e4301b/" ||
     !/^[a-f0-9]{64}$/.test(privateDigest) ||
-    /^0+$/.test(privateDigest))
+    privateDigest !== APPROVED_PRIVATE_MANIFEST_SHA256)
 )
   throw new Error(
     "Protected deployment requires an exact approved private manifest digest/prefix",
@@ -120,11 +190,19 @@ const logs = new LogGroup(stack, "ApiLogs", {
   retention: RetentionDays.TWO_WEEKS,
   removalPolicy: RemovalPolicy.RETAIN,
 });
+const runtimeRole = new Role(stack, "ReadApiRole", {
+  assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
+});
+logs.grantWrite(runtimeRole);
 const handler = new Function(stack, "ReadApi", {
   runtime: Runtime.NODEJS_24_X,
   architecture: Architecture.X86_64,
   handler: "index.handler",
-  code: Code.fromAsset("oracle-lambda.zip"),
+  code: Code.fromBucket(
+    assetBucket,
+    `${assetPrefix}lambda/${archiveDigest}.zip`,
+  ),
+  role: runtimeRole,
   memorySize: 4096,
   ephemeralStorageSize: Size.gibibytes(4),
   timeout: Duration.seconds(29),
@@ -137,8 +215,11 @@ const handler = new Function(stack, "ReadApi", {
     PRISM_SNAPSHOT_MANIFEST_SHA256: manifestDigest,
     PRISM_ACCESS_SECRET_ARN: access.secretArn,
     PRISM_QUOTA_TABLE: table.tableName,
-    PRISM_BUILD_ID: String(
-      app.node.tryGetContext("buildId") ?? "p2-review-unreleased",
+    PRISM_BUILD_ID: report.identity.buildId,
+    PRISM_DEPLOY_REGION: region,
+    PRISM_RELEASE_STAGE: stage,
+    PRISM_MCP_ALLOWED_ORIGINS: String(
+      app.node.tryGetContext("mcpAllowedOrigins") ?? "",
     ),
     MODEL_INFERENCE: "disabled",
     ...(privateSnapshots
@@ -175,15 +256,20 @@ handler.addToRolePolicy(
       "dynamodb:UpdateItem",
     ],
     resources: [table.tableArn],
+    conditions: {
+      "ForAllValues:StringLike": {
+        "dynamodb:LeadingKeys": ["session#*", "quota#*"],
+      },
+    },
   }),
 );
 const api = new HttpApi(stack, "HttpReadApi", {
   defaultIntegration: new HttpLambdaIntegration("ReadIntegration", handler),
   createDefaultStage: true,
 });
-const stage = api.defaultStage!.node
+const apiStage = api.defaultStage!.node
   .defaultChild as import("aws-cdk-lib/aws-apigatewayv2").CfnStage;
-stage.defaultRouteSettings = {
+apiStage.defaultRouteSettings = {
   throttlingBurstLimit: 10,
   throttlingRateLimit: 5,
 };
@@ -209,6 +295,35 @@ const cdn = new Distribution(stack, "ReviewSite", {
     },
   },
 });
+const enableMap = app.node.tryGetContext("enableLocationMap") === "true";
+if (enableMap) {
+  const origin = String(app.node.tryGetContext("crmMapOrigin") ?? ""),
+    expires = String(app.node.tryGetContext("mapKeyExpiresAt") ?? "");
+  if (
+    !/^https:\/\/d[a-z0-9]+\.cloudfront\.net$/.test(origin) ||
+    !Number.isFinite(Date.parse(expires)) ||
+    Date.parse(expires) <= Date.now() ||
+    Date.parse(expires) > Date.now() + 14 * 86400000
+  )
+    throw new Error(
+      "Map key requires the exact CRM CloudFront origin and finite <=14-day expiry",
+    );
+  const key = new CfnAPIKey(stack, "ReviewLocationBrowserKey", {
+    keyName: "prism-p3-review-map",
+    description: "Restricted P3 Standard map browser key; value stays private",
+    expireTime: expires,
+    restrictions: {
+      allowActions: ["geo-maps:GetTile"],
+      allowResources: [
+        `arn:${stack.partition}:geo-maps:${region}::provider/default`,
+      ],
+      allowReferers: [`${origin}/*`],
+    },
+  });
+  key.applyRemovalPolicy(RemovalPolicy.RETAIN);
+  new CfnOutput(stack, "LocationMapKeyArn", { value: key.attrKeyArn });
+  new CfnOutput(stack, "LocationMapKeyName", { value: "prism-p3-review-map" });
+}
 handler
   .metricErrors({ period: Duration.minutes(5) })
   .createAlarm(stack, "ApiErrors", {
@@ -247,6 +362,15 @@ new StringParameter(stack, "ReviewRetention", {
 new CfnOutput(stack, "DistributionId", { value: cdn.distributionId });
 new CfnOutput(stack, "SiteUrl", {
   value: `https://${cdn.distributionDomainName}`,
+});
+new CfnOutput(stack, "Region", { value: region });
+new CfnOutput(stack, "Stage", { value: stage });
+new CfnOutput(stack, "ReleaseBuildId", { value: report.identity.buildId });
+new CfnOutput(stack, "LambdaArchiveSha256", { value: archiveDigest });
+new CfnOutput(stack, "SourceHead", { value: report.identity.head });
+new CfnOutput(stack, "SourceTree", { value: report.identity.tree });
+new CfnOutput(stack, "ContractSha256", {
+  value: report.identity.contractSha256,
 });
 new CfnOutput(stack, "ApiUrl", { value: api.apiEndpoint });
 new CfnOutput(stack, "StaticBucket", { value: site.bucketName });

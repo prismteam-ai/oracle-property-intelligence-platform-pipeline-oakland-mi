@@ -1,3 +1,12 @@
+import { sourceIdentity } from "../../../packages/hosted-runtime/src/source-identity.ts";
+import {
+  runtimeIdentity,
+  STAGING_REGION,
+  validatedRegion,
+} from "../../../packages/hosted-runtime/src/release.ts";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { CONTRACT_VERSION } from "../../../packages/contracts/src/index.ts";
 import { MemorySessionStore } from "../../../packages/hosted-runtime/src/sessions.ts";
 import http from "node:http";
 import { createActiveSnapshot } from "../../../packages/query/src/active.ts";
@@ -13,7 +22,26 @@ if (
 const snapshot = await createActiveSnapshot();
 if (process.env.AWS_LAMBDA_FUNCTION_NAME)
   throw new Error("Use the Lambda entry point in Lambda");
+const identity = runtimeIdentity(
+  "oracle",
+  sourceIdentity(),
+  {
+    version: CONTRACT_VERSION,
+    sha256: createHash("sha256")
+      .update(readFileSync("packages/contracts/src/index.ts"))
+      .digest("hex"),
+  },
+  "local",
+  validatedRegion(process.env.PRISM_DEPLOY_REGION ?? STAGING_REGION, [
+    process.env.AWS_REGION,
+    process.env.AWS_DEFAULT_REGION,
+  ]),
+);
 const handler = createApi({
+  identity,
+  mcpAllowedOrigins: (process.env.PRISM_MCP_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .filter(Boolean),
   snapshot,
   local,
   quota: new MemoryQuotaStore(),

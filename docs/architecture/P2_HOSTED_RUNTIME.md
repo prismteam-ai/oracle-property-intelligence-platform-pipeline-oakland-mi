@@ -1,5 +1,7 @@
 # P2 read plane and evaluator access
 
+This retained baseline design is superseded for deployment by [the P3 staging runbook](P3_STAGING.md). P3 freezes `us-east-1`, binds clean source/package identity and uses explicit S3 assets with direct CloudFormation; no default bootstrap/ECR is required.
+
 The Node HTTP adapter (`apps/api/src/server.ts`) and the API Gateway v2 adapter (`apps/api/src/lambda.ts`) use the same transport-neutral handler. The handler has bounded search/detail/coverage/run/manifest routes and no raw SQL, source ingestion, model inference or mutation route. The official MCP SDK server is a separately tested stdio/Streamable HTTP component owned by the read-model lane; it is not exposed by this Lambda adapter.
 
 Default mode is real. `PRISM_SNAPSHOT_DIR` identifies the complete, verified public-safe snapshot; missing real artifacts fail startup. A synthetic demonstration requires `PRISM_DATA_MODE=synthetic`. Local UI development additionally requires `PRISM_ACCESS_MODE=local`; this bypass is rejected by the Lambda entry point. There is no UI data-mode toggle that can mix evidence.

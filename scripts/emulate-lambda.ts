@@ -1,3 +1,5 @@
+import type { RuntimeIdentity } from "../packages/hosted-runtime/src/release.ts";
+import { sourceIdentity } from "../packages/hosted-runtime/src/source-identity.ts";
 import { validatePrivateManifest } from "../packages/hosted-runtime/src/private-cache.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
@@ -30,7 +32,14 @@ const privateManifestSha256 = privateDirectory
   : undefined;
 const packageReport = JSON.parse(
   await readFile(path.join(root, "dist-lambda/package-report.json"), "utf8"),
-) as { zipSha256: string };
+) as { zipSha256: string; identity: RuntimeIdentity };
+const source = sourceIdentity();
+if (
+  source.head !== packageReport.identity.head ||
+  source.tree !== packageReport.identity.tree ||
+  (packageReport.identity.stage === "p3-review" && source.dirty)
+)
+  throw new Error("Emulation must match measured clean staging source");
 const archive = path.join(root, "oracle-lambda.zip"),
   archiveDigest = createHash("sha256")
     .update(await readFile(archive))
@@ -74,9 +83,7 @@ const args = [
   "-e",
   `PRISM_EMULATION_CODE_DIGEST=${createHash("sha256").update(code).digest("hex")}`,
   "-e",
-  "PRISM_BUILD_ID=p2-lambda-rie",
-  "-e",
-  "AWS_REGION=us-east-2",
+  "AWS_REGION=us-east-1",
 ];
 if (snapshot)
   args.push(
@@ -145,12 +152,13 @@ async function invoke(
   rawPath: string,
   body?: unknown,
   cookie?: string,
+  headers: Record<string, string> = {},
 ) {
   const event = {
     version: "2.0",
-    rawPath,
-    rawQueryString: "",
-    headers: {},
+    rawPath: rawPath.split("?")[0],
+    rawQueryString: rawPath.split("?").slice(1).join("?"),
+    headers: { "content-type": "application/json", ...headers },
     cookies: cookie ? [cookie] : undefined,
     body: body === undefined ? undefined : JSON.stringify(body),
     requestContext: { http: { method, sourceIp: "127.0.0.1" } },
@@ -188,8 +196,27 @@ try {
     snapshotDigest: string;
     count: number;
     addressCount?: number;
+    head: string;
+    tree: string;
+    buildId: string;
+    contractVersion: string;
+    contractSha256: string;
+    stage: string;
+    region: string;
+    dataMode: string;
   };
   if (h.mode !== mode) throw new Error("Emulator mode drift");
+  for (const key of [
+    "head",
+    "tree",
+    "buildId",
+    "contractVersion",
+    "contractSha256",
+    "stage",
+    "region",
+  ] as const)
+    if (h[key] !== packageReport.identity[key])
+      throw new Error("Packaged runtime identity drift");
   const unauthorized = await invoke("GET", "/api/coverage");
   if (unauthorized.out.statusCode !== 401)
     throw new Error("Unauthenticated data route exposed");
@@ -215,6 +242,63 @@ try {
     total: number;
     queryHash: string;
   };
+  const rpc = async (
+    id: number,
+    method: string,
+    params: Record<string, unknown>,
+  ) => {
+    const invoked = await invoke(
+      "POST",
+      "/api/mcp",
+      { jsonrpc: "2.0", id, method, params },
+      cookie,
+      { accept: "application/json, text/event-stream" },
+    );
+    const message = JSON.parse(invoked.out.body) as {
+      id?: number;
+      error?: unknown;
+      result?: Record<string, unknown>;
+    };
+    if (
+      invoked.out.statusCode !== 200 ||
+      message.error ||
+      message.id !== id ||
+      !message.result
+    )
+      throw new Error("Packaged MCP protocol failure");
+    return message.result;
+  };
+  await rpc(1, "initialize", {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+    clientInfo: { name: "prism-p3-rie", version: "1" },
+  });
+  const tools = (await rpc(2, "tools/list", {})).tools as unknown[];
+  if (!Array.isArray(tools) || tools.length !== 3)
+    throw new Error("Packaged MCP discovery failure");
+  const mcpStatus = (
+    await rpc(3, "tools/call", {
+      name: "snapshot_status",
+      arguments: { snapshotId: h.snapshotId },
+    })
+  ).structuredContent as { snapshotId?: string; digest?: string };
+  if (
+    mcpStatus?.snapshotId !== h.snapshotId ||
+    mcpStatus.digest !== h.snapshotDigest
+  )
+    throw new Error("Packaged MCP snapshot mismatch");
+  const mcpSearch = (
+    await rpc(4, "tools/call", {
+      name: "search_properties",
+      arguments: { ...q, limit: 1 },
+    })
+  ).structuredContent as { snapshotId?: string; rows?: unknown[] };
+  if (
+    mcpSearch?.snapshotId !== h.snapshotId ||
+    !Array.isArray(mcpSearch.rows) ||
+    mcpSearch.rows.length > 1
+  )
+    throw new Error("Packaged MCP search bound failed");
   let protectedChecks: Record<string, unknown> | undefined;
   if (privateDirectory) {
     const roof = await invoke(
@@ -267,7 +351,31 @@ try {
       )
     )
       throw new Error("Protected roof proxy semantics failed");
+    const context = await invoke(
+        "GET",
+        "/api/source-context?sourceId=official-novi-residential-sales-pdf&page=2",
+        undefined,
+        cookie,
+      ),
+      contextBody = JSON.parse(context.out.body) as {
+        source?: {
+          semanticBasis?: string;
+          declaredReportPeriod?: unknown;
+          pageUrl?: string;
+          observations?: unknown;
+        };
+      };
+    if (
+      context.out.statusCode !== 200 ||
+      contextBody.source?.semanticBasis !== "building_year_proxy" ||
+      contextBody.source.declaredReportPeriod !== null ||
+      !contextBody.source.pageUrl?.endsWith("#page=2") ||
+      contextBody.source.observations
+    )
+      throw new Error("Packaged source context semantics failed");
     protectedChecks = {
+      sourceContextMetadataNoRows: true,
+      sourceContextDeclaredPeriodUnknown: true,
       roofProxyMatches: evidence.total,
       returnedProxyRows: evidence.rows.length,
       sourceReportedSaleEvents: evidence.rows.reduce(
@@ -331,6 +439,16 @@ try {
     configuredTimeoutSeconds: 29,
     coldFitsConfiguredTimeout: health.milliseconds < 29000,
     snapshotMode: h.mode,
+    runtimeIdentity: {
+      head: h.head,
+      tree: h.tree,
+      buildId: h.buildId,
+      contractVersion: h.contractVersion,
+      contractSha256: h.contractSha256,
+      stage: h.stage,
+      region: h.region,
+      dataMode: h.dataMode,
+    },
     publicManifestSha256,
     privateManifestSha256,
     source: {
@@ -366,6 +484,8 @@ try {
       unknownKeyRejected: true,
       revocation: true,
       nativeDuckDb: true,
+      hostedMcpDiscoveryAndBoundedSearch: true,
+      compiledReleaseIdentity: true,
     },
     limitations: [
       "Local RIE is not a deployed Lambda/API Gateway/CDN proof.",

@@ -9,6 +9,8 @@ execFileSync(
 const t = JSON.parse(
   await readFile("cdk.out/PrismOracleReview.template.json", "utf8"),
 ) as {
+  Outputs: Record<string, { Value: unknown }>;
+  Parameters?: Record<string, unknown>;
   Resources: Record<
     string,
     {
@@ -25,6 +27,34 @@ assert.equal(lambdas.length, 1);
 const lambda = lambdas[0]![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
 assert(!("ZipFile" in (lambda.Code as object)));
+const packageReport = JSON.parse(
+  await readFile("dist-lambda/package-report.json", "utf8"),
+) as {
+  zipSha256: string;
+  identity: {
+    head: string;
+    tree: string;
+    buildId: string;
+    contractSha256: string;
+  };
+};
+assert.deepEqual(lambda.Code, {
+  S3Bucket: "prism-p3-local-synth-assets",
+  S3Key: `prism-p3/oracle/lambda/${packageReport.zipSha256}.zip`,
+});
+assert(
+  !Object.keys(t.Parameters ?? {}).some((p) => /BootstrapVersion/.test(p)),
+);
+assert(!entries.some(([, r]) => r.Type.startsWith("AWS::ECR::")));
+for (const [k, v] of Object.entries({
+  Region: "us-east-1",
+  Stage: "local",
+  SourceHead: packageReport.identity.head,
+  SourceTree: packageReport.identity.tree,
+  ReleaseBuildId: packageReport.identity.buildId,
+  ContractSha256: packageReport.identity.contractSha256,
+}))
+  assert.equal(t.Outputs[k]?.Value, v);
 assert.deepEqual(lambda.Architectures, ["x86_64"]);
 assert.equal(of("AWS::CloudFront::OriginAccessControl").length, 1);
 assert.equal(of("AWS::CloudFront::Distribution").length, 1);
@@ -59,6 +89,13 @@ assert(actions.includes("s3:GetObject"));
 const env = (lambda.Environment as { Variables: Record<string, string> })
   .Variables;
 assert.equal(env.PRISM_DATA_MODE, "real");
+assert.equal(env.PRISM_DEPLOY_REGION, "us-east-1");
+assert.equal(
+  env.PRISM_SNAPSHOT_MANIFEST_SHA256,
+  "777885ed0bbbf317b457ab4394155da875313fab01516f86b25c3b51008c50b4",
+);
+assert.equal(env.PRISM_RELEASE_STAGE, "local");
+assert(!("PRISM_ENABLE_PROTECTED_VIEW" in env));
 assert(!("PRISM_RUNTIME_EMULATION" in env));
 assert(!("PRISM_ACCESS_MODE" in env));
 assert.equal(
@@ -68,6 +105,77 @@ assert.equal(
     }
   ).AttributeName,
   "expiresAt",
+);
+// A second local synth proves optional protected/map resources without a key value
+// or any account lookup. Fixture origin is never contacted.
+execFileSync(
+  process.execPath,
+  ["node_modules/tsx/dist/cli.mjs", "infra/cdk/app.ts"],
+  {
+    stdio: "pipe",
+    env: {
+      ...process.env,
+      CDK_OUTDIR: "data/cdk-protected-map-check",
+      CDK_CONTEXT_JSON: JSON.stringify({
+        enableProtectedView: "true",
+        privateManifestSha256:
+          "6b2f332e18b73637e279f0c6661ea970565f332346b0f24f9911d7b38de1cdc9",
+        enableLocationMap: "true",
+        crmMapOrigin: "https://dfixture.cloudfront.net",
+        mapKeyExpiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      }),
+    },
+  },
+);
+const optional = JSON.parse(
+  await readFile(
+    "data/cdk-protected-map-check/PrismOracleReview.template.json",
+    "utf8",
+  ),
+) as typeof t;
+const optionalResources = Object.values(optional.Resources),
+  key = optionalResources.find((r) => r.Type === "AWS::Location::APIKey")!;
+assert(key);
+assert.deepEqual(
+  (key.Properties!.Restrictions as { AllowActions: string[] }).AllowActions,
+  ["geo-maps:GetTile"],
+);
+assert.deepEqual(
+  (key.Properties!.Restrictions as { AllowReferers: string[] }).AllowReferers,
+  ["https://dfixture.cloudfront.net/*"],
+);
+assert.equal(
+  optionalResources.filter((r) => r.Type === "AWS::S3::Bucket").length,
+  3,
+);
+assert(
+  !Object.keys(optional.Outputs).some((k) =>
+    /^Location.*(Value|Secret)$/.test(k),
+  ),
+);
+const protectedLambda = optionalResources.find(
+  (r) => r.Type === "AWS::Lambda::Function",
+)!;
+assert.equal(
+  (
+    protectedLambda.Properties!.Environment as {
+      Variables: Record<string, string>;
+    }
+  ).Variables.PRISM_PRIVATE_SNAPSHOT_MANIFEST_SHA256,
+  "6b2f332e18b73637e279f0c6661ea970565f332346b0f24f9911d7b38de1cdc9",
+);
+assert.throws(() =>
+  execFileSync(
+    process.execPath,
+    ["node_modules/tsx/dist/cli.mjs", "infra/cdk/app.ts"],
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        CDK_CONTEXT_JSON: JSON.stringify({ deploymentRegion: "us-east-2" }),
+      },
+    },
+  ),
 );
 const report = {
   localOnly: true,
@@ -83,6 +191,12 @@ const report = {
     errorAndLatencyAlarms: true,
     noSourceOrModelPrivileges: true,
     noCloudAuthBypass: true,
+    noBootstrapAssetsOrEcr: true,
+    explicitMeasuredS3Archive: true,
+    singleRegionAndSourceBinding: true,
+    protectedExactCompanionSeparateBucket: true,
+    optionalMapExactOriginActionExpiryNoKeyOutput: true,
+    wrongRegionRejected: true,
   },
   runtime: {
     memoryMiB: lambda.MemorySize,
@@ -93,7 +207,7 @@ const report = {
   allowActions: actions,
   limitations: [
     "Synthesis and policy assertions are local; no account permission or deployed service proof.",
-    "Manifest digest is an all-zero sentinel in an unconfigured synth; gated deploy supplies the exact verified digest and accepted prefix.",
+    "Local synthesis uses a task-named placeholder asset bucket and no account pin; guarded staging deployment requires the exact private account/bucket and clean measured staging archive.",
   ],
 };
 if (process.env.PRISM_CDK_EVIDENCE)
