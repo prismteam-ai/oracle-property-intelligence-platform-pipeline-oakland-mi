@@ -1,8 +1,7 @@
 import { validatePrivateManifest } from "../packages/hosted-runtime/src/private-cache.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile, mkdtemp, rm, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 const image =
@@ -38,9 +37,9 @@ const archive = path.join(root, "oracle-lambda.zip"),
     .digest("hex");
 if (archiveDigest !== packageReport.zipSha256)
   throw new Error("Deployment archive does not match measured package");
-const packageDirectory = await mkdtemp(
-  path.join(tmpdir(), "prism-lambda-archive-"),
-);
+const extractionRoot = path.join(root, "data/lambda-emulation");
+await mkdir(extractionRoot, { recursive: true });
+const packageDirectory = await mkdtemp(path.join(extractionRoot, "archive-"));
 execFileSync("unzip", ["-q", archive, "-d", packageDirectory]);
 const code = "synthetic-emulation-fixture-code",
   signingKey = randomBytes(48).toString("hex"),
@@ -123,7 +122,18 @@ if (privateDirectory) {
   }
 }
 args.push(image, "index.handler");
-const id = execFileSync("docker", args, { encoding: "utf8" }).trim();
+let id: string;
+try {
+  id = execFileSync("docker", args, {
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+  }).trim();
+} catch {
+  await rm(packageDirectory, { recursive: true, force: true });
+  throw new Error(
+    "Local Docker RIE failed to start; fixture configuration redacted",
+  );
+}
 interface Response {
   statusCode: number;
   body: string;
