@@ -373,103 +373,144 @@ test("leap-day ownership anniversary is clamped consistently to the calendar mon
   }
 });
 
-test("protected official year-built and reported-sale observations remain outside public snapshots and cannot prove tenure", async () => {
-  const f = await sourceFixture(),
-    out = path.join(f.root, "public");
-  const m = await buildCountySnapshot({
-    sourceManifest: f.manifest,
-    outputDir: out,
-    privateOutputDir: path.join(f.privateRoot, "owner"),
-  });
-  const input = path.join(f.privateRoot, "enrichment.json");
-  await writeFile(
-    input,
-    JSON.stringify({
-      observedAt: "2026-10-27T08:00:00.000Z",
-      sources: [
-        {
-          sourceId: "official-novi-residential-sales-pdf",
-          url: "https://www.cityofnovi.org/media/synthetic.pdf",
-          bodySha256: sha256("synthetic-pdf"),
-          observedAt: "2026-10-27T08:00:00.000Z",
-          rights: "private_pending_redistribution",
-          observations: [
-            {
-              nativeId: "synthetic-row-1",
-              sourcePin: "50-00-12-345-678",
-              normalizedPin: "0012345678",
-              builtYear: 1990,
-              saleDate: "2024-05-15",
-              page: 1,
-              line: 1,
-              recordDigest: sha256("synthetic-row"),
-            },
-          ],
-        },
-      ],
-    }),
-  );
-  const privateDir = path.join(f.privateRoot, "enriched");
-  const summary = await buildProtectedEnrichment({
-    snapshotDirectory: out,
-    inputFile: input,
-    outputDirectory: privateDir,
-    protectedRoots: [out],
-  });
-  expect(summary.counts).toMatchObject({
-    observations: 1,
-    matched_properties: 2,
-  });
-  const file = path.join(privateDir, "protected-enrichment.parquet"),
-    reader = await RealSnapshot.open(out, {
-      protectedEnrichmentFile: file,
-      protectedEnrichmentSha256: sha256(await readFile(file)),
+test.each([
+  {
+    publicObservedAt: "2026-10-27T08:00:00.000Z",
+    builtYear: 1990,
+    expectedAge: 36,
+  },
+  // A later source observation can follow the public snapshot. Its retained year
+  // must survive independently of a clamped age; asOf-age would falsely yield 2020.
+  {
+    publicObservedAt: "2020-10-27T08:00:00.000Z",
+    builtYear: 2025,
+    expectedAge: 0,
+  },
+])(
+  "protected source year $builtYear remains precise when proxy age is $expectedAge, outside public snapshots and unable to prove tenure",
+  async ({ publicObservedAt, builtYear, expectedAge }) => {
+    const f = await sourceFixture(),
+      out = path.join(f.root, "public");
+    for (const layer of Object.values(f.source.layers))
+      for (const page of layer.pages) page.observedAt = publicObservedAt;
+    await writeFile(f.manifest, JSON.stringify(f.source));
+    const m = await buildCountySnapshot({
+      sourceManifest: f.manifest,
+      outputDir: out,
+      privateOutputDir: path.join(f.privateRoot, "owner"),
     });
-  const publicReader = await RealSnapshot.open(out);
-  try {
-    expect(reader.snapshotId).not.toBe(m.snapshotId);
-    const q = {
-      snapshotId: reader.snapshotId,
-      lat: 42.66,
-      lng: -83.29,
-      radiusMeters: 5000,
-      roofMinAgeYears: 35,
-      minConfidence: "low",
-    };
-    const result = await reader.search(q);
-    expect(result.total).toBe(2);
-    expect(
-      result.rows.every(
-        (p) =>
-          p.roof.basis === "built_year" &&
-          p.roof.confidence === "low" &&
-          p.roof.ageYears === 36,
-      ),
-    ).toBe(true);
-    expect(
-      result.rows.every(
-        (p) =>
-          p.roof.provenance?.[0]?.kind === "real-minimized" &&
-          p.ownership.events?.[0]?.kind === "reported_sale" &&
-          p.ownership.lastTransferDate === null &&
-          p.ownership.historyCoverage === "partial",
-      ),
-    ).toBe(true);
-    expect(
-      (await publicReader.search({ ...q, snapshotId: publicReader.snapshotId }))
-        .total,
-    ).toBe(0);
-    await expect(
-      reader.search({ ...q, minOwnershipYears: 10 }),
-    ).rejects.toThrow("tenure is unknown");
-    await expect(
-      reader.search({ ...q, ownerRegion: "out_of_area" }),
-    ).rejects.toThrow("protected");
-  } finally {
-    reader.close();
-    publicReader.close();
-  }
-});
+    const input = path.join(f.privateRoot, "enrichment.json");
+    await writeFile(
+      input,
+      JSON.stringify({
+        observedAt: "2026-10-27T08:00:00.000Z",
+        sources: [
+          {
+            sourceId: "official-novi-residential-sales-pdf",
+            url: "https://www.cityofnovi.org/media/synthetic.pdf",
+            bodySha256: sha256("synthetic-pdf"),
+            observedAt: "2026-10-27T08:00:00.000Z",
+            rights: "private_pending_redistribution",
+            observations: [
+              {
+                nativeId: "synthetic-row-1",
+                sourcePin: "50-00-12-345-678",
+                normalizedPin: "0012345678",
+                builtYear,
+                saleDate: "2024-05-15",
+                page: 1,
+                line: 1,
+                recordDigest: sha256("synthetic-row"),
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const privateDir = path.join(f.privateRoot, "enriched");
+    const summary = await buildProtectedEnrichment({
+      snapshotDirectory: out,
+      inputFile: input,
+      outputDirectory: privateDir,
+      protectedRoots: [out],
+    });
+    expect(summary.counts).toMatchObject({
+      observations: 1,
+      matched_properties: 2,
+    });
+    const file = path.join(privateDir, "protected-enrichment.parquet"),
+      reader = await RealSnapshot.open(out, {
+        protectedEnrichmentFile: file,
+        protectedEnrichmentSha256: sha256(await readFile(file)),
+      });
+    const publicReader = await RealSnapshot.open(out);
+    try {
+      expect(reader.snapshotId).not.toBe(m.snapshotId);
+      const q = {
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 5000,
+        ...(expectedAge > 0 ? { roofMinAgeYears: expectedAge - 1 } : {}),
+        minConfidence: "low",
+      };
+      const result = await reader.search(q);
+      expect(result.total).toBe(2);
+      expect(
+        result.rows.every(
+          (p) =>
+            p.roof.basis === "built_year" &&
+            p.roof.confidence === "low" &&
+            p.roof.ageYears === expectedAge &&
+            p.roof.caveats.includes(
+              `Source-reported building year: ${builtYear}. This is a building year proxy, not a verified roof installation year.`,
+            ),
+        ),
+      ).toBe(true);
+      expect(
+        result.rows.every(
+          (p) =>
+            p.roof.provenance?.[0]?.kind === "real-minimized" &&
+            p.ownership.events?.[0]?.kind === "reported_sale" &&
+            p.ownership.lastTransferDate === null &&
+            p.ownership.historyCoverage === "partial",
+        ),
+      ).toBe(true);
+      expect(
+        (
+          await publicReader.search({
+            ...q,
+            snapshotId: publicReader.snapshotId,
+          })
+        ).total,
+      ).toBe(0);
+      const detail = await reader.detail(result.rows[0]!.id, reader.snapshotId);
+      expect(detail.roof.caveats).toEqual(result.rows[0]!.roof.caveats);
+      expect(detail.roof.asOf).toBe(publicObservedAt.slice(0, 10));
+      if (expectedAge === 0)
+        expect(
+          Number(detail.roof.asOf.slice(0, 4)) - detail.roof.ageYears!,
+        ).not.toBe(builtYear);
+      const publicDetail = await publicReader.detail(
+        result.rows[0]!.id,
+        publicReader.snapshotId,
+      );
+      expect(publicDetail.roof.ageYears).toBeNull();
+      expect(publicDetail.roof.caveats.join(" ")).not.toContain(
+        "Source-reported building year:",
+      );
+      await expect(
+        reader.search({ ...q, minOwnershipYears: 10 }),
+      ).rejects.toThrow("tenure is unknown");
+      await expect(
+        reader.search({ ...q, ownerRegion: "out_of_area" }),
+      ).rejects.toThrow("protected");
+    } finally {
+      reader.close();
+      publicReader.close();
+    }
+  },
+);
 
 test("owner address comparison never aliases street-number or unit prefixes", () => {
   expect(

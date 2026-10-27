@@ -333,7 +333,7 @@ try {
     const evidence = JSON.parse(roof.out.body) as {
       total: number;
       rows: {
-        roof: { ageYears: number | null; basis: string };
+        roof: { ageYears: number | null; basis: string; caveats: string[] };
         ownership: {
           lastTransferDate: string | null;
           events?: { kind: string }[];
@@ -347,6 +347,11 @@ try {
           p.roof.ageYears !== null &&
           p.roof.ageYears > 15 &&
           p.roof.basis === "built_year" &&
+          p.roof.caveats.some((c) =>
+            /^Source-reported building year: \d{4}\. This is a building year proxy, not a verified roof installation year\.$/.test(
+              c,
+            ),
+          ) &&
           p.ownership.lastTransferDate === null,
       )
     )
@@ -374,6 +379,7 @@ try {
     )
       throw new Error("Packaged source context semantics failed");
     protectedChecks = {
+      sourceReportedBuildingYearPresent: true,
       sourceContextMetadataNoRows: true,
       sourceContextDeclaredPeriodUnknown: true,
       roofProxyMatches: evidence.total,

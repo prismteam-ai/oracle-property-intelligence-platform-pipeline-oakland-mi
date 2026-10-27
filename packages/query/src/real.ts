@@ -427,6 +427,7 @@ export class RealSnapshot {
                   : "Selected official layers do not establish roof age or installation.",
               ]
             : [
+                `Source-reported building year: ${builtYear}. This is a building year proxy, not a verified roof installation year.`,
                 "Protected official assessor report year-built proxy; unobserved roof replacements may exist. Municipal redistribution rights remain unverified.",
               ],
         provenance: enrichment
