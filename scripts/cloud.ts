@@ -70,7 +70,7 @@ if (!execute) {
         stage: STAGING_STAGE,
         region: STAGING_REGION,
         capacity,
-        memoryMiB: capacity.mode === "existing-account-shared" ? 3008 : 4096,
+        memoryMiB: 3008,
         missing: required.filter((k) => !process.env[k]),
         source: sourceIdentity(),
         approvedPublicManifestSha256: APPROVED_PUBLIC_MANIFEST_SHA256,
@@ -217,7 +217,7 @@ const deploymentConfig = {
   pins,
   capacity,
   capacityProof,
-  memoryMiB: capacity.mode === "existing-account-shared" ? 3008 : 4096,
+  memoryMiB: 3008,
   sharedOperationLimit,
   frontendDigest,
   protected: process.env.PRISM_PRIVATE_OPERATIONAL_DIR
@@ -314,8 +314,7 @@ const assertDeployed = (o: Record<string, string>) => {
       (capacity.reservedConcurrentExecutions === null
         ? "none"
         : String(capacity.reservedConcurrentExecutions)) ||
-    o.FunctionMemoryMiB !==
-      String(capacity.mode === "existing-account-shared" ? 3008 : 4096) ||
+    o.FunctionMemoryMiB !== String(3008) ||
     o.ExistingAccountConcurrency !==
       (capacity.existingAccountConcurrency === null ? "not-used" : "10") ||
     o.ApiRatePerSecond !== String(capacity.apiRatePerSecond) ||

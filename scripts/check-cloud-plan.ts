@@ -29,7 +29,7 @@ assert.equal(lambdas.length, 1);
 const lambda = lambdas[0]![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
 assert.equal(lambda.ReservedConcurrentExecutions, 2);
-assert.equal(lambda.MemorySize, 4096);
+assert.equal(lambda.MemorySize, 3008);
 assert(!("ZipFile" in (lambda.Code as object)));
 const packageReport = JSON.parse(
   await readFile("dist-lambda/package-report.json", "utf8"),
