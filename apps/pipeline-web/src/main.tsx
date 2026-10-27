@@ -464,7 +464,7 @@ function App() {
           <p>
             Verified immutable snapshot.
             <br />
-            No public publication.
+            Public base replicated · private enrichment stays protected.
           </p>
           {crmUrl && <a href={crmUrl}>Open Roofing CRM ↗</a>}
         </div>
@@ -570,8 +570,8 @@ function App() {
               </div>
               <div>
                 <span>PUBLIC REPLICAS</span>
-                <strong>—</strong>
-                <small>Not published · approval required</small>
+                <strong>2</strong>
+                <small>Public P2 base · verified October 27</small>
               </div>
             </section>
             <section className="two-columns">
@@ -984,12 +984,12 @@ function App() {
                 <span className="eyebrow">ARTIFACT IDENTITY</span>
                 <h2>Snapshot integrity and publication evidence</h2>
                 <p>
-                  Runtime file hashes are verified. Local CAR identity is
-                  evaluated separately; public retrieval and replicas require
-                  provider proof.
+                  Runtime file hashes are verified. The public P2 base has a
+                  separate publication receipt; this protected working snapshot
+                  includes private enrichment.
                 </p>
               </div>
-              <span className="badge">Local evidence</span>
+              <span className="badge">Runtime + recorded public proof</span>
             </div>
             <div className="artifact-grid">
               <article>
@@ -1015,22 +1015,36 @@ function App() {
                 ))}
               </article>
               <article className="publication-gate">
-                <h3>The publication gate stays closed</h3>
+                <h3>Public base published on two free providers</h3>
                 <p>
-                  {manifest?.car?.reason ??
-                    "Local content identity is independent of public publication or retention."}
+                  Recorded October 27, 2026: Filebase and Pinata both pinned the
+                  exact public P2 base. All eight files matched their SHA-256
+                  hashes on each provider. Pinata retrieval also passed while
+                  the Filebase pin was temporarily removed, then restored.
                 </p>
-                <ol>
-                  <li>Validate eligible Lexicon groups.</li>
-                  <li>Pack and validate deterministic CARs.</li>
-                  <li>Approve exact bytes, fields and retention.</li>
-                  <li>
-                    Verify independent stored replicas and public retrieval.
-                  </li>
-                </ol>
+                <p>
+                  <strong>Public base only:</strong>{" "}
+                  oakland-real-71c0ba7aafadd0e4301b
+                </p>
+                <code>
+                  bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu
+                </code>
+                <p>
+                  Owner derivatives, protected observations, contacts and
+                  provider records were excluded. The runtime manifest alongside
+                  this receipt describes the protected working view.
+                </p>
                 <p className="muted">
-                  No network upload, IPNS update or Atlas contribution runs in
-                  this product.
+                  This is recorded verification, not a live availability
+                  monitor. Public gateways ipfs.io and dweb.link could not be
+                  verified from the assessment network. Provider pins do not
+                  prove isolated storage or permanent retention. IPNS was
+                  verified with a 48-hour validity period; renewal is not
+                  scheduled.
+                </p>
+                <p className="muted">
+                  Publication was performed separately under explicit user
+                  approval. This interface performs no uploads or IPNS updates.
                 </p>
               </article>
             </div>
