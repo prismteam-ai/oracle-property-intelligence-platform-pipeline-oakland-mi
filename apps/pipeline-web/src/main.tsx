@@ -336,11 +336,11 @@ function App() {
     setError("");
     try {
       const h = await get<Health>("health", abort.signal);
-      const [r, c, m] = await Promise.all([
-        get<unknown[]>("runs", abort.signal),
-        get<unknown[]>("coverage", abort.signal),
-        get<Manifest>("manifest", abort.signal),
-      ]);
+      // A review runtime has two reserved slots. Pace bootstrap reads so a
+      // single browser does not saturate them before the workspace opens.
+      const r = await get<unknown[]>("runs", abort.signal);
+      const c = await get<unknown[]>("coverage", abort.signal);
+      const m = await get<Manifest>("manifest", abort.signal);
       if (current !== loadSequence.current) return;
       setHealth(h);
       healthRef.current = h;
@@ -985,8 +985,9 @@ function App() {
                 <h2>Snapshot integrity and publication evidence</h2>
                 <p>
                   Runtime file hashes are verified. The public P2 base has a
-                  separate publication receipt; this protected working snapshot
-                  includes private enrichment.
+                  separate publication receipt. The current working view is
+                  verified independently; protected staging includes private
+                  enrichment.
                 </p>
               </div>
               <span className="badge">Runtime + recorded public proof</span>
@@ -1032,7 +1033,7 @@ function App() {
                 <p>
                   Owner derivatives, protected observations, contacts and
                   provider records were excluded. The runtime manifest alongside
-                  this receipt describes the protected working view.
+                  this receipt describes the current working view.
                 </p>
                 <p className="muted">
                   This is recorded verification, not a live availability

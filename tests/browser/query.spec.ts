@@ -498,3 +498,29 @@ type HealthForTest = {
   mode: string;
   count: number;
 };
+
+test("review bootstrap fits a single protected read slot", async ({ page }) => {
+  let active = 0,
+    peak = 0;
+  await page.route(/\/api\/(runs|coverage|manifest)$/, async (route) => {
+    active++;
+    peak = Math.max(peak, active);
+    try {
+      if (active > 1)
+        return await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: '{"code":"QUERY_TIMEOUT"}',
+        });
+      const response = await route.fetch();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await route.fulfill({ response });
+    } finally {
+      active--;
+    }
+  });
+  await open(page);
+  await expect(page.locator("tbody tr").first()).toBeVisible();
+  expect(peak).toBe(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
