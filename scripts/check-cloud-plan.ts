@@ -1,5 +1,7 @@
+import path from "node:path";
+import os from "node:os";
 import { execFileSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import assert from "node:assert/strict";
 execFileSync(
   process.execPath,
@@ -26,6 +28,8 @@ const lambdas = of("AWS::Lambda::Function");
 assert.equal(lambdas.length, 1);
 const lambda = lambdas[0]![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
+assert.equal(lambda.ReservedConcurrentExecutions, 2);
+assert.equal(lambda.MemorySize, 4096);
 assert(!("ZipFile" in (lambda.Code as object)));
 const packageReport = JSON.parse(
   await readFile("dist-lambda/package-report.json", "utf8"),
@@ -177,6 +181,73 @@ assert.throws(() =>
     },
   ),
 );
+const proofDirectory = await mkdtemp(
+    path.join(os.tmpdir(), "prism-cdk-capacity-"),
+  ),
+  proofFile = path.join(proofDirectory, "proof.json");
+await writeFile(
+  proofFile,
+  JSON.stringify({
+    version: 1,
+    observedAt: new Date().toISOString(),
+    accountId: "234567890123",
+    region: "us-east-1",
+    concurrentExecutions: 10,
+    unreservedConcurrentExecutions: 10,
+    totalFunctionCount: 0,
+    functions: [],
+  }),
+  { mode: 0o600 },
+);
+try {
+  execFileSync(
+    process.execPath,
+    ["node_modules/tsx/dist/cli.mjs", "infra/cdk/app.ts"],
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        CDK_OUTDIR: "data/cdk-shared-account-check",
+        PRISM_CONCURRENCY_MODE: "existing-account-shared",
+        PRISM_SHARED_ACCOUNT_CONCURRENCY_APPROVED: "yes",
+        PRISM_EXISTING_ACCOUNT_CONCURRENCY: "10",
+        PRISM_ACCOUNT_CONCURRENCY_PROOF: proofFile,
+        CDK_CONTEXT_JSON: JSON.stringify({
+          deploymentAccount: "234567890123",
+          concurrencyMode: "existing-account-shared",
+          existingAccountConcurrency: "10",
+        }),
+      },
+    },
+  );
+  const shared = JSON.parse(
+    await readFile(
+      "data/cdk-shared-account-check/PrismOracleReview.template.json",
+      "utf8",
+    ),
+  ) as typeof t;
+  const sharedFunction = Object.values(shared.Resources).find(
+    (r) => r.Type === "AWS::Lambda::Function",
+  )!.Properties!;
+  assert(!Object.hasOwn(sharedFunction, "ReservedConcurrentExecutions"));
+  assert.equal(sharedFunction.MemorySize, 3008);
+  const sharedStage = Object.values(shared.Resources).find(
+    (r) => r.Type === "AWS::ApiGatewayV2::Stage",
+  )!.Properties!;
+  assert.deepEqual(sharedStage.DefaultRouteSettings, {
+    ThrottlingBurstLimit: 6,
+    ThrottlingRateLimit: 2,
+  });
+  assert.equal(
+    shared.Outputs.ConcurrencyMode?.Value,
+    "existing-account-shared",
+  );
+  assert.equal(shared.Outputs.FunctionReservedConcurrency?.Value, "none");
+  assert.equal(shared.Outputs.ExistingAccountConcurrency?.Value, "10");
+  assert.equal(shared.Outputs.FunctionMemoryMiB?.Value, "3008");
+} finally {
+  await rm(proofDirectory, { recursive: true, force: true });
+}
 const report = {
   localOnly: true,
   cloudServiceInvocations: 0,
@@ -197,6 +268,8 @@ const report = {
     protectedExactCompanionSeparateBucket: true,
     optionalMapExactOriginActionExpiryNoKeyOutput: true,
     wrongRegionRejected: true,
+    sharedOptInOmitsReservationAndUses3008MiB: true,
+    sharedThrottle2PerSecondBurst6: true,
   },
   runtime: {
     memoryMiB: lambda.MemorySize,

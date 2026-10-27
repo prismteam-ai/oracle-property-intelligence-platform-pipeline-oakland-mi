@@ -12,6 +12,9 @@ const image =
   mode = process.env.PRISM_DATA_MODE ?? "synthetic",
   snapshot = process.env.PRISM_SNAPSHOT_DIR;
 const privateDirectory = process.env.PRISM_PRIVATE_OPERATIONAL_DIR;
+const memoryMiB = Number(process.env.PRISM_EMULATOR_MEMORY_MIB ?? "4096");
+if (![2560, 3008, 4096].includes(memoryMiB))
+  throw new Error("Unsupported measured memory cap");
 if (mode === "real" && !snapshot)
   throw new Error(
     "Real emulation requires an explicit verified snapshot directory",
@@ -30,6 +33,7 @@ const privateManifestSha256 = privateDirectory
       )
       .digest("hex")
   : undefined;
+const cpuLimit = memoryMiB <= 3008 ? 1 : 2;
 const packageReport = JSON.parse(
   await readFile(path.join(root, "dist-lambda/package-report.json"), "utf8"),
 ) as { zipSha256: string; identity: RuntimeIdentity };
@@ -62,9 +66,9 @@ const args = [
   "--network",
   "none",
   "--memory",
-  "4g",
+  `${memoryMiB}m`,
   "--cpus",
-  "2",
+  String(cpuLimit),
   "--pids-limit",
   "128",
   "--read-only",
@@ -147,6 +151,7 @@ interface Response {
   headers?: Record<string, string>;
   cookies?: string[];
 }
+const invocationMilliseconds: number[] = [];
 async function invoke(
   method: string,
   rawPath: string,
@@ -171,10 +176,9 @@ async function invoke(
     ["exec", "-i", id, "node", "--input-type=module", "-e", program],
     { input: JSON.stringify(event), encoding: "utf8", timeout: 120000 },
   );
-  return {
-    out: JSON.parse(raw) as Response,
-    milliseconds: performance.now() - start,
-  };
+  const milliseconds = performance.now() - start;
+  invocationMilliseconds.push(milliseconds);
+  return { out: JSON.parse(raw) as Response, milliseconds };
 }
 try {
   // Start-up polling is local to the network-disabled container.
@@ -434,16 +438,27 @@ try {
     ["stats", "--no-stream", "--format", "{{.MemUsage}}", id],
     { encoding: "utf8" },
   ).trim();
+  if (invocationMilliseconds.some((n) => n >= 29000))
+    throw new Error("Measured invocation exceeded configured29second envelope");
   const report = {
     kind: "actual AWS Runtime Interface Emulator",
     image,
     imageNetwork: "none",
     deployedArchiveSha256: archiveDigest,
     archiveExtractedForEmulation: true,
-    configuredMemoryMiB: 4096,
-    configuredCpuLimit: 2,
+    configuredMemoryMiB: memoryMiB,
+    configuredCpuLimit: cpuLimit,
+    measuredInvocationCount: invocationMilliseconds.length,
+    maximumInvocationMilliseconds: Math.max(...invocationMilliseconds),
+    allInvocationsFitConfiguredTimeout: invocationMilliseconds.every(
+      (n) => n < 29000,
+    ),
     configuredTimeoutSeconds: 29,
     coldFitsConfiguredTimeout: health.milliseconds < 29000,
+    allMeasuredQueriesFitConfiguredTimeout: [
+      cold.milliseconds,
+      warm.milliseconds,
+    ].every((x) => x < 29000),
     snapshotMode: h.mode,
     runtimeIdentity: {
       head: h.head,

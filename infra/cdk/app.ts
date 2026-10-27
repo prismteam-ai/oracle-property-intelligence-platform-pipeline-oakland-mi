@@ -1,3 +1,6 @@
+import { loadConcurrencyProof } from "../../packages/hosted-runtime/src/concurrency-file.ts";
+import path from "node:path";
+import { buildConcurrencyPolicy } from "../../packages/hosted-runtime/src/concurrency.ts";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
@@ -55,6 +58,20 @@ const region = validatedRegion(
   ),
   [process.env.AWS_REGION, process.env.AWS_DEFAULT_REGION],
 );
+const capacity = buildConcurrencyPolicy({
+  ...process.env,
+  PRISM_CONCURRENCY_MODE: String(
+    app.node.tryGetContext("concurrencyMode") ??
+      process.env.PRISM_CONCURRENCY_MODE ??
+      "reserved",
+  ),
+  PRISM_EXISTING_ACCOUNT_CONCURRENCY: String(
+    app.node.tryGetContext("existingAccountConcurrency") ??
+      process.env.PRISM_EXISTING_ACCOUNT_CONCURRENCY ??
+      "",
+  ),
+});
+const memoryMiB = capacity.mode === "existing-account-shared" ? 3008 : 4096;
 const stage = String(
   app.node.tryGetContext("stage") ?? process.env.PRISM_RELEASE_STAGE ?? "local",
 );
@@ -65,6 +82,14 @@ const account =
   process.env.PRISM_EXPECTED_ACCOUNT_ID;
 if (account !== undefined && !/^\d{12}$/.test(String(account)))
   throw new Error("Exact account context required");
+const capacityProof =
+  capacity.mode === "existing-account-shared"
+    ? await loadConcurrencyProof(
+        process.env.PRISM_ACCOUNT_CONCURRENCY_PROOF ?? "",
+        String(account ?? ""),
+        [process.cwd(), path.resolve(process.cwd(), "../../return")],
+      )
+    : null;
 const archive = readFileSync("oracle-lambda.zip"),
   archiveDigest = createHash("sha256").update(archive).digest("hex"),
   report = JSON.parse(
@@ -203,10 +228,12 @@ const handler = new Function(stack, "ReadApi", {
     `${assetPrefix}lambda/${archiveDigest}.zip`,
   ),
   role: runtimeRole,
-  memorySize: 4096,
+  memorySize: memoryMiB,
   ephemeralStorageSize: Size.gibibytes(4),
   timeout: Duration.seconds(29),
-  reservedConcurrentExecutions: 2,
+  ...(capacity.reservedConcurrentExecutions === null
+    ? {}
+    : { reservedConcurrentExecutions: capacity.reservedConcurrentExecutions }),
   logGroup: logs,
   environment: {
     PRISM_DATA_MODE: "real",
@@ -270,8 +297,8 @@ const api = new HttpApi(stack, "HttpReadApi", {
 const apiStage = api.defaultStage!.node
   .defaultChild as import("aws-cdk-lib/aws-apigatewayv2").CfnStage;
 apiStage.defaultRouteSettings = {
-  throttlingBurstLimit: 10,
-  throttlingRateLimit: 5,
+  throttlingBurstLimit: capacity.apiBurst,
+  throttlingRateLimit: capacity.apiRatePerSecond,
 };
 const cdn = new Distribution(stack, "ReviewSite", {
   defaultRootObject: "index.html",
@@ -364,6 +391,27 @@ new CfnOutput(stack, "SiteUrl", {
   value: `https://${cdn.distributionDomainName}`,
 });
 new CfnOutput(stack, "Region", { value: region });
+new CfnOutput(stack, "ConcurrencyMode", { value: capacity.mode });
+new CfnOutput(stack, "ConcurrencyProofSha256", {
+  value: capacityProof?.sha256 ?? "not_validated_local_or_reserved_mode",
+});
+new CfnOutput(stack, "ExistingAccountConcurrency", {
+  value:
+    capacity.existingAccountConcurrency === null
+      ? "not-used"
+      : String(capacity.existingAccountConcurrency),
+});
+new CfnOutput(stack, "FunctionReservedConcurrency", {
+  value:
+    capacity.reservedConcurrentExecutions === null
+      ? "none"
+      : String(capacity.reservedConcurrentExecutions),
+});
+new CfnOutput(stack, "FunctionMemoryMiB", { value: String(memoryMiB) });
+new CfnOutput(stack, "ApiRatePerSecond", {
+  value: String(capacity.apiRatePerSecond),
+});
+new CfnOutput(stack, "ApiBurst", { value: String(capacity.apiBurst) });
 new CfnOutput(stack, "Stage", { value: stage });
 new CfnOutput(stack, "ReleaseBuildId", { value: report.identity.buildId });
 new CfnOutput(stack, "LambdaArchiveSha256", { value: archiveDigest });

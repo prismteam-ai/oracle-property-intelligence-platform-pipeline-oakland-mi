@@ -64,3 +64,7 @@ Authenticated protected `GET /api/source-context?sourceId=…&page=…` exposes 
 ## Rotation and teardown
 
 `pnpm evidence`/`pnpm destroy` are dry-run plans by default. Actual teardown additionally requires `PRISM_TEARDOWN_APPROVED=yes` and the exported evidence archive SHA. It revokes review access, deletes the one scoped map key if present and requests deletion of only the exact task stack. Buckets/versions, evaluator table, logs and Secret are intentionally retained for a human-reviewed14-day window. The command explicitly reports retained cleanup needed and `billingCeased:false`; it does not claim resources or charges disappeared. The lead must record exact retained-resource decisions and billing reconciliation separately before any final cessation claim.
+
+## Existing isolated Free account
+
+The default reserved2 configuration is unchanged. See [the explicit shared-account deviation](P3_EXISTING_ACCOUNT_SHARED.md) for the separately approved pool10/no-reservation/3008MiB mode, required fresh private metadata proof and honest capacity limits. No further quota/Support request or paid upgrade is authorized. Use explicit STS responses and static temporary task profiles; automatic assume-role profiles must not write the user-global CLI cache.

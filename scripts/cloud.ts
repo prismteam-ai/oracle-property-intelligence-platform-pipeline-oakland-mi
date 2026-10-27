@@ -1,7 +1,9 @@
+import { buildConcurrencyPolicy } from "../packages/hosted-runtime/src/concurrency.ts";
+import { loadConcurrencyProof } from "../packages/hosted-runtime/src/concurrency-file.ts";
 /** P3 guarded operator entry point. No effect occurs without --execute and exact private release pins. */
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir, lstat, readdir } from "node:fs/promises";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { sourceIdentity } from "../packages/hosted-runtime/src/source-identity.ts";
@@ -37,6 +39,7 @@ if (
   throw new Error(
     "Expected deploy|smoke|evidence|rotate-access|destroy and optional --execute",
   );
+const capacity = buildConcurrencyPolicy(process.env);
 const required = [
   "PRISM_EXPECTED_ACCOUNT_ID",
   "PRISM_EXPECTED_HEAD",
@@ -48,6 +51,12 @@ const required = [
   "PRISM_AWS_PENDING_USD",
   "PRISM_P3_ACTUAL_USD",
   "PRISM_P3_PENDING_USD",
+  ...(capacity.mode === "existing-account-shared"
+    ? [
+        ...(action === "deploy" ? ["PRISM_ACCOUNT_CONCURRENCY_PROOF"] : []),
+        "PRISM_SHARED_ACCOUNT_OPERATION_LIMIT",
+      ]
+    : []),
   ...(action === "deploy"
     ? ["PRISM_CFN_EXECUTION_ROLE_ARN", "PRISM_SNAPSHOT_DIR"]
     : []),
@@ -60,6 +69,8 @@ if (!execute) {
         action,
         stage: STAGING_STAGE,
         region: STAGING_REGION,
+        capacity,
+        memoryMiB: capacity.mode === "existing-account-shared" ? 3008 : 4096,
         missing: required.filter((k) => !process.env[k]),
         source: sourceIdentity(),
         approvedPublicManifestSha256: APPROVED_PUBLIC_MANIFEST_SHA256,
@@ -121,6 +132,27 @@ const pins: ReleasePins = validateReleasePins({
   stackName: "PrismOracleReview",
 });
 assertPinnedSource(pins, sourceIdentity());
+const capacityProof =
+  capacity.mode === "existing-account-shared" && action === "deploy"
+    ? await loadConcurrencyProof(
+        get("PRISM_ACCOUNT_CONCURRENCY_PROOF"),
+        pins.expectedAccountId,
+        [process.cwd(), path.resolve(process.cwd(), "../../return")],
+      )
+    : null;
+const sharedOperationLimit =
+  capacity.mode === "existing-account-shared"
+    ? Number(get("PRISM_SHARED_ACCOUNT_OPERATION_LIMIT"))
+    : null;
+if (
+  sharedOperationLimit !== null &&
+  (!Number.isInteger(sharedOperationLimit) ||
+    sharedOperationLimit < 1 ||
+    sharedOperationLimit > 100)
+)
+  throw new Error(
+    "Shared mode requires a manual finite1..100 AWS-operation envelope",
+  );
 const costs = {
   awsActual: Number(get("PRISM_AWS_ACTUAL_USD")),
   awsPending: Number(get("PRISM_AWS_PENDING_USD")),
@@ -183,6 +215,10 @@ if (action === "deploy") {
 }
 const deploymentConfig = {
   pins,
+  capacity,
+  capacityProof,
+  memoryMiB: capacity.mode === "existing-account-shared" ? 3008 : 4096,
+  sharedOperationLimit,
   frontendDigest,
   protected: process.env.PRISM_PRIVATE_OPERATIONAL_DIR
     ? pins.privateManifestSha256
@@ -201,7 +237,8 @@ let receipt: {
   action: string;
   steps: string[];
   status: string;
-} = { version: 1, action, steps: [], status: "started" };
+  awsOperations?: number;
+} = { version: 1, action, steps: [], status: "started", awsOperations: 0 };
 try {
   receipt = JSON.parse(await readFile(receiptFile, "utf8")) as typeof receipt;
 } catch (e) {
@@ -212,6 +249,15 @@ const save = async () =>
     mode: 0o600,
   });
 function aws(args: string[], input?: string) {
+  if (
+    sharedOperationLimit !== null &&
+    (receipt.awsOperations ?? 0) >= sharedOperationLimit
+  )
+    throw new Error("Finite shared CLI-invocation envelope exhausted");
+  receipt.awsOperations = (receipt.awsOperations ?? 0) + 1;
+  writeFileSync(receiptFile, JSON.stringify(receipt, null, 2) + "\n", {
+    mode: 0o600,
+  });
   try {
     return execFileSync("aws", ["--region", pins.region, ...args], {
       encoding: "utf8",
@@ -262,7 +308,20 @@ const assertDeployed = (o: Record<string, string>) => {
     o.ReleaseBuildId !== report.identity.buildId ||
     o.SourceHead !== pins.head ||
     o.SourceTree !== pins.tree ||
-    o.ContractSha256 !== report.identity.contractSha256
+    o.ContractSha256 !== report.identity.contractSha256 ||
+    o.ConcurrencyMode !== capacity.mode ||
+    o.FunctionReservedConcurrency !==
+      (capacity.reservedConcurrentExecutions === null
+        ? "none"
+        : String(capacity.reservedConcurrentExecutions)) ||
+    o.FunctionMemoryMiB !==
+      String(capacity.mode === "existing-account-shared" ? 3008 : 4096) ||
+    o.ExistingAccountConcurrency !==
+      (capacity.existingAccountConcurrency === null ? "not-used" : "10") ||
+    o.ApiRatePerSecond !== String(capacity.apiRatePerSecond) ||
+    o.ApiBurst !== String(capacity.apiBurst) ||
+    (capacityProof !== null &&
+      o.ConcurrencyProofSha256 !== capacityProof.sha256)
   )
     throw new Error("Deployed stack does not match the exact approved release");
 };
@@ -379,6 +438,11 @@ try {
       deploymentRegion: pins.region,
       deploymentAccount: pins.expectedAccountId,
       stage: pins.stage,
+      concurrencyMode: capacity.mode,
+      existingAccountConcurrency:
+        capacity.existingAccountConcurrency === null
+          ? ""
+          : String(capacity.existingAccountConcurrency),
       deploymentAssetBucket: pins.assetBucket,
       deploymentAssetPrefix: pins.assetPrefix,
       snapshotManifestSha256: pins.publicManifestSha256,
@@ -492,6 +556,9 @@ try {
         status: "deployed_pending_smoke",
         region: pins.region,
         stage: pins.stage,
+        capacity,
+        capacityProof,
+        sharedOperationLimit,
         siteUrl: o.SiteUrl,
         buildId: o.ReleaseBuildId,
         archiveSha256: pins.archiveSha256,
@@ -576,6 +643,15 @@ try {
           stage: o.Stage,
           buildId: o.ReleaseBuildId,
           archiveSha256: o.LambdaArchiveSha256,
+          concurrency: {
+            mode: o.ConcurrencyMode,
+            reserved: o.FunctionReservedConcurrency,
+            sharedPool: o.ExistingAccountConcurrency,
+            proofSha256: o.ConcurrencyProofSha256,
+            memoryMiB: o.FunctionMemoryMiB,
+            apiRatePerSecond: o.ApiRatePerSecond,
+            apiBurst: o.ApiBurst,
+          },
           siteUrl: o.SiteUrl,
           accountVerified: true,
           retainedResourcesRequireReview: true,
