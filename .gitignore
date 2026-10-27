@@ -1,0 +1,17 @@
+node_modules/
+dist/
+cdk.out/
+.env
+.env.*
+!.env.example
+.turbo/
+coverage/
+test-results/
+playwright-report/
+data/
+private/
+*.db
+*.sqlite
+*.parquet
+*.car
+*.log

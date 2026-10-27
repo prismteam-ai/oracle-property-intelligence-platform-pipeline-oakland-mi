@@ -1,0 +1,150 @@
+import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
+import {
+  CONTRACT_VERSION,
+  DomainError,
+  QuerySchema,
+  SearchResponseSchema,
+  type Property,
+  type SearchResponse,
+} from "../../contracts/src/index.ts";
+import { SnapshotReader, openDays } from "./index.ts";
+import { digest } from "../../identity/src/index.ts";
+const distanceSql =
+  "12742017.6 * asin(sqrt(least(1.0,pow(sin(radians(lat-$lat)/2),2)+cos(radians($lat))*cos(radians(lat))*pow(sin(radians(lng-$lng)/2),2))))";
+export class DuckSnapshot {
+  private constructor(
+    readonly snapshotId: string,
+    readonly rows: readonly Property[],
+    readonly connection: DuckDBConnection,
+    private instance: DuckDBInstance,
+  ) {}
+  static async create(
+    snapshotId: string,
+    rows: readonly Property[],
+  ): Promise<DuckSnapshot> {
+    const instance = await DuckDBInstance.create(":memory:", {
+      threads: "2",
+      memory_limit: "512MB",
+      enable_external_access: "false",
+    });
+    const db = await instance.connect();
+    await db.run(
+      "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON)",
+    );
+    await db.run(
+      "CREATE TABLE permits (property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR)",
+    );
+    const confidence = { high: 3, medium: 2, low: 1, unknown: 0 };
+    for (const p of rows) {
+      await db.run("INSERT INTO properties VALUES ($1,$2,$3,$4,$5,$6)", [
+        p.id,
+        p.coordinates?.lat ?? null,
+        p.coordinates?.lng ?? null,
+        p.roof.ageYears,
+        confidence[p.roof.confidence],
+        JSON.stringify(p),
+      ]);
+      for (const permit of p.permits)
+        await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4)", [
+          p.id,
+          permit.status,
+          openDays(permit.openedAt, p.roof.asOf),
+          permit.kind,
+        ]);
+    }
+    return new DuckSnapshot(snapshotId, rows, db, instance);
+  }
+  async search(input: unknown): Promise<SearchResponse> {
+    const q = QuerySchema.safeParse(input);
+    if (!q.success)
+      throw new DomainError(
+        "INVALID_INPUT",
+        "Search parameters outside contract",
+      );
+    const query = q.data;
+    if (query.snapshotId !== this.snapshotId)
+      throw new DomainError(
+        "SNAPSHOT_UNAVAILABLE",
+        "Requested snapshot unavailable",
+      );
+    const { cursor, ...filter } = query;
+    const queryHash = digest(filter);
+    let offset = 0;
+    if (cursor)
+      try {
+        const c = JSON.parse(Buffer.from(cursor, "base64url").toString()) as {
+          snapshotId: string;
+          queryHash: string;
+          offset: number;
+        };
+        if (
+          c.snapshotId !== this.snapshotId ||
+          c.queryHash !== queryHash ||
+          !Number.isSafeInteger(c.offset) ||
+          c.offset < 0
+        )
+          throw new Error();
+        offset = c.offset;
+      } catch {
+        throw new DomainError(
+          "INVALID_CURSOR",
+          "Cursor belongs to another snapshot/filter",
+        );
+      }
+    const confidence = { any: 0, high: 3, medium: 2, low: 1 };
+    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
+    const result = await this.connection.run(sql, {
+      lat: query.lat,
+      lng: query.lng,
+      confidence: confidence[query.minConfidence],
+      roof: query.roofMinAgeYears ?? null,
+      unknown: query.includeUnknown,
+      status: query.permitStatus,
+      days: query.minOpenDays,
+      radius: query.radiusMeters,
+      prioritize: query.permitStatus === "open" || query.minOpenDays > 0,
+      limit: query.limit,
+      offset,
+    });
+    const native = await result.getRowObjectsJson();
+    // Count remains exact even if a caller pages beyond the final row.
+    const total = native.length
+      ? Number(native[0]!.total)
+      : new SnapshotReader(this.snapshotId, this.rows).search({
+          ...query,
+          cursor: undefined,
+          limit: 1,
+        }).total;
+    const rows = native.map((r) => ({
+      ...(JSON.parse(String(r.payload)) as Property),
+      distanceMeters: Number(r.distance),
+    }));
+    const more = offset + rows.length < total;
+    return SearchResponseSchema.parse({
+      contractVersion: CONTRACT_VERSION,
+      snapshotId: this.snapshotId,
+      queryHash,
+      rows,
+      total,
+      truncated: more,
+      nextCursor: more
+        ? Buffer.from(
+            JSON.stringify({
+              snapshotId: this.snapshotId,
+              queryHash,
+              offset: offset + rows.length,
+            }),
+          ).toString("base64url")
+        : null,
+      limitations: [
+        "P1 fixture/sample scope, not county coverage",
+        "Local DuckDB accepted-snapshot query; no upstream MCP deployment",
+        "No actual public CID or provider persistence verified",
+      ],
+    });
+  }
+  close(): void {
+    this.connection.closeSync();
+    this.instance.closeSync();
+  }
+}
