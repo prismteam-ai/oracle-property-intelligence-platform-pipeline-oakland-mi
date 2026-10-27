@@ -18,7 +18,19 @@
     "build": "turbo run build",
     "test:browser": "playwright test",
     "cdk:synth": "tsx infra/cdk/app.ts",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "package:lambda": "tsx scripts/package-lambda.ts",
+    "runtime:emulate": "tsx scripts/emulate-lambda.ts",
+    "deploy": "tsx scripts/cloud.ts deploy",
+    "smoke": "tsx scripts/cloud.ts smoke",
+    "evidence": "tsx scripts/cloud.ts evidence",
+    "rotate-access": "tsx scripts/cloud.ts rotate-access",
+    "destroy": "tsx scripts/cloud.ts destroy",
+    "snapshot:build": "tsx scripts/build-county.ts",
+    "mcp:stdio": "tsx scripts/mcp-stdio.ts",
+    "publication:local": "tsx scripts/publication-local.ts",
+    "benchmark:real": "tsx scripts/benchmark-real.ts",
+    "cdk:check": "tsx scripts/check-cloud-plan.ts"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -27,7 +39,18 @@
     "zod": "4.6.7",
     "@duckdb/node-api": "2.0.0-r.1",
     "ai": "7.0.154",
-    "@ai-sdk/provider": "4.0.34"
+    "@ai-sdk/provider": "4.0.34",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@ipld/car": "5.4.7",
+    "@ipld/dag-cbor": "10.0.2",
+    "ipfs-unixfs-importer": "17.1.1",
+    "ipfs-unixfs-exporter": "16.2.3",
+    "blockstore-core": "7.0.1",
+    "multiformats": "14.0.5",
+    "@aws-sdk/client-s3": "3.1157.0",
+    "@aws-sdk/client-secrets-manager": "3.1157.0",
+    "@aws-sdk/client-dynamodb": "3.1157.0",
+    "@aws-sdk/lib-dynamodb": "3.1157.0"
   },
   "devDependencies": {
     "vite": "8.3.5",
@@ -45,6 +68,7 @@
     "eslint": "10.13.0",
     "typescript-eslint": "8.72.1",
     "prettier": "3.9.10",
-    "@eslint/js": "10.0.1"
+    "@eslint/js": "10.0.1",
+    "esbuild": "0.28.2"
   }
 }

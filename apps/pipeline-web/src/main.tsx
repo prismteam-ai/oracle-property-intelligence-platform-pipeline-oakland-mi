@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type {
   Property,
@@ -10,14 +10,15 @@ interface Run {
   id: string;
   at: string;
   source: string;
-  sourceCount: number;
-  processed: number;
-  added: number;
-  changed: number;
-  deleted: number;
-  unchanged: number;
+  sourceCount: number | null;
+  processed: number | null;
+  added: number | null;
+  changed: number | null;
+  deleted: number | null;
+  unchanged: number | null;
   state: string;
   limitations: string[];
+  raw?: unknown;
 }
 interface Coverage {
   source: string;
@@ -26,21 +27,64 @@ interface Coverage {
   count: number | null;
   limitations: string[];
 }
+const object = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+const number = (v: unknown): number | null =>
+  typeof v === "number" ? v : null;
+function normalizeRun(value: unknown): Run {
+  const r = object(value);
+  if ("at" in r) return value as Run;
+  return {
+    id: String(r.id ?? "Source run"),
+    at: String(r.completedAt ?? r.startedAt ?? ""),
+    source: String(r.kind ?? "official source"),
+    sourceCount: null,
+    processed: null,
+    added: null,
+    changed: null,
+    deleted: null,
+    unchanged: null,
+    state: r.complete ? "COMPLETE" : "INCOMPLETE",
+    limitations: ["Use the source receipt for layer counts and delta details."],
+    raw: value,
+  };
+}
+function normalizeCoverage(value: unknown): Coverage {
+  const c = object(value);
+  if ("source" in c) return value as Coverage;
+  const counts = object(c.counts);
+  return {
+    source: "Official selected layers",
+    scope: `${number(counts.parcels)?.toLocaleString() ?? "Unknown"} parcels · ${number(counts.addresses)?.toLocaleString() ?? "Unknown"} official site addresses`,
+    state: c.completeSelectedLayers ? "complete_selected_layers" : "partial",
+    count: number(counts.properties),
+    limitations: Array.isArray(c.limitations)
+      ? c.limitations.map(String)
+      : ["Coverage unknown"],
+  };
+}
 interface Manifest {
   snapshotId: string;
-  mode: string;
-  items: { name: string; size: number; digest: string; cid: null }[];
-  car: { state: string; reason: string };
-  ipfs: { state: string; replicas: number };
-  limitations: string[];
+  files?: { name: string; bytes: number; sha256: string }[];
+  items?: { name: string; size: number; digest: string; cid: string | null }[];
+  car?: { state: string; reason: string };
+  limitations?: string[];
+  [key: string]: unknown;
 }
-const snapshot = "demo-oakland-v1";
-async function get<T>(path: string): Promise<T> {
-  const r = await fetch(`/api/${path}`);
+interface Health {
+  snapshotId: string;
+  snapshotDigest: string;
+  mode: "real" | "synthetic";
+  count: number;
+  addressCount?: number;
+  buildId: string;
+  accessMode: string;
+}
+async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const r = await fetch(`/api/${path}`, { signal });
+  if (r.status === 401) throw new Error("REVIEW_ACCESS_REQUIRED");
   if (!r.ok)
-    throw new Error(
-      "The local data service is unavailable. Start the Oracle API and retry.",
-    );
+    throw new Error("The data service could not complete this request.");
   return r.json() as Promise<T>;
 }
 function App() {
@@ -53,61 +97,206 @@ function App() {
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [radius, setRadius] = useState(5),
-    [age, setAge] = useState(15),
+    [age, setAge] = useState(0),
     [permits, setPermits] = useState<"any" | "open" | "closed">("any"),
     [minDays, setMinDays] = useState(0);
+  const [health, setHealth] = useState<Health | null>(null),
+    [accessRequired, setAccessRequired] = useState(false),
+    [accessCode, setAccessCode] = useState(""),
+    [dirty, setDirty] = useState(false),
+    [ownerRegion, setOwnerRegion] = useState<
+      "any" | "regional" | "out_of_area" | "unknown"
+    >("any"),
+    [ownershipYears, setOwnershipYears] = useState(0),
+    [lat, setLat] = useState(42.66),
+    [lng, setLng] = useState(-83.29),
+    [binding, setBinding] = useState<{
+      generation: number;
+      query: QueryInput;
+    } | null>(null);
+  const loadSequence = useRef(0),
+    loadController = useRef<AbortController | null>(null);
+  const detailSequence = useRef(0),
+    detailController = useRef<AbortController | null>(null);
+  const generation = useRef(0),
+    controller = useRef<AbortController | null>(null),
+    healthRef = useRef<Health | null>(null);
+  const snapshot = health?.snapshotId ?? "Loading verified snapshot…";
+  const crmUrl =
+    import.meta.env.VITE_CRM_URL ??
+    (["127.0.0.1", "localhost"].includes(window.location.hostname)
+      ? "http://127.0.0.1:4174"
+      : "");
   const latest = runs.at(-1);
-  async function search() {
+  function closeEvidence() {
+    detailSequence.current++;
+    detailController.current?.abort();
+    setSelected(null);
+  }
+  function invalidate() {
+    generation.current++;
+    controller.current?.abort();
+    setResult(null);
+    closeEvidence();
+    setBinding(null);
+    setDirty(true);
+    setLoading(false);
+  }
+  async function search(active = healthRef.current, cursor?: string) {
+    if (!active) return;
+    const current = ++generation.current;
+    controller.current?.abort();
+    const abort = new AbortController();
+    controller.current = abort;
+    setResult(null);
+    closeEvidence();
+    setBinding(null);
     setLoading(true);
+    setDirty(false);
     setError("");
+    const q: QueryInput = {
+      snapshotId: active.snapshotId,
+      lat,
+      lng,
+      radiusMeters: radius * 1609.344,
+      roofMinAgeYears: age,
+      permitStatus: permits,
+      minOpenDays: minDays,
+      includeUnknown: age === 0,
+      ownerRegion,
+      ...(ownershipYears > 0 ? { minOwnershipYears: ownershipYears } : {}),
+      limit: 50,
+      ...(cursor ? { cursor } : {}),
+    };
     try {
-      const q: QueryInput = {
-        snapshotId: snapshot,
-        lat: 42.66,
-        lng: -83.29,
-        radiusMeters: radius * 1609.344,
-        roofMinAgeYears: age,
-        permitStatus: permits,
-        minOpenDays: minDays,
-        limit: 50,
-      };
-      const r = await fetch("/api/search", {
+      const response = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(q),
+        signal: abort.signal,
       });
-      if (!r.ok)
+      if (response.status === 401) {
+        setAccessRequired(true);
+        return;
+      }
+      if (!response.ok)
         throw new Error(
           "The query could not be completed. Check the filters and retry.",
         );
-      const data = (await r.json()) as SearchResponse;
+      const data = (await response.json()) as SearchResponse;
+      if (current !== generation.current) return;
+      if (
+        data.snapshotId !== active.snapshotId ||
+        !/^[a-f0-9]{64}$/.test(data.queryHash)
+      )
+        throw new Error("The response identity does not match this snapshot.");
       setResult(data);
+      setBinding({ generation: current, query: q });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Query unavailable");
+      if (
+        current === generation.current &&
+        !(e instanceof DOMException && e.name === "AbortError")
+      )
+        setError(e instanceof Error ? e.message : "Query unavailable");
     } finally {
-      setLoading(false);
+      if (current === generation.current) setLoading(false);
+    }
+  }
+  async function inspect(id: string) {
+    if (!result || !binding || dirty || loading) return;
+    const current = binding.generation,
+      detail = ++detailSequence.current;
+    detailController.current?.abort();
+    const abort = new AbortController();
+    detailController.current = abort;
+    setSelected(null);
+    try {
+      const p = await get<Property>(
+        `properties/${encodeURIComponent(id)}?snapshotId=${encodeURIComponent(result.snapshotId)}`,
+        abort.signal,
+      );
+      if (
+        current === generation.current &&
+        detail === detailSequence.current &&
+        p.id === id &&
+        result.rows.some((row) => row.id === p.id)
+      )
+        setSelected(p);
+    } catch (e) {
+      if (
+        current === generation.current &&
+        detail === detailSequence.current &&
+        !(e instanceof DOMException && e.name === "AbortError")
+      )
+        setError(e instanceof Error ? e.message : "Detail unavailable");
     }
   }
   async function load() {
+    const current = ++loadSequence.current;
+    loadController.current?.abort();
+    const abort = new AbortController();
+    loadController.current = abort;
+    invalidate();
+    healthRef.current = null;
+    setHealth(null);
+    setRuns([]);
+    setCoverage([]);
+    setManifest(null);
     setLoading(true);
+    setDirty(false);
     setError("");
     try {
+      const h = await get<Health>("health", abort.signal);
       const [r, c, m] = await Promise.all([
-        get<Run[]>("runs"),
-        get<Coverage[]>("coverage"),
-        get<Manifest>("manifest"),
+        get<unknown[]>("runs", abort.signal),
+        get<unknown[]>("coverage", abort.signal),
+        get<Manifest>("manifest", abort.signal),
       ]);
-      setRuns(r);
-      setCoverage(c);
+      if (current !== loadSequence.current) return;
+      setHealth(h);
+      healthRef.current = h;
+      setRuns(r.map(normalizeRun));
+      setCoverage(c.map(normalizeCoverage));
       setManifest(m);
-      await search();
+      setAccessRequired(false);
+      await search(h);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Service unavailable");
+      if (current !== loadSequence.current) return;
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (e instanceof Error && e.message === "REVIEW_ACCESS_REQUIRED")
+        setAccessRequired(true);
+      else setError(e instanceof Error ? e.message : "Service unavailable");
       setLoading(false);
+    }
+  }
+  async function signIn() {
+    setError("");
+    try {
+      const r = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessCode }),
+      });
+      setAccessCode("");
+      if (!r.ok)
+        throw new Error(
+          "The review code was not accepted. Please retry later.",
+        );
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Access unavailable");
     }
   }
   useEffect(() => {
     void load();
+    return () => {
+      generation.current++;
+      controller.current?.abort();
+      detailSequence.current++;
+      detailController.current?.abort();
+      loadSequence.current++;
+      loadController.current?.abort();
+    };
   }, []);
   useEffect(() => {
     if (!selected) return;
@@ -118,7 +307,7 @@ function App() {
       0,
     );
     const keyboard = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelected(null);
+      if (event.key === "Escape") closeEvidence();
       if (event.key === "Tab") {
         const elements = Array.from(
           document.querySelectorAll<HTMLElement>(
@@ -176,13 +365,19 @@ function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="tiny-label">EXECUTION MODE</div>
-          <strong>Local foundations</strong>
+          <strong>
+            {!health
+              ? "Connecting to snapshot"
+              : health.mode === "real"
+                ? "Official public records"
+                : "Synthetic demonstration"}
+          </strong>
           <p>
-            Deterministic fixtures.
+            Verified immutable snapshot.
             <br />
             No public publication.
           </p>
-          <a href="http://127.0.0.1:4174">Open Roofing CRM ↗</a>
+          {crmUrl && <a href={crmUrl}>Open Roofing CRM ↗</a>}
         </div>
       </aside>
       <main>
@@ -202,16 +397,54 @@ function App() {
           </div>
           <span className="mode-pill">
             <span />
-            SYNTHETIC · P1 LOCAL
+            {!health
+              ? "CONNECTING · MODE PENDING"
+              : health.mode === "real"
+                ? "REAL · OFFICIAL SOURCE"
+                : "SYNTHETIC · DEMONSTRATION"}
           </span>
         </header>
         <div className="notice" role="note">
-          <strong>Demonstration dataset</strong>
+          <strong>
+            {!health
+              ? "Loading verified snapshot"
+              : health.mode === "real"
+                ? "Official parcel and site-address evidence"
+                : "Demonstration dataset"}
+          </strong>
           <span>
-            48 synthetic properties prove the workflow. Official minimized
-            parcel evidence is kept separately; this is not county coverage.
+            {!health
+              ? "Data mode and counts appear after the snapshot is verified."
+              : health.mode === "real"
+                ? `${health.count.toLocaleString()} canonical properties and ${(health.addressCount ?? 0).toLocaleString()} official site addresses. Roof, permit and ownership fields remain unknown where sources do not support them.`
+                : `${health?.count ?? 0} synthetic properties prove the workflow. These records are separate from official county evidence.`}
           </span>
         </div>
+        {accessRequired && (
+          <section className="panel access-panel">
+            <h2>Open the review workspace</h2>
+            <p>
+              Enter the evaluator access code. Access expires automatically.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void signIn();
+              }}
+            >
+              <label>
+                Review access code
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                />
+              </label>
+              <button className="primary">Open workspace</button>
+            </form>
+          </section>
+        )}
         {error && (
           <div className="error" role="alert">
             {error}
@@ -222,22 +455,29 @@ function App() {
           <>
             <section className="metrics" aria-label="Run metrics">
               <div>
-                <span>FIXTURE PROPERTIES</span>
-                <strong>48</strong>
-                <small>47 with spatial evidence</small>
+                <span>CANONICAL PROPERTIES</span>
+                <strong>{health?.count.toLocaleString() ?? "—"}</strong>
+                <small>
+                  {health?.addressCount?.toLocaleString() ?? "—"} official site
+                  addresses
+                </small>
               </div>
               <div>
-                <span>COMPLETED LOCAL RUNS</span>
+                <span>RECORDED RUNS</span>
                 <strong>{runs.length.toString().padStart(2, "0")}</strong>
                 <small>Incremental state preserved</small>
               </div>
               <div>
                 <span>LATEST RUN DELTA</span>
                 <strong>
-                  +{latest?.added ?? 0}
-                  <i> / {latest?.changed ?? 0} changed</i>
+                  {latest?.added === null
+                    ? "Unknown"
+                    : `+${latest?.added ?? 0}`}
+                  <i> / {latest?.changed ?? "Unknown"} changed</i>
                 </strong>
-                <small>{latest?.deleted ?? 0} tombstone applied</small>
+                <small>
+                  {latest?.deleted ?? "Unknown"} tombstones recorded
+                </small>
               </div>
               <div>
                 <span>PUBLIC REPLICAS</span>
@@ -270,22 +510,33 @@ function App() {
                           UTC
                         </time>
                         <p>
-                          {run.sourceCount} source records · {run.processed}{" "}
-                          processed
+                          {run.sourceCount ?? "Unknown"} source records ·{" "}
+                          {run.processed ?? "Unknown"} processed
                         </p>
                         <div className="delta">
-                          <span>+{run.added} added</span>
-                          <span>{run.changed} changed</span>
-                          <span>{run.deleted} removed</span>
-                          <span>{run.unchanged} unchanged</span>
+                          <span>
+                            {run.added === null
+                              ? "Added: unknown"
+                              : `+${run.added} added`}
+                          </span>
+                          <span>{run.changed ?? "Unknown"} changed</span>
+                          <span>{run.deleted ?? "Unknown"} removed</span>
+                          <span>{run.unchanged ?? "Unknown"} unchanged</span>
                         </div>
-                        {index === runs.length - 1 && (
-                          <p className="muted">
-                            Idempotent replay returns this same completed
-                            receipt. Corrected content and tombstones advance
-                            the working state.
-                          </p>
+                        {run.raw !== undefined && (
+                          <details>
+                            <summary>Exact source run receipt</summary>
+                            <pre>{JSON.stringify(run.raw, null, 2)}</pre>
+                          </details>
                         )}
+                        {health?.mode === "synthetic" &&
+                          index === runs.length - 1 && (
+                            <p className="muted">
+                              Idempotent replay returns this same completed
+                              receipt. Corrected content and tombstones advance
+                              the working state.
+                            </p>
+                          )}
                       </div>
                     </article>
                   ))}
@@ -318,7 +569,9 @@ function App() {
                           ? "Fixture"
                           : c.count === null
                             ? "Not measured"
-                            : "Partial"}
+                            : c.state === "complete_selected_layers"
+                              ? "Complete selected layers"
+                              : "Partial"}
                       </span>
                     </div>
                     <p>{c.scope}</p>
@@ -337,8 +590,8 @@ function App() {
                 <code>{snapshot}</code>
               </div>
               <p>
-                Every query and detail view uses this immutable fixture
-                contract.
+                Every query and detail view uses this immutable snapshot
+                identity.
               </p>
               <button className="text-button" onClick={() => setTab("query")}>
                 Explore the snapshot →
@@ -347,12 +600,24 @@ function App() {
           </>
         )}
         {tab === "query" && (
-          <section className="panel query-panel">
+          <section
+            className="panel query-panel"
+            data-query-generation={binding?.generation ?? generation.current}
+            data-query-hash={result?.queryHash ?? ""}
+            data-snapshot-id={result?.snapshotId ?? snapshot}
+            data-snapshot-digest={health?.snapshotDigest ?? ""}
+            data-build-id={health?.buildId ?? ""}
+            aria-busy={loading}
+          >
             <div className="section-heading">
               <div>
                 <span className="eyebrow">PORTABLE ANALYTICS</span>
                 <h2>Find opportunities by evidence</h2>
-                <p>Local DuckDB query · Oakland-centered fixture cohort</p>
+                <p>
+                  {health?.mode === "real"
+                    ? "Official evidence · exact radius from site-address coordinates"
+                    : "Synthetic DuckDB cohort · explicit demonstration mode"}
+                </p>
               </div>
               <span className="subtle-tag">{snapshot}</span>
             </div>
@@ -370,8 +635,11 @@ function App() {
                   value={radius}
                   min="0.1"
                   max="20"
-                  step="0.5"
-                  onChange={(e) => setRadius(Number(e.target.value))}
+                  step="0.1"
+                  onChange={(e) => {
+                    invalidate();
+                    setRadius(Number(e.target.value));
+                  }}
                 />
               </label>
               <label>
@@ -381,14 +649,21 @@ function App() {
                   value={age}
                   min="0"
                   max="150"
-                  onChange={(e) => setAge(Number(e.target.value))}
+                  onChange={(e) => {
+                    invalidate();
+                    setAge(Number(e.target.value));
+                  }}
                 />
               </label>
               <label>
                 Permit status
                 <select
+                  aria-label="Permit status"
                   value={permits}
-                  onChange={(e) => setPermits(e.target.value as typeof permits)}
+                  onChange={(e) => {
+                    invalidate();
+                    setPermits(e.target.value as typeof permits);
+                  }}
                 >
                   <option value="any">All permits</option>
                   <option value="open">Open permits</option>
@@ -402,16 +677,87 @@ function App() {
                   value={minDays}
                   min="0"
                   max="50000"
-                  onChange={(e) => setMinDays(Number(e.target.value))}
+                  onChange={(e) => {
+                    invalidate();
+                    setMinDays(Number(e.target.value));
+                  }}
                 />
               </label>
-              <button className="primary" disabled={loading}>
+              <label>
+                Center latitude
+                <input
+                  aria-label="Center latitude"
+                  type="number"
+                  min="-90"
+                  max="90"
+                  step="0.00001"
+                  value={lat}
+                  onChange={(e) => {
+                    invalidate();
+                    setLat(Number(e.target.value));
+                  }}
+                />
+              </label>
+              <label>
+                Center longitude
+                <input
+                  aria-label="Center longitude"
+                  type="number"
+                  min="-180"
+                  max="180"
+                  step="0.00001"
+                  value={lng}
+                  onChange={(e) => {
+                    invalidate();
+                    setLng(Number(e.target.value));
+                  }}
+                />
+              </label>
+              <label>
+                Owner location
+                <select
+                  aria-label="Owner location"
+                  value={ownerRegion}
+                  onChange={(e) => {
+                    invalidate();
+                    setOwnerRegion(e.target.value as typeof ownerRegion);
+                  }}
+                >
+                  <option value="any">Any / unknown allowed</option>
+                  <option value="regional">Regional</option>
+                  <option value="out_of_area">Out of area</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label>
+                Ownership years minimum
+                <input
+                  type="number"
+                  min="0"
+                  max="200"
+                  value={ownershipYears}
+                  onChange={(e) => {
+                    invalidate();
+                    setOwnershipYears(Number(e.target.value));
+                  }}
+                />
+              </label>
+              <button
+                className="primary"
+                disabled={loading || !health || accessRequired}
+              >
                 {loading ? "Searching…" : "Run query"}
               </button>
             </form>
             <div className="query-results-heading">
               <strong>{result?.total ?? 0} matching properties</strong>
-              <span>Exact radius · source-backed fixture evidence</span>
+              <span>
+                {loading
+                  ? "Query in progress; previous results cleared"
+                  : dirty
+                    ? "Filters changed. Run query to view matching evidence."
+                    : "Exact radius · snapshot-bound evidence"}
+              </span>
             </div>
             <div className="table-wrap">
               <table>
@@ -446,14 +792,26 @@ function App() {
                         </small>
                       </td>
                       <td>
-                        {p.permits.filter((x) => x.status === "open").length}{" "}
-                        open<small>{p.permits.length} total</small>
+                        {health?.mode === "real" && p.permits.length === 0 ? (
+                          <>
+                            Unknown<small>No sourced permit rows</small>
+                          </>
+                        ) : (
+                          <>
+                            {
+                              p.permits.filter((x) => x.status === "open")
+                                .length
+                            }{" "}
+                            open<small>{p.permits.length} total</small>
+                          </>
+                        )}
                       </td>
                       <td>{(p.distanceMeters / 1609.344).toFixed(1)} mi</td>
                       <td>
                         <button
+                          disabled={loading || dirty}
                           className="text-button"
-                          onClick={() => setSelected(p)}
+                          onClick={() => void inspect(p.id)}
                           aria-label={`Inspect evidence for ${p.id}`}
                         >
                           Inspect ↗
@@ -464,6 +822,18 @@ function App() {
                 </tbody>
               </table>
             </div>
+            {(loading || dirty) && (
+              <div className="empty" role="status">
+                <h3>
+                  {loading ? "Searching this snapshot…" : "Filters changed"}
+                </h3>
+                <p>
+                  {loading
+                    ? "Results and detail actions will appear when this query completes."
+                    : "Run the query to load evidence for these filters."}
+                </p>
+              </div>
+            )}
             {result?.rows.length === 0 && (
               <div className="empty">
                 <h3>No evidence matches these filters.</h3>
@@ -475,11 +845,40 @@ function App() {
             )}
             <div className="query-foot">
               <code>query {result?.queryHash.slice(0, 16) ?? "pending"}</code>
+              {result?.nextCursor && (
+                <button
+                  className="text-button"
+                  disabled={loading || dirty}
+                  onClick={() =>
+                    void search(healthRef.current, result.nextCursor!)
+                  }
+                >
+                  Next 50 matches →
+                </button>
+              )}
               <span>
                 {result?.truncated
                   ? "Results are paginated; additional matches exist."
-                  : "All matches shown for this fixture query."}
+                  : "All matches shown for this bounded query."}
               </span>
+              <details className="query-proof">
+                <summary>Applied query and identity</summary>
+                <pre>
+                  {JSON.stringify(
+                    {
+                      query: binding?.query ?? null,
+                      queryHash: result?.queryHash ?? null,
+                      generation: binding?.generation ?? generation.current,
+                      snapshotId: health?.snapshotId,
+                      snapshotDigest: health?.snapshotDigest,
+                      buildId: health?.buildId,
+                      limitations: result?.limitations,
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
             </div>
           </section>
         )}
@@ -487,33 +886,45 @@ function App() {
           <section className="panel artifact-panel">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">PUBLICATION REHEARSAL</span>
-                <h2>A manifest, not a publication claim</h2>
+                <span className="eyebrow">ARTIFACT IDENTITY</span>
+                <h2>Snapshot integrity and publication evidence</h2>
                 <p>
-                  Local digests are measured. Public CIDs and durability are not
-                  yet established.
+                  Runtime file hashes are verified. Local CAR identity is
+                  evaluated separately; public retrieval and replicas require
+                  provider proof.
                 </p>
               </div>
-              <span className="badge">Dry run only</span>
+              <span className="badge">Local evidence</span>
             </div>
             <div className="artifact-grid">
               <article>
                 <span className="eyebrow">SNAPSHOT IDENTITY</span>
                 <h3>{manifest?.snapshotId}</h3>
-                {manifest?.items.map((item) => (
+                {(
+                  manifest?.items ??
+                  manifest?.files?.map((f) => ({
+                    name: f.name,
+                    size: f.bytes,
+                    digest: f.sha256,
+                    cid: null,
+                  }))
+                )?.map((item) => (
                   <div key={item.name} className="artifact">
                     <strong>{item.name}</strong>
                     <p>{item.size.toLocaleString()} bytes · SHA-256</p>
                     <code>{item.digest}</code>
                     <p className="muted">
-                      CID: not produced · eligibility: pending
+                      CID: {item.cid ?? "Not included in this runtime manifest"}
                     </p>
                   </div>
                 ))}
               </article>
               <article className="publication-gate">
                 <h3>The publication gate stays closed</h3>
-                <p>{manifest?.car.reason}</p>
+                <p>
+                  {manifest?.car?.reason ??
+                    "Local content identity is independent of public publication or retention."}
+                </p>
                 <ol>
                   <li>Validate eligible Lexicon groups.</li>
                   <li>Pack and validate deterministic CARs.</li>
@@ -529,18 +940,18 @@ function App() {
               </article>
             </div>
             <details>
-              <summary>View machine-readable dry manifest</summary>
+              <summary>View machine-readable runtime manifest</summary>
               <pre>{JSON.stringify(manifest, null, 2)}</pre>
             </details>
           </section>
         )}
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
-          <span>Local P1 · No accounts, cloud or public writes</span>
+          <span>P2 · Verified snapshot / {health?.buildId ?? "loading"}</span>
         </footer>
       </main>
       {selected && (
-        <div className="drawer-backdrop" onClick={() => setSelected(null)}>
+        <div className="drawer-backdrop" onClick={closeEvidence}>
           <section
             role="dialog"
             aria-modal="true"
@@ -551,16 +962,37 @@ function App() {
             <button
               className="close"
               aria-label="Close evidence"
-              onClick={() => setSelected(null)}
+              onClick={closeEvidence}
             >
               ×
             </button>
             <span className="eyebrow">RECORD EVIDENCE</span>
             <h2 id="evidence-title">{selected.address}</h2>
-            <span className="badge teal">Synthetic fixture</span>
+            <span className="badge teal">
+              {health?.mode === "real"
+                ? "Official source evidence"
+                : "Synthetic fixture"}
+            </span>
+            <p className="muted">
+              Snapshot {result?.snapshotId} · query{" "}
+              {result?.queryHash.slice(0, 16)} · generation{" "}
+              {binding?.generation}
+            </p>
             <dl>
               <dt>Canonical ID</dt>
               <dd>{selected.id}</dd>
+              <dt>Jurisdiction</dt>
+              <dd>{selected.jurisdiction?.name ?? "Unknown"}</dd>
+              <dt>Parcel PIN / KEYPIN</dt>
+              <dd>
+                {selected.parcelIdentifiers?.pin ?? "Unknown"} /{" "}
+                {selected.parcelIdentifiers?.keypin ?? "Unknown"}
+              </dd>
+              <dt>Official site addresses</dt>
+              <dd>
+                {selected.siteAddressCount ?? "Unknown"} · coordinate basis:{" "}
+                {selected.coordinateBasis ?? "unknown"}
+              </dd>
               <dt>Source-native ID</dt>
               <dd>{selected.nativeId}</dd>
               <dt>Roof evidence</dt>
@@ -583,6 +1015,44 @@ function App() {
                 {c}
               </p>
             ))}
+            {!!selected.roof.provenance?.length && (
+              <>
+                <h3>Roof proxy source evidence</h3>
+                {selected.roof.provenance.map((p) => (
+                  <article className="lineage" key={p.recordId}>
+                    <strong>{p.sourceId}</strong>
+                    <p>
+                      {p.recordId} · {p.observedAt}
+                    </p>
+                    <code>{p.digest}</code>
+                  </article>
+                ))}
+              </>
+            )}
+            {!!selected.ownership.events?.length && (
+              <>
+                <h3>Reported ownership events</h3>
+                <p className="muted">
+                  A reported sale date is not a verified transfer event or proof
+                  of continuous ownership.
+                </p>
+                {selected.ownership.events.map((event) => (
+                  <article className="detail-permit" key={event.id}>
+                    <strong>
+                      {event.kind === "reported_sale"
+                        ? "Reported sale"
+                        : "Recorded transfer"}{" "}
+                      · {event.date}
+                    </strong>
+                    {event.provenance.map((p) => (
+                      <p key={p.recordId}>
+                        {p.sourceId} · {p.recordId} · observed {p.observedAt}
+                      </p>
+                    ))}
+                  </article>
+                ))}
+              </>
+            )}
             <h3>Permits and contractor evidence</h3>
             {selected.permits.map((p) => (
               <article className="detail-permit" key={p.id}>
@@ -606,8 +1076,8 @@ function App() {
             ))}
             {!selected.permits.length && (
               <p>
-                No permits in this synthetic record; this is not evidence of
-                county permit absence.
+                Permit evidence is unavailable for this record. This is not
+                proof of permit absence.
               </p>
             )}
             <h3>Source lineage</h3>

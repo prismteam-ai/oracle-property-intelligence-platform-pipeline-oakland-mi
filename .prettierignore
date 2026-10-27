@@ -6,3 +6,6 @@ test-results
 playwright-report
 pnpm-lock.yaml
 README.md
+
+dist-lambda/
+oracle-lambda.zip

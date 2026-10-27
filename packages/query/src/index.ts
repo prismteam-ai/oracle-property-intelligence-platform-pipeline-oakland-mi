@@ -99,6 +99,28 @@ export class SnapshotReader {
         );
         if (distance > q.radiusMeters) return [];
         if (
+          q.ownerRegion &&
+          q.ownerRegion !== "any" &&
+          p.ownership.ownerRegion !== q.ownerRegion
+        )
+          return [];
+        if (q.minOwnershipYears !== undefined) {
+          const transfer = p.ownership.lastTransferDate;
+          if (!transfer || transfer > p.roof.asOf) return [];
+          const anniversary = new Date(transfer);
+          if (!Number.isFinite(anniversary.valueOf())) return [];
+          const month = anniversary.getUTCMonth(),
+            day = anniversary.getUTCDate(),
+            year = anniversary.getUTCFullYear() + q.minOwnershipYears;
+          anniversary.setUTCDate(1);
+          anniversary.setUTCFullYear(year);
+          anniversary.setUTCMonth(month);
+          anniversary.setUTCDate(
+            Math.min(day, new Date(Date.UTC(year, month + 1, 0)).getUTCDate()),
+          );
+          if (anniversary.toISOString().slice(0, 10) > p.roof.asOf) return [];
+        }
+        if (
           q.roofMinAgeYears !== undefined &&
           (p.roof.ageYears === null
             ? !q.includeUnknown

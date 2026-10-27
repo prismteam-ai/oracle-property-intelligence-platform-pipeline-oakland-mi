@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const CONTRACT_VERSION = "0.1.0" as const;
+export const CONTRACT_VERSION = "0.2.1" as const;
 export const EvidenceState = z.enum([
   "confirmed_present",
   "confirmed_empty",
@@ -9,12 +9,22 @@ export const EvidenceState = z.enum([
   "invalid_quarantined",
   "unknown",
 ]);
+export const ObservationClass = z.enum([
+  "source_reported",
+  "derived_deterministically",
+  "matched_with_evidence",
+  "unknown",
+  "not_available",
+  "terms_blocked",
+  "access_blocked",
+  "not_in_source_scope",
+]);
 export const ProvenanceSchema = z.object({
   sourceId: z.string(),
   recordId: z.string(),
   observedAt: z.iso.datetime(),
   digest: z.string(),
-  kind: z.enum(["synthetic", "real-minimized"]),
+  kind: z.enum(["synthetic", "real-minimized", "real-public"]),
 });
 export const PermitSchema = z.object({
   id: z.string(),
@@ -30,11 +40,39 @@ export const PermitSchema = z.object({
   }),
   provenance: z.array(ProvenanceSchema),
 });
+export const CoordinateSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+export const SiteAddressSchema = z.object({
+  id: z.string(),
+  nativeId: z.string(),
+  address: z.string(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  coordinates: CoordinateSchema.nullable(),
+  provenance: z.array(ProvenanceSchema),
+});
 export const PropertySchema = z.object({
   id: z.string(),
   nativeId: z.string(),
   parcelIds: z.array(z.string()),
   address: z.string(),
+  parcelIdentifiers: z
+    .object({ pin: z.string().nullable(), keypin: z.string().nullable() })
+    .optional(),
+  jurisdiction: z
+    .object({ code: z.string().nullable(), name: z.string().nullable() })
+    .optional(),
+  sourceRevisionDate: z.string().nullable().optional(),
+  siteAddresses: z.array(SiteAddressSchema).optional(),
+  siteAddressCount: z.number().int().nonnegative().optional(),
+  siteAddressesTruncated: z.boolean().optional(),
+  coordinateBasis: z
+    .enum(["official_site_address", "nearest_official_site_address", "unknown"])
+    .optional(),
+  evidenceClass: ObservationClass.optional(),
   usage: z.enum(["residential", "commercial", "condominium", "unknown"]),
   coordinates: z
     .object({
@@ -53,12 +91,30 @@ export const PropertySchema = z.object({
     confidence: z.enum(["high", "medium", "low", "unknown"]),
     asOf: z.iso.date(),
     caveats: z.array(z.string()),
+    provenance: z.array(ProvenanceSchema).optional(),
+    evidenceClass: ObservationClass.optional(),
   }),
   permits: z.array(PermitSchema),
   ownership: z.object({
     lastTransferDate: z.iso.date().nullable(),
+    events: z
+      .array(
+        z.object({
+          id: z.string(),
+          kind: z.enum(["reported_sale", "recorded_transfer"]),
+          date: z.iso.date(),
+          provenance: z.array(ProvenanceSchema),
+        }),
+      )
+      .optional(),
     historyCoverage: z.enum(["full", "partial", "unknown"]),
     ownerRegion: z.enum(["regional", "out_of_area", "unknown"]),
+    locationClass: z
+      .enum(["local", "in_county", "in_state", "out_of_state", "unknown"])
+      .optional(),
+    siteAddressMatch: z.boolean().nullable().optional(),
+    observedAt: z.iso.datetime().nullable().optional(),
+    evidenceClass: ObservationClass.optional(),
   }),
   provenance: z.array(ProvenanceSchema),
 });
@@ -77,6 +133,10 @@ export const QuerySchema = z
     includeUnknown: z.boolean().default(false),
     limit: z.number().int().min(1).max(200).default(50),
     cursor: z.string().optional(),
+    ownerRegion: z
+      .enum(["any", "regional", "out_of_area", "unknown"])
+      .optional(),
+    minOwnershipYears: z.number().int().min(0).max(200).optional(),
   })
   .strict();
 export type Query = z.infer<typeof QuerySchema>;

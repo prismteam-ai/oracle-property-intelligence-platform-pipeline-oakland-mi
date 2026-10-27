@@ -15,3 +15,5 @@ private/
 *.parquet
 *.car
 *.log
+dist-lambda/
+oracle-lambda.zip

@@ -1,4 +1,4 @@
-import { DomainError } from "../../contracts/src/index.ts";
+import { CONTRACT_VERSION, DomainError } from "../../contracts/src/index.ts";
 import { SnapshotReader } from "../../query/src/index.ts";
 import { z } from "zod";
 const Call = z
@@ -29,7 +29,7 @@ export function callTool(reader: SnapshotReader, input: unknown): unknown {
     };
   if (tool === "getSchema")
     return {
-      contractVersion: "0.1.0",
+      contractVersion: CONTRACT_VERSION,
       tools: ["searchProperties", "getProperty"],
       readOnly: true,
       sql: false,

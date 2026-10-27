@@ -92,7 +92,7 @@ export class DuckSnapshot {
         );
       }
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
-    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
+    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner) AND ($years IS NULL OR try_cast(json_extract_string(payload,'$.ownership.lastTransferDate') AS DATE) + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
     const result = await this.connection.run(sql, {
       lat: query.lat,
       lng: query.lng,
@@ -101,6 +101,8 @@ export class DuckSnapshot {
       unknown: query.includeUnknown,
       status: query.permitStatus,
       days: query.minOpenDays,
+      owner: query.ownerRegion ?? "any",
+      years: query.minOwnershipYears ?? null,
       radius: query.radiusMeters,
       prioritize: query.permitStatus === "open" || query.minOpenDays > 0,
       limit: query.limit,
