@@ -67,9 +67,10 @@ export class DynamoQuotaStore implements QuotaStore {
         new UpdateCommand({
           TableName: this.tableName,
           Key: { pk: k.pk, sk: k.sk },
-          UpdateExpression: "SET expiresAt = :ttl ADD consumed :units",
+          UpdateExpression: "SET expiresAt = :ttl ADD #consumed :units",
           ConditionExpression:
-            "attribute_not_exists(consumed) OR consumed <= :ceiling",
+            "attribute_not_exists(#consumed) OR #consumed <= :ceiling",
+          ExpressionAttributeNames: { "#consumed": "consumed" },
           ExpressionAttributeValues: {
             ":ttl": k.resetAt + 86400,
             ":units": k.units,

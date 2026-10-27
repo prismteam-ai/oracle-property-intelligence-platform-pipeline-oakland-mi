@@ -84,8 +84,9 @@ describe("review access", () => {
       ).remaining,
     ).toBe(8);
     expect(JSON.stringify(sent)).toContain(
-      "attribute_not_exists(consumed) OR consumed <= :ceiling",
+      "attribute_not_exists(#consumed) OR #consumed <= :ceiling",
     );
+    expect(JSON.stringify(sent)).toContain('"#consumed":"consumed"');
     const fail = new DynamoQuotaStore(
       {
         send: async () => {
