@@ -71,7 +71,8 @@ const capacity = buildConcurrencyPolicy({
       "",
   ),
 });
-const memoryMiB = capacity.mode === "existing-account-shared" ? 3008 : 4096;
+// Retain the memory size already verified in this new Free-plan account.
+const memoryMiB = 3008;
 const stage = String(
   app.node.tryGetContext("stage") ?? process.env.PRISM_RELEASE_STAGE ?? "local",
 );
