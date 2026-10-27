@@ -15,5 +15,12 @@
     "packages/**/src/**",
     "vite.config.ts",
     "tsconfig.json"
+  ],
+  "globalEnv": [
+    "PRISM_RELEASE_STAGE",
+    "PRISM_DEPLOY_REGION",
+    "VITE_CRM_URL",
+    "AWS_REGION",
+    "AWS_DEFAULT_REGION"
   ]
 }
