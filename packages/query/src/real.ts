@@ -316,27 +316,29 @@ export class RealSnapshot {
           await db.run("SELECT * FROM protected_permit_rows")
         ).getRowObjectsJson();
         const ids = new Set<string>();
-        for (const candidate of rows) {
-          const { row, permit, openDays } = validateProtectedPermitRow(
-            candidate,
-            verified.manifest.snapshotId,
-          );
+        const validated = rows.map((candidate) =>
+          validateProtectedPermitRow(candidate, verified.manifest.snapshotId),
+        );
+        for (const { permit } of validated) {
           if (ids.has(permit.id))
             throw new Error("Duplicate protected permit identity");
           ids.add(permit.id);
-          const binding = await (
-            await db.run(
-              "SELECT (SELECT count(*) FROM properties WHERE id=$property) AS properties,(SELECT count(*) FROM permits WHERE id=$id) AS collisions",
-              { property: row.property_id, id: permit.id },
-            )
-          ).getRowObjectsJson();
-          if (
-            Number(binding[0]!.properties) !== 1 ||
-            Number(binding[0]!.collisions) !== 0
+        }
+        // Validate the full finite cohort once, rather than scan the county view per permit.
+        // JSON extraction happens only after every canonical payload passed the strict boundary.
+        const binding = await (
+          await db.run(
+            "WITH canonical AS (SELECT id,count(*) AS n FROM properties GROUP BY id) SELECT (SELECT count(*) FROM protected_permit_rows r LEFT JOIN canonical p ON p.id=r.property_id WHERE coalesce(p.n,0)!=1) AS invalid_properties,(SELECT count(*) FROM protected_permit_rows r JOIN permits p ON p.id=json_extract_string(r.permit_json,'$.id')) AS collisions",
           )
-            throw new Error(
-              "Protected permit canonical property/identity binding rejected",
-            );
+        ).getRowObjectsJson();
+        if (
+          Number(binding[0]!.invalid_properties) !== 0 ||
+          Number(binding[0]!.collisions) !== 0
+        )
+          throw new Error(
+            "Protected permit canonical property/identity binding rejected",
+          );
+        for (const { row, permit, openDays } of validated) {
           await db.run(
             "INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json) VALUES($property,$id,$status,$kind,$opened,$closed,$days,$reported,$company,$license,$rating,$source,$native,$digest,$observed,$canonical)",
             {
