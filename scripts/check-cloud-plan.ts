@@ -229,6 +229,8 @@ try {
         ...localEnv,
         CDK_OUTDIR: "data/cdk-shared-account-check",
         PRISM_CONCURRENCY_MODE: "existing-account-shared",
+        PRISM_API_RATE_PER_SECOND: "2",
+        PRISM_API_BURST: "6",
         PRISM_SHARED_ACCOUNT_CONCURRENCY_APPROVED: "yes",
         PRISM_EXISTING_ACCOUNT_CONCURRENCY: "10",
         PRISM_ACCOUNT_CONCURRENCY_PROOF: proofFile,
