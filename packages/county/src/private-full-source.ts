@@ -19,6 +19,7 @@ export const FULL_SOURCE_DEFINITIONS = {
     table: "private_county_parcels",
     maximum: 1_200_000,
     title: "Full official county parcel source intake",
+    geometryIncluded: false,
   },
   "county-addresses": {
     name: "county-addresses.parquet",
@@ -27,13 +28,23 @@ export const FULL_SOURCE_DEFINITIONS = {
     table: "private_county_addresses",
     maximum: 1_200_000,
     title: "Full official county address source intake",
+    geometryIncluded: false,
+  },
+  "municipal-source": {
+    name: "municipal-permit-source.parquet",
+    sourceId: "official-independence-public-permits",
+    version: "official-municipal-permits-full-v2",
+    table: "private_municipal_permit_sources",
+    maximum: 50_000,
+    title: "Full official Independence permit source intake",
+    geometryIncluded: true,
   },
 } as const;
 export type FullSourceRole = keyof typeof FULL_SOURCE_DEFINITIONS;
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 const Config = z
   .object({
-    role: z.enum(["county-parcels", "county-addresses"]),
+    role: z.enum(["county-parcels", "county-addresses", "municipal-source"]),
     file: z
       .string()
       .min(1)
@@ -61,7 +72,7 @@ export interface FullSourceAudit {
 }
 export function parseFullSourceConfigs(value: unknown): FullSourceConfig[] {
   try {
-    const configs = z.array(Config).max(2).parse(value),
+    const configs = z.array(Config).max(3).parse(value),
       roles = new Set<string>();
     for (const c of configs) {
       if (

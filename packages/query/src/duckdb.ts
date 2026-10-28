@@ -121,7 +121,7 @@ export class DuckSnapshot {
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
     const sql = `WITH matches AS (
       SELECT id,payload,age,${distanceSql} AS distance,
-      (SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority
+      (SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL}) AS priority
       FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence
       AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL))
       AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner)

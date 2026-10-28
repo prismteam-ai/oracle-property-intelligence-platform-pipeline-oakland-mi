@@ -10,7 +10,11 @@ import {
   troyBusinessName,
   TROY_SCOPE_CLASSIFICATIONS,
 } from "./troy.ts";
-export const PRIVATE_PERMIT_LIMIT = 10_000;
+export const PRIVATE_PERMIT_LIMIT = 50_000;
+export const INDEPENDENCE_PERMIT_SOURCE =
+  "official-independence-building-permits";
+export const INDEPENDENCE_PUBLIC_PERMIT_SOURCE =
+  "official-independence-public-permits";
 export const PRIVATE_PERMIT_JSON_BYTES = 16_384;
 const StrictLicense = PermitSchema.shape.contractor.shape.licenseEvidence
   .unwrap()
@@ -35,7 +39,11 @@ const Row = z
     property_id: z.string().min(1).max(200),
     permit_json: z.string().min(1),
     public_snapshot_id: z.string().min(1).max(200),
-    source_id: z.literal(TROY_SOURCE),
+    source_id: z.enum([
+      TROY_SOURCE,
+      INDEPENDENCE_PERMIT_SOURCE,
+      INDEPENDENCE_PUBLIC_PERMIT_SOURCE,
+    ]),
     native_id: z.string().min(1).max(120),
     record_digest: z.string().regex(/^[a-f0-9]{64}$/),
     observed_at: z.iso.datetime(),
@@ -85,6 +93,73 @@ function evidenceUrl(value: string, kind: "license" | "rating") {
   )
     throw new Error("Protected contractor evidence URL rejected");
 }
+/** Preserve each official status literally; only CLOSED establishes closed state. */
+function validateIndependencePermit(
+  row: z.infer<typeof Row>,
+  permit: z.infer<typeof StrictPermit>,
+) {
+  const currentPublic = row.source_id === INDEPENDENCE_PUBLIC_PERMIT_SOURCE;
+  const expectedStatus =
+    currentPublic && permit.reportedStatus === "CLOSED" ? "closed" : "unknown";
+  if (
+    !/^[0-9]{1,20}$/.test(row.native_id) ||
+    permit.id !==
+      (currentPublic ? "independence-public-" : "independence-building-") +
+        sha256(row.native_id).slice(0, 24) ||
+    !permit.permitNumber ||
+    permit.jurisdiction !==
+      "Charter Township of Independence, Oakland County, Michigan" ||
+    !Object.values(TROY_SCOPE_CLASSIFICATIONS).some(
+      (scope) =>
+        scope.kind === permit.kind &&
+        scope.proposedWorkScope === permit.proposedWorkScope,
+    ) ||
+    permit.status !== expectedStatus ||
+    permit.statusBasis !==
+      (expectedStatus === "closed" ? "explicit_closed" : "unknown") ||
+    !(
+      currentPublic
+        ? [
+            "FINALED",
+            "ISSUED",
+            "EXPIRED",
+            "CLOSED",
+            "CANCELED",
+            "HOLD (PREREQ)",
+            "SUSPENDED (FEE)",
+          ]
+        : ["FINALED", "ISSUED", "EXPIRED"]
+    ).includes(permit.reportedStatus ?? "") ||
+    permit.openedAt !== null ||
+    permit.closedAt !== null ||
+    permit.statusObservedAt !== row.observed_at ||
+    (permit.issuedAt !== null &&
+      permit.issuedAt !== undefined &&
+      permit.issuedAt > row.observed_at.slice(0, 10)) ||
+    !permit.matchEvidence ||
+    permit.matchEvidence.basis !== "exact_normalized_parcel" ||
+    permit.matchEvidence.candidateCount !== 1 ||
+    permit.matchEvidence.confidence !== "medium" ||
+    permit.matchEvidence.addressAgreement !== "unknown" ||
+    permit.contractor.reportedName !== null ||
+    permit.contractor.verifiedCompanyId !== null ||
+    permit.contractor.license !== null ||
+    permit.contractor.rating !== null ||
+    permit.contractor.licenseEvidence != null ||
+    permit.contractor.ratingEvidence != null ||
+    permit.provenance.length !== 1 ||
+    !permit.provenance.every(
+      (p) =>
+        p.sourceId === row.source_id &&
+        p.recordId === row.native_id &&
+        p.digest === row.record_digest &&
+        p.kind === "real-minimized" &&
+        p.observedAt === row.observed_at,
+    )
+  )
+    throw new Error("Independence source evidence boundary rejected");
+  return { row, permit: permit as Permit, openDays: null };
+}
 export function validateProtectedPermitRow(
   input: unknown,
   publicSnapshotId: string,
@@ -99,6 +174,8 @@ export function validateProtectedPermitRow(
     const raw = JSON.parse(row.permit_json) as unknown;
     boundedJson(raw);
     const permit = StrictPermit.parse(raw);
+    if (row.source_id !== TROY_SOURCE)
+      return validateIndependencePermit(row, permit);
     const legacyScopes = [
       {
         kind: "roof_replacement",

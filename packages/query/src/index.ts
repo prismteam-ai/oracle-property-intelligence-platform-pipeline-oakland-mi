@@ -18,6 +18,7 @@ import {
   observedPermitStatus,
   observedPermitOpenDays,
   reportedSaleOlderThan,
+  compareQueryRows,
 } from "../../contracts/src/query-predicates.ts";
 export {
   distanceMeters,
@@ -139,25 +140,7 @@ export class SnapshotReader {
         }
         return [{ ...p, distanceMeters: distance }];
       })
-      .sort((a, b) => {
-        const priority = (p: Property) =>
-          Math.max(
-            -1,
-            ...p.permits.map(
-              (x) => observedPermitOpenDays(x, p.roof.asOf) ?? -1,
-            ),
-          );
-        return (
-          (q.sort === "roof_age_desc"
-            ? (b.roof.ageYears ?? -1) - (a.roof.ageYears ?? -1)
-            : q.sort === "permit_open_days_desc" ||
-                (!q.sort && (q.permitStatus === "open" || q.minOpenDays > 0))
-              ? priority(b) - priority(a)
-              : 0) ||
-          a.distanceMeters - b.distanceMeters ||
-          a.id.localeCompare(b.id)
-        );
-      });
+      .sort((a, b) => compareQueryRows(a, b, q));
     const rows = selected.slice(offset, offset + q.limit),
       more = offset + rows.length < selected.length;
     return SearchResponseSchema.parse({

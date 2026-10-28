@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { sha256, stableJson } from "./model.ts";
 import { TROY_SOURCE } from "./troy.ts";
-export const PRIVATE_SOURCE_INTAKE_LIMIT = 10_000;
+export const PRIVATE_SOURCE_INTAKE_LIMIT = 50_000;
 export const TROY_SOURCE_FIELDS = [
   "Permit Type",
   "Permit Number",

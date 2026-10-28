@@ -18,7 +18,8 @@ export interface PrivateFile {
     | "protected-permits.parquet"
     | "private-source-intake.parquet"
     | "county-parcels.parquet"
-    | "county-addresses.parquet";
+    | "county-addresses.parquet"
+    | "municipal-permit-source.parquet";
   role: "owner" | "enrichment" | "permits" | "source-intake" | FullSourceRole;
   bytes: number;
   sha256: string;
@@ -28,7 +29,7 @@ export interface PrivateFile {
   sourceValidatedOffline?: true;
 }
 export interface PrivateManifest {
-  version: "1" | "2" | "3" | "4";
+  version: "1" | "2" | "3" | "4" | "5";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -52,13 +53,16 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    !["1", "2", "3", "4"].includes(m.version) ||
+    !["1", "2", "3", "4", "5"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    (m.version === "4"
-      ? m.files.length !== 6
-      : m.files.length !== (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
+    (m.version === "5"
+      ? m.files.length !== 7
+      : m.version === "4"
+        ? m.files.length !== 6
+        : m.files.length !==
+          (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
@@ -77,7 +81,7 @@ export function validatePrivateManifest(
             "role",
             "bytes",
             "sha256",
-            ...(full && m.version === "4"
+            ...(full && ["4", "5"].includes(m.version)
               ? [
                   "sourceSchemaSha256",
                   "sourceRecordCount",
@@ -91,11 +95,11 @@ export function validatePrivateManifest(
         ? f.name !== "owner-derivatives.parquet"
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
-          : f.role === "permits" && ["2", "3", "4"].includes(m.version)
+          : f.role === "permits" && ["2", "3", "4", "5"].includes(m.version)
             ? f.name !== "protected-permits.parquet"
-            : f.role === "source-intake" && ["3", "4"].includes(m.version)
+            : f.role === "source-intake" && ["3", "4", "5"].includes(m.version)
               ? f.name !== "private-source-intake.parquet"
-              : full && m.version === "4"
+              : full && ["4", "5"].includes(m.version)
                 ? f.name !== full.name
                 : true) ||
       names.has(f.name) ||
@@ -117,18 +121,19 @@ export function validatePrivateManifest(
     roles.add(f.role);
   }
   if (
-    m.version === "4" &&
+    ["4", "5"].includes(m.version) &&
     (!roles.has("owner") ||
       !roles.has("enrichment") ||
       !roles.has("permits") ||
       !roles.has("source-intake") ||
       !roles.has("county-parcels") ||
       !roles.has("county-addresses") ||
+      (m.version === "5" && !roles.has("municipal-source")) ||
       m.files
         .filter((f) => ["county-parcels", "county-addresses"].includes(f.role))
         .reduce((n, f) => n + f.sourceRecordCount!, 0) > 1_200_000)
   )
-    throw new Error("Protected v4 exact role/count set rejected");
+    throw new Error("Protected exact versioned role/count set rejected");
   const canonical = [...m.files].sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );

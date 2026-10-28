@@ -144,6 +144,36 @@ describe("source-bound municipal places", () => {
 });
 
 describe("typed evidence predicates and native parity", () => {
+  it("ranks only the permits satisfying the same requested evidence conjunction", async () => {
+    const rows = fixtures().slice(0, 2);
+    const a = rows[0]!,
+      b = rows[1]!;
+    a.permits[0]!.openedAt = "1990-01-01";
+    a.permits[1]!.status = "open";
+    a.permits[1]!.closedAt = null;
+    a.permits[1]!.openedAt = "2020-01-01";
+    b.permits[0]!.openedAt = "2015-01-01";
+    const q = {
+      ...base,
+      permitStatus: "open" as const,
+      requiresContractor: true,
+      sort: "permit_open_days_desc" as const,
+    };
+    const memory = new SnapshotReader(base.snapshotId, rows),
+      native = await DuckSnapshot.create(base.snapshotId, rows);
+    try {
+      expect(memory.search(q).rows.map((p) => p.id)).toEqual([
+        "SYN-B",
+        "SYN-A",
+      ]);
+      expect((await native.search(q)).rows.map((p) => p.id)).toEqual([
+        "SYN-B",
+        "SYN-A",
+      ]);
+    } finally {
+      native.close();
+    }
+  });
   it("keeps presence, unknown status, same-permit conjunction and source ordering consistent", async () => {
     const rows = fixtures(),
       memory = new SnapshotReader(base.snapshotId, rows),

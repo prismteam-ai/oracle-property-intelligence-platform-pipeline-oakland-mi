@@ -129,6 +129,7 @@ export class RealSnapshot {
     readonly ownerSignalsAvailable: boolean,
     overlayDigests: readonly string[],
     readonly permitCount: number,
+    readonly permitSourceCounts: Readonly<Record<string, number>>,
     readonly sourceIntakeCount: number,
     readonly fullSourceAudits: readonly FullSourceAudit[],
     private temporaryDirectory: string,
@@ -200,7 +201,7 @@ export class RealSnapshot {
               scope:
                 "Acquired roof-description results linked to current properties; this is not countywide permit coverage",
               state: "partial",
-              count: permitCount,
+              count: permitSourceCounts["official-troy-issued-permits"] ?? 0,
               limitations: [
                 "Count includes roofing-qualified and other permit types with conservative property assignments. Unmatched or conflicting records are excluded from property results.",
                 "Issued-only records have unknown open/closed status and do not prove completed roofing work.",
@@ -209,12 +210,29 @@ export class RealSnapshot {
             },
           ]
         : []),
+      ...(permitSourceCounts["official-independence-public-permits"]
+        ? [
+            {
+              source: "Official Independence Public permit records",
+              scope:
+                "Current exact-PIN, jurisdiction and point-consistent assignments from the acquired municipal view",
+              state: "partial",
+              count: permitSourceCounts["official-independence-public-permits"],
+              limitations: [
+                "Only the literal CLOSED establishes closed status; FINALED, ISSUED, EXPIRED, CANCELED, HOLD (PREREQ) and SUSPENDED (FEE) remain unknown.",
+                "No source lifecycle dates, continuous open duration or verified contractor identity is asserted.",
+                "Unassigned source records and all original fields remain in the protected source intake.",
+              ],
+            },
+          ]
+        : []),
     ];
     this.coverage.push(
       ...fullSourceAudits.map((audit) => ({
         source: FULL_SOURCE_DEFINITIONS[audit.role].title,
-        scope:
-          "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
+        scope: FULL_SOURCE_DEFINITIONS[audit.role].geometryIncluded
+          ? "Complete observed source attributes and point geometry retained in protected working views"
+          : "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
         state: "source_retained_private",
         count: audit.records,
         limitations: [
@@ -268,6 +286,7 @@ export class RealSnapshot {
     }
     const overlayDigests: string[] = [];
     let permitCount = 0;
+    const permitSourceCounts: Record<string, number> = {};
     let sourceIntakeCount = 0;
     const fullSourceAudits: FullSourceAudit[] = [],
       allowedSourcePaths: string[] = [];
@@ -461,6 +480,9 @@ export class RealSnapshot {
           );
         }
         permitCount = rows.length;
+        for (const { row } of validated)
+          permitSourceCounts[row.source_id] =
+            (permitSourceCounts[row.source_id] ?? 0) + 1;
         overlayDigests.push("permits:" + options.protectedPermitsSha256);
         await db.run("DROP TABLE protected_permit_rows");
       }
@@ -603,6 +625,29 @@ export class RealSnapshot {
         ).getRowObjectsJson();
         if (Number(bindings[0]!.invalid))
           throw new Error("Protected full-source property binding rejected");
+        if (config.role === "municipal-source") {
+          const alignment = await (
+            await db.run(
+              `
+            SELECT count(*) AS invalid FROM ${definition.table} s
+            FULL OUTER JOIN (SELECT * FROM permits WHERE source_id=$source) p
+              ON s.native_id=p.native_id
+            WHERE (s.property_id IS NOT NULL OR p.native_id IS NOT NULL) AND (
+              s.native_id IS NULL OR p.native_id IS NULL OR
+              s.property_id IS DISTINCT FROM p.property_id OR
+              s.record_digest IS DISTINCT FROM p.receipt_digest OR
+              s.observed_at IS DISTINCT FROM p.observed_at OR
+              json_extract_string(s.source_record_json,'$.attributes.Status') IS DISTINCT FROM json_extract_string(p.canonical_json,'$.reportedStatus') OR
+              json_extract_string(s.source_record_json,'$.attributes.Permit_Number') IS DISTINCT FROM json_extract_string(p.canonical_json,'$.permitNumber')
+            )`,
+              { source: definition.sourceId },
+            )
+          ).getRowObjectsJson();
+          if (Number(alignment[0]!.invalid))
+            throw new Error(
+              "Protected municipal source/permit alignment rejected",
+            );
+        }
         fullSourceAudits.push({
           role: config.role,
           sourceId: definition.sourceId,
@@ -619,6 +664,16 @@ export class RealSnapshot {
         allowedSourcePaths.push(file);
         overlayDigests.push(config.role + ":" + config.sha256);
       }
+      if (
+        sourceIntakeCount +
+          fullSourceAudits
+            .filter((audit) => audit.role === "municipal-source")
+            .reduce((sum, audit) => sum + audit.records, 0) >
+        PRIVATE_SOURCE_INTAKE_LIMIT
+      )
+        throw new Error(
+          "Combined municipal full-source intake exceeds the versioned 50000-record envelope",
+        );
       await db.run("CREATE INDEX address_location ON site_addresses(lat,lng)");
       await db.run(
         "CREATE INDEX link_property ON parcel_address_links(property_id)",
@@ -657,6 +712,7 @@ export class RealSnapshot {
         Boolean(options.protectedDerivativeFile),
         overlayDigests,
         permitCount,
+        permitSourceCounts,
         sourceIntakeCount,
         fullSourceAudits,
         temporaryDirectory,
@@ -1004,7 +1060,7 @@ export class RealSnapshot {
       requiresVerifiedLicense: Boolean(q.requiresVerifiedLicense),
       requiresBbbRating: Boolean(q.requiresBbbRating),
     };
-    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)) ${PERMIT_EVIDENCE_SQL})))`;
+    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL}) AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)) ${PERMIT_EVIDENCE_SQL})))`;
     const native = await (
       await this.connection.run(
         cte +

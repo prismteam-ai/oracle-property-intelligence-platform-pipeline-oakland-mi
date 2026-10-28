@@ -204,25 +204,66 @@ export function propertyMatchesQuery(
     !hasMinimumVerifiedTenure(property, input.minOwnershipYears)
   )
     return false;
+  if (
+    (input.permitStatus ?? "any") !== "any" ||
+    (input.minOpenDays ?? 0) > 0 ||
+    needsPermitEvidence(input as Query)
+  )
+    return property.permits.some((permit) =>
+      permitMatchesQuery(permit, input, property.roof.asOf),
+    );
+  return true;
+}
+
+export function permitMatchesQuery(
+  permit: Permit,
+  input: QueryInput,
+  asOf: string,
+): boolean {
   const query = {
     ...input,
     permitStatus: input.permitStatus ?? "any",
     minOpenDays: input.minOpenDays ?? 0,
   } as Query;
-  if (
-    query.permitStatus !== "any" ||
-    query.minOpenDays > 0 ||
-    needsPermitEvidence(query)
-  )
-    return property.permits.some(
-      (permit) =>
-        permit.kind !== "other" &&
-        permitEvidenceMatches(permit, query) &&
-        (query.permitStatus === "any" ||
-          observedPermitStatus(permit) === query.permitStatus) &&
-        (query.minOpenDays === 0 ||
-          (observedPermitOpenDays(permit, property.roof.asOf) ?? -1) >=
-            query.minOpenDays),
-    );
-  return true;
+  return (
+    permit.kind !== "other" &&
+    permitEvidenceMatches(permit, query) &&
+    (query.permitStatus === "any" ||
+      observedPermitStatus(permit) === query.permitStatus) &&
+    (query.minOpenDays === 0 ||
+      (observedPermitOpenDays(permit, asOf) ?? -1) >= query.minOpenDays)
+  );
+}
+export function qualifyingOpenDuration(
+  property: Property,
+  query: QueryInput,
+): number {
+  return Math.max(
+    -1,
+    ...property.permits
+      .filter((permit) => permitMatchesQuery(permit, query, property.roof.asOf))
+      .map(
+        (permit) => observedPermitOpenDays(permit, property.roof.asOf) ?? -1,
+      ),
+  );
+}
+/** Rank only qualifying evidence; another permit on the same property cannot supply priority. */
+export function compareQueryRows(
+  a: Property & { distanceMeters: number },
+  b: Property & { distanceMeters: number },
+  query: QueryInput,
+): number {
+  const priority =
+    query.sort === "roof_age_desc"
+      ? (b.roof.ageYears ?? -1) - (a.roof.ageYears ?? -1)
+      : query.sort === "permit_open_days_desc" ||
+          (!query.sort &&
+            (query.permitStatus === "open" || (query.minOpenDays ?? 0) > 0))
+        ? qualifyingOpenDuration(b, query) - qualifyingOpenDuration(a, query)
+        : 0;
+  return (
+    priority ||
+    a.distanceMeters - b.distanceMeters ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
 }
