@@ -5,6 +5,7 @@ import {
   QuerySchema,
   SearchResponseSchema,
   type Property,
+  type Permit,
   type SearchResponse,
 } from "../../contracts/src/index.ts";
 const EARTH_RADIUS_METERS = 6371008.8;
@@ -33,6 +34,36 @@ export function openDays(openedAt: string | null, asOf: string): number | null {
   )
     return null;
   return Math.floor((end - start) / 86400000);
+}
+export function observedPermitStatus(permit: Permit): Permit["status"] {
+  if (permit.status === "open" && permit.closedAt !== null) return "unknown";
+  if (permit.statusBasis === "issued_only" || permit.statusBasis === "unknown")
+    return "unknown";
+  if (permit.statusBasis === "explicit_closed" && permit.status !== "closed")
+    return "unknown";
+  if (
+    permit.statusBasis === "explicit_open" &&
+    (permit.status !== "open" || permit.closedAt !== null)
+  )
+    return "unknown";
+  return permit.status;
+}
+/** Explicit observations are frozen at statusObservedAt; legacy fixtures retain their supplied asOf. */
+export function observedPermitOpenDays(
+  permit: Permit,
+  asOf: string,
+): number | null {
+  if (
+    observedPermitStatus(permit) !== "open" ||
+    permit.kind === "other" ||
+    permit.closedAt !== null
+  )
+    return null;
+  const date =
+    permit.statusBasis === "explicit_open"
+      ? permit.statusObservedAt?.slice(0, 10)
+      : asOf;
+  return date ? openDays(permit.openedAt, date) : null;
 }
 /** A reported sale is a partial observation; a transfer/tenure date is never substituted. */
 export function latestReportedSale(property: Property): string | null {
@@ -168,10 +199,11 @@ export class SnapshotReader {
           const permit = p.permits.some(
             (x) =>
               x.kind !== "other" &&
-              (q.permitStatus === "any" || x.status === q.permitStatus) &&
+              (q.permitStatus === "any" ||
+                observedPermitStatus(x) === q.permitStatus) &&
               (q.minOpenDays === 0 ||
-                (x.status === "open" &&
-                  (openDays(x.openedAt, p.roof.asOf) ?? -1) >= q.minOpenDays)),
+                (observedPermitOpenDays(x, p.roof.asOf) ?? -1) >=
+                  q.minOpenDays),
           );
           if (!permit) return [];
         }
@@ -181,9 +213,9 @@ export class SnapshotReader {
         const priority = (p: Property) =>
           Math.max(
             -1,
-            ...p.permits
-              .filter((x) => x.kind !== "other" && x.status === "open")
-              .map((x) => openDays(x.openedAt, p.roof.asOf) ?? -1),
+            ...p.permits.map(
+              (x) => observedPermitOpenDays(x, p.roof.asOf) ?? -1,
+            ),
           );
         return (
           (q.permitStatus === "open" || q.minOpenDays > 0

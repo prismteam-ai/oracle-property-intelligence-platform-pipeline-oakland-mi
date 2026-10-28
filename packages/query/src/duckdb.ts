@@ -7,7 +7,12 @@ import {
   type Property,
   type SearchResponse,
 } from "../../contracts/src/index.ts";
-import { SnapshotReader, openDays, latestReportedSale } from "./index.ts";
+import {
+  SnapshotReader,
+  observedPermitStatus,
+  observedPermitOpenDays,
+  latestReportedSale,
+} from "./index.ts";
 import { digest } from "../../identity/src/index.ts";
 const distanceSql =
   "12742017.6 * asin(sqrt(least(1.0,pow(sin(radians(lat-$lat)/2),2)+cos(radians($lat))*cos(radians(lat))*pow(sin(radians(lng-$lng)/2),2))))";
@@ -48,8 +53,8 @@ export class DuckSnapshot {
       for (const permit of p.permits)
         await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4)", [
           p.id,
-          permit.status,
-          openDays(permit.openedAt, p.roof.asOf),
+          observedPermitStatus(permit),
+          observedPermitOpenDays(permit, p.roof.asOf),
           permit.kind,
         ]);
     }
