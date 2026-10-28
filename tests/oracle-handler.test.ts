@@ -1,4 +1,5 @@
 import { it, expect } from "vitest";
+import { CONTRACT_VERSION } from "../packages/contracts/src/index.ts";
 import { createApi, type ActiveSnapshot } from "../apps/api/src/handler.ts";
 import {
   AccessService,
@@ -40,7 +41,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
   expect(JSON.parse(health.body)).toMatchObject({
     region: "us-east-1",
     stage: "local",
-    contractVersion: "0.3.0",
+    contractVersion: CONTRACT_VERSION,
     dataMode: "synthetic",
   });
   expect(
@@ -89,7 +90,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
   expect(context.headers["Cache-Control"]).toBe("no-store");
   expect(JSON.parse(context.body)).toMatchObject({
     version: "1",
-    contractVersion: "0.3.0",
+    contractVersion: CONTRACT_VERSION,
     snapshotId: "fixture",
     source: {
       declaredReportPeriod: null,

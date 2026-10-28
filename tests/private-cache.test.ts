@@ -88,3 +88,66 @@ it("pins private roles/base/hash separately, rejects extras and wrong base befor
     await rm(root, { recursive: true, force: true });
   }
 });
+it("v2 requires exactly owner/enrichment/permits, while v1 forbids permits and unknown metadata", async () => {
+  const base = "oakland-real-" + "b".repeat(20),
+    data = Buffer.from("synthetic"),
+    root = await mkdtemp(path.join(tmpdir(), "prism-private-v2-"));
+  const files = [
+    {
+      name: "owner-derivatives.parquet",
+      role: "owner",
+      bytes: data.length,
+      sha256: sha256(data),
+    },
+    {
+      name: "protected-enrichment.parquet",
+      role: "enrichment",
+      bytes: data.length,
+      sha256: sha256(data),
+    },
+    {
+      name: "protected-permits.parquet",
+      role: "permits",
+      bytes: data.length,
+      sha256: sha256(data),
+    },
+  ];
+  const manifest = {
+    version: "2",
+    publicSnapshotId: base,
+    snapshotId: base,
+    digest: sha256(stableJson(files)),
+    files,
+  };
+  expect(() => validatePrivateManifest(manifest, base)).not.toThrow();
+  for (const invalid of [
+    { ...manifest, version: "1" },
+    { ...manifest, files: files.slice(0, 2) },
+    { ...manifest, rawPath: "private/raw" },
+    {
+      ...manifest,
+      files: [
+        ...files.slice(0, 2),
+        { ...files[2], name: "../protected-permits.parquet" },
+      ],
+    },
+  ])
+    expect(() => validatePrivateManifest(invalid, base)).toThrow();
+  const raw = Buffer.from(JSON.stringify(manifest));
+  try {
+    const ready = await loadPrivateCache({
+      publicSnapshotId: base,
+      reader: {
+        read: async (key) =>
+          key.endsWith("private-operational-manifest.json") ? raw : data,
+      },
+      prefix: "private/v2/",
+      manifestDigest: sha256(raw),
+      cacheRoot: root,
+    });
+    expect(ready.permitsSha256).toBe(sha256(data));
+    expect(ready.permitsFile).toContain("protected-permits.parquet");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

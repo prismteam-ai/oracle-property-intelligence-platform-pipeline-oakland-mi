@@ -7,13 +7,16 @@ import {
 } from "./snapshot-cache.ts";
 import { stableJson, sha256 } from "../../county/src/model.ts";
 export interface PrivateFile {
-  name: "owner-derivatives.parquet" | "protected-enrichment.parquet";
-  role: "owner" | "enrichment";
+  name:
+    | "owner-derivatives.parquet"
+    | "protected-enrichment.parquet"
+    | "protected-permits.parquet";
+  role: "owner" | "enrichment" | "permits";
   bytes: number;
   sha256: string;
 }
 export interface PrivateManifest {
-  version: "1";
+  version: "1" | "2";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -37,11 +40,11 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    m.version !== "1" ||
+    !["1", "2"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    m.files.length !== 2
+    m.files.length !== (m.version === "2" ? 3 : 2)
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
@@ -56,7 +59,9 @@ export function validatePrivateManifest(
         ? f.name !== "owner-derivatives.parquet"
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
-          : true) ||
+          : f.role === "permits" && m.version === "2"
+            ? f.name !== "protected-permits.parquet"
+            : true) ||
       names.has(f.name) ||
       roles.has(f.role) ||
       !Number.isSafeInteger(f.bytes) ||
@@ -94,12 +99,15 @@ export async function loadPrivateCache(options: {
     ),
   ) as PrivateManifest;
   const owner = m.files.find((f) => f.role === "owner")!,
-    enrichment = m.files.find((f) => f.role === "enrichment")!;
+    enrichment = m.files.find((f) => f.role === "enrichment")!,
+    permits = m.files.find((f) => f.role === "permits");
   return {
     ownerFile: path.join(directory, owner.name),
     ownerSha256: owner.sha256,
     enrichmentFile: path.join(directory, enrichment.name),
     enrichmentSha256: enrichment.sha256,
+    permitsFile: permits ? path.join(directory, permits.name) : undefined,
+    permitsSha256: permits?.sha256,
   };
 }
 export async function preparePrivateCache(publicSnapshotId: string) {
@@ -127,4 +135,11 @@ export async function preparePrivateCache(publicSnapshotId: string) {
   process.env.PRISM_OWNER_DERIVATIVES_SHA256 = prepared.ownerSha256;
   process.env.PRISM_PRIVATE_ENRICHMENT = prepared.enrichmentFile;
   process.env.PRISM_PRIVATE_ENRICHMENT_SHA256 = prepared.enrichmentSha256;
+  if (prepared.permitsFile) {
+    process.env.PRISM_PRIVATE_PERMITS = prepared.permitsFile;
+    process.env.PRISM_PRIVATE_PERMITS_SHA256 = prepared.permitsSha256;
+  } else {
+    delete process.env.PRISM_PRIVATE_PERMITS;
+    delete process.env.PRISM_PRIVATE_PERMITS_SHA256;
+  }
 }

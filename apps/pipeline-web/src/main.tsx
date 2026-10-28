@@ -197,6 +197,7 @@ function App() {
       "any" | "regional" | "out_of_area" | "unknown"
     >("any"),
     [ownershipYears, setOwnershipYears] = useState(0),
+    [reportedSaleYears, setReportedSaleYears] = useState(0),
     [lat, setLat] = useState(42.66),
     [lng, setLng] = useState(-83.29),
     [binding, setBinding] = useState<{
@@ -253,7 +254,13 @@ function App() {
       minOpenDays: minDays,
       includeUnknown: age === 0,
       ownerRegion,
-      ...(ownershipYears > 0 ? { minOwnershipYears: ownershipYears } : {}),
+      ...(active.mode === "real"
+        ? reportedSaleYears > 0
+          ? { minReportedSaleAgeYears: reportedSaleYears }
+          : {}
+        : ownershipYears > 0
+          ? { minOwnershipYears: ownershipYears }
+          : {}),
       limit: 50,
       ...(cursor ? { cursor } : {}),
     };
@@ -826,17 +833,29 @@ function App() {
                 </select>
               </label>
               <label>
-                Ownership years minimum
+                {health?.mode === "real"
+                  ? "Latest reported sale older than (years)"
+                  : "Ownership years minimum"}
                 <input
                   type="number"
                   min="0"
                   max="200"
-                  value={ownershipYears}
+                  value={
+                    health?.mode === "real" ? reportedSaleYears : ownershipYears
+                  }
                   onChange={(e) => {
                     invalidate();
-                    setOwnershipYears(Number(e.target.value));
+                    if (health?.mode === "real")
+                      setReportedSaleYears(Number(e.target.value));
+                    else setOwnershipYears(Number(e.target.value));
                   }}
                 />
+                {health?.mode === "real" && (
+                  <small>
+                    Partial sale history; unknown dates excluded when filtered.
+                    This does not establish ownership tenure.
+                  </small>
+                )}
               </label>
               <button
                 className="primary"
@@ -891,13 +910,29 @@ function App() {
                           <>
                             Unknown<small>No sourced permit rows</small>
                           </>
+                        ) : p.permits.every((x) => x.status === "unknown") ? (
+                          <>
+                            Status unknown
+                            <small>
+                              {p.permits.length} issued or unclassified
+                              observations
+                            </small>
+                          </>
                         ) : (
                           <>
                             {
                               p.permits.filter((x) => x.status === "open")
                                 .length
                             }{" "}
-                            open<small>{p.permits.length} total</small>
+                            open
+                            <small>
+                              {p.permits.length} total ·{" "}
+                              {
+                                p.permits.filter((x) => x.status === "unknown")
+                                  .length
+                              }{" "}
+                              unknown
+                            </small>
                           </>
                         )}
                       </td>
@@ -1175,9 +1210,30 @@ function App() {
             <h3>Permits and contractor evidence</h3>
             {selected.permits.map((p) => (
               <article className="detail-permit" key={p.id}>
-                <strong>{p.id}</strong>
+                <strong>{p.permitNumber ?? p.id}</strong>
                 <p>
-                  {p.status} · opened {p.openedAt ?? "date unavailable"}
+                  {p.jurisdiction ?? "Jurisdiction unavailable"} ·{" "}
+                  {p.reportedPermitType ?? p.kind.replaceAll("_", " ")}
+                </p>
+                <p>
+                  Issued {p.issuedAt ?? "date unavailable"} · Status {p.status}
+                  {p.statusBasis
+                    ? ` (${p.statusBasis.replaceAll("_", " ")})`
+                    : ""}
+                </p>
+                {p.statusBasis === "issued_only" && (
+                  <p className="notice compact">
+                    Issuance does not establish that this permit remains open or
+                    that work was completed.
+                  </p>
+                )}
+                {p.proposedWorkScope && <p>{p.proposedWorkScope}</p>}
+                <p>
+                  Opened {p.openedAt ?? "unknown"} · Closed{" "}
+                  {p.closedAt ?? "unknown"}
+                  {p.statusObservedAt
+                    ? ` · status observed ${p.statusObservedAt}`
+                    : ""}
                 </p>
                 <p>
                   Reported contractor:{" "}
@@ -1189,8 +1245,56 @@ function App() {
                 </p>
                 <p>
                   License: {p.contractor.license ?? "Unavailable"} · Rating:{" "}
-                  {p.contractor.rating ?? "Unavailable"}
+                  {p.contractor.ratingEvidence
+                    ? `${p.contractor.ratingEvidence.value} on the BBB letter-grade scale`
+                    : (p.contractor.rating ?? "Unavailable")}
                 </p>
+                {p.contractor.licenseEvidence && (
+                  <p>
+                    {p.contractor.licenseEvidence.type} ·{" "}
+                    {p.contractor.licenseEvidence.status} ·{" "}
+                    {p.contractor.licenseEvidence.confidence} match confidence ·{" "}
+                    <a
+                      href={p.contractor.licenseEvidence.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Official license source
+                    </a>{" "}
+                    · observed {p.contractor.licenseEvidence.observedAt}.{" "}
+                    {p.contractor.licenseEvidence.matchBasis}
+                  </p>
+                )}
+                {p.contractor.ratingEvidence && (
+                  <p>
+                    <a
+                      href={p.contractor.ratingEvidence.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      BBB profile
+                    </a>{" "}
+                    · {p.contractor.ratingEvidence.matchConfidence} match
+                    confidence · observed{" "}
+                    {p.contractor.ratingEvidence.observedAt}. A BBB grade is not
+                    a numeric score or a license.
+                  </p>
+                )}
+                {p.matchEvidence && (
+                  <p>
+                    Property match: {p.matchEvidence.basis.replaceAll("_", " ")}{" "}
+                    · {p.matchEvidence.confidence} confidence.{" "}
+                    {p.matchEvidence.caveats.join(" ")}
+                  </p>
+                )}
+                {p.provenance.map((source) => (
+                  <p key={`${source.sourceId}:${source.recordId}`}>
+                    {source.sourceId} · {source.recordId} · observed{" "}
+                    {source.observedAt}
+                    <br />
+                    <code>{source.digest}</code>
+                  </p>
+                ))}
               </article>
             ))}
             {!selected.permits.length && (

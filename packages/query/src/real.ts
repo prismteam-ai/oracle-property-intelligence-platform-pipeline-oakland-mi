@@ -17,6 +17,10 @@ import {
   OWNER_DERIVATION_VERSION,
 } from "../../county/src/model.ts";
 import type { ArtifactManifest } from "../../county/src/build.ts";
+import {
+  PRIVATE_PERMIT_LIMIT,
+  validateProtectedPermitRow,
+} from "../../county/src/private-permits.ts";
 const CORE_FILES = [
   "parcels.parquet",
   "site-addresses.parquet",
@@ -49,7 +53,7 @@ export async function verifySnapshotDirectory(
   ) as ArtifactManifest;
   if (
     raw.version !== "1" ||
-    raw.contractVersion !== CONTRACT_VERSION ||
+    ![CONTRACT_VERSION, "0.2.1"].includes(raw.contractVersion) ||
     !/^oakland-real-[a-f0-9]{20}$/.test(raw.snapshotId) ||
     !/^[a-f0-9]{64}$/.test(raw.digest) ||
     !Number.isSafeInteger(raw.count) ||
@@ -107,6 +111,7 @@ export class RealSnapshot {
     runs: unknown[],
     readonly ownerSignalsAvailable: boolean,
     overlayDigests: readonly string[],
+    readonly permitCount: number,
   ) {
     this.publicSnapshotId = manifest.snapshotId;
     this.protectedSignals = overlayDigests.length > 0;
@@ -145,7 +150,9 @@ export class RealSnapshot {
                 "Owner location is derived from postal state, not a county or tenure inference.",
                 "Official sales cohorts are partial; built year is a low-confidence roof proxy, not an observed replacement.",
                 "No private observation is promoted to public bytes without redistribution approval.",
+                "Troy issued-roof observations are a stratified partial cohort. Issuance does not establish an open permit or completed work; only explicitly sourced status supports open/closed filters.",
               ],
+              permitCount,
             },
           ]
         : []),
@@ -159,6 +166,8 @@ export class RealSnapshot {
       protectedDerivativeSha256?: string;
       protectedEnrichmentFile?: string;
       protectedEnrichmentSha256?: string;
+      protectedPermitsFile?: string;
+      protectedPermitsSha256?: string;
     } = {},
   ): Promise<RealSnapshot> {
     const verified = await verifySnapshotDirectory(directory);
@@ -169,6 +178,7 @@ export class RealSnapshot {
     });
     const db = await instance.connect();
     const overlayDigests: string[] = [];
+    let permitCount = 0;
     const checkPrivate = async (file: string, expected: string | undefined) => {
       const meta = await lstat(file);
       const resolved = await realpath(file);
@@ -194,6 +204,7 @@ export class RealSnapshot {
           `CREATE TABLE ${table} AS SELECT * FROM read_parquet(${quote(path.join(root, file))})`,
         );
       await db.run(PROPERTY_VIEW_SQL);
+      await db.run("ALTER TABLE permits ADD COLUMN canonical_json VARCHAR");
       if (options.protectedDerivativeFile) {
         await checkPrivate(
           options.protectedDerivativeFile,
@@ -265,6 +276,92 @@ export class RealSnapshot {
       await db.run(
         "CREATE VIEW roof_evidence AS SELECT property_id,CASE WHEN count(DISTINCT built_year)=1 THEN max(built_year) ELSE NULL END AS built_year FROM protected_enrichment GROUP BY property_id",
       );
+      await db.run(
+        "CREATE VIEW latest_reported_sales AS SELECT property_id,max(try_cast(sale_date AS DATE)) AS sale_date FROM protected_enrichment GROUP BY property_id",
+      );
+      if (options.protectedPermitsFile) {
+        await checkPrivate(
+          options.protectedPermitsFile,
+          options.protectedPermitsSha256,
+        );
+        await db.run(
+          `CREATE TABLE protected_permit_rows AS SELECT * FROM read_parquet(${quote(options.protectedPermitsFile)})`,
+        );
+        const columns = await (
+          await db.run("PRAGMA table_info('protected_permit_rows')")
+        ).getRowObjectsJson();
+        const expectedColumns = [
+          "property_id",
+          "permit_json",
+          "public_snapshot_id",
+          "source_id",
+          "native_id",
+          "record_digest",
+          "observed_at",
+        ];
+        if (
+          columns.length !== expectedColumns.length ||
+          columns.some(
+            (x, i) => x.name !== expectedColumns[i] || x.type !== "VARCHAR",
+          )
+        )
+          throw new Error("Protected permit outer columns rejected");
+        const total = await (
+          await db.run("SELECT count(*) AS n FROM protected_permit_rows")
+        ).getRowObjectsJson();
+        if (Number(total[0]!.n) > PRIVATE_PERMIT_LIMIT)
+          throw new Error("Protected permit cohort bound rejected");
+        const rows = await (
+          await db.run("SELECT * FROM protected_permit_rows")
+        ).getRowObjectsJson();
+        const ids = new Set<string>();
+        for (const candidate of rows) {
+          const { row, permit, openDays } = validateProtectedPermitRow(
+            candidate,
+            verified.manifest.snapshotId,
+          );
+          if (ids.has(permit.id))
+            throw new Error("Duplicate protected permit identity");
+          ids.add(permit.id);
+          const binding = await (
+            await db.run(
+              "SELECT (SELECT count(*) FROM properties WHERE id=$property) AS properties,(SELECT count(*) FROM permits WHERE id=$id) AS collisions",
+              { property: row.property_id, id: permit.id },
+            )
+          ).getRowObjectsJson();
+          if (
+            Number(binding[0]!.properties) !== 1 ||
+            Number(binding[0]!.collisions) !== 0
+          )
+            throw new Error(
+              "Protected permit canonical property/identity binding rejected",
+            );
+          await db.run(
+            "INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json) VALUES($property,$id,$status,$kind,$opened,$closed,$days,$reported,$company,$license,$rating,$source,$native,$digest,$observed,$canonical)",
+            {
+              property: row.property_id,
+              id: permit.id,
+              status: permit.status,
+              kind: permit.kind,
+              opened: permit.openedAt,
+              closed: permit.closedAt,
+              days: openDays,
+              reported: permit.contractor.reportedName,
+              company: permit.contractor.verifiedCompanyId,
+              license: permit.contractor.license,
+              rating: permit.contractor.rating,
+              source: row.source_id,
+              native: row.native_id,
+              digest: row.record_digest,
+              observed: row.observed_at,
+              canonical: JSON.stringify(permit),
+            },
+          );
+        }
+        permitCount = rows.length;
+        overlayDigests.push("permits:" + options.protectedPermitsSha256);
+        await db.run("DROP TABLE protected_permit_rows");
+      }
       await db.run("CREATE INDEX address_location ON site_addresses(lat,lng)");
       await db.run(
         "CREATE INDEX link_property ON parcel_address_links(property_id)",
@@ -297,6 +394,7 @@ export class RealSnapshot {
         ) as unknown[],
         Boolean(options.protectedDerivativeFile),
         overlayDigests,
+        permitCount,
       );
     } catch (error) {
       db.closeSync();
@@ -436,28 +534,32 @@ export class RealSnapshot {
         evidenceClass:
           builtYear === null ? "unknown" : "derived_deterministically",
       },
-      permits: permits.map((p) => ({
-        id: String(p.id),
-        status: String(p.status),
-        kind: String(p.kind),
-        openedAt: text(p.opened_at),
-        closedAt: text(p.closed_at),
-        contractor: {
-          reportedName: text(p.reported_contractor),
-          verifiedCompanyId: text(p.verified_company_id),
-          license: text(p.license),
-          rating: p.rating === null ? null : Number(p.rating),
-        },
-        provenance: [
-          {
-            sourceId: String(p.source_id),
-            recordId: String(p.native_id),
-            digest: String(p.receipt_digest),
-            observedAt: String(p.observed_at),
-            kind: "real-public",
-          },
-        ],
-      })),
+      permits: permits.map((p) =>
+        p.canonical_json
+          ? (JSON.parse(String(p.canonical_json)) as unknown)
+          : {
+              id: String(p.id),
+              status: String(p.status),
+              kind: String(p.kind),
+              openedAt: text(p.opened_at),
+              closedAt: text(p.closed_at),
+              contractor: {
+                reportedName: text(p.reported_contractor),
+                verifiedCompanyId: text(p.verified_company_id),
+                license: text(p.license),
+                rating: p.rating === null ? null : Number(p.rating),
+              },
+              provenance: [
+                {
+                  sourceId: String(p.source_id),
+                  recordId: String(p.native_id),
+                  digest: String(p.receipt_digest),
+                  observedAt: String(p.observed_at),
+                  kind: "real-public",
+                },
+              ],
+            },
+      ),
       ownership: {
         lastTransferDate: null,
         events: enrichment
@@ -574,6 +676,7 @@ export class RealSnapshot {
       wrapped,
       radius: q.radiusMeters,
       roof: q.roofMinAgeYears ?? null,
+      reportedSaleAge: q.minReportedSaleAgeYears ?? null,
       includeUnknown: q.includeUnknown,
       minConfidence: q.minConfidence,
       owner: q.ownerRegion ?? "any",
@@ -584,7 +687,7 @@ export class RealSnapshot {
       offset,
       prioritize: q.permitStatus === "open" || q.minOpenDays > 0,
     };
-    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id WHERE ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)))))`;
+    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)))))`;
     const native = await (
       await this.connection.run(
         cte +
@@ -639,7 +742,7 @@ export class RealSnapshot {
         ...COUNTY_LIMITATIONS,
         ...(statusRequired
           ? [
-              "No qualifying sourced roofing permits are available; this is not evidence that no permits exist.",
+              "Permit filters use only explicitly observed status. Issued-only records have unknown status, and this partial cohort cannot establish absence of permits.",
             ]
           : []),
         ...(q.roofMinAgeYears !== undefined
@@ -652,6 +755,11 @@ export class RealSnapshot {
         ...(this.protectedSignals
           ? [
               "Protected owner location is derived from postal state; no ownership tenure is inferred.",
+            ]
+          : []),
+        ...(q.minReportedSaleAgeYears !== undefined
+          ? [
+              "Reported-sale age uses the latest observed reported-sale date and the property's snapshot observation date. Partial sale observations do not establish ownership tenure or rule out unobserved later sales; unknown dates are excluded.",
             ]
           : []),
       ],

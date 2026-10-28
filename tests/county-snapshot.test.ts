@@ -15,6 +15,12 @@ import {
   verifySnapshotDirectory,
 } from "../packages/query/src/real.ts";
 import { buildProtectedEnrichment } from "../packages/county/src/enrichment.ts";
+import { DuckDBInstance } from "@duckdb/node-api";
+import {
+  matchTroyIssued,
+  normalizeTroyIssued,
+  TROY_SOURCE,
+} from "../packages/county/src/troy.ts";
 import { DuckSnapshot } from "../packages/query/src/duckdb.ts";
 import { SnapshotReader } from "../packages/query/src/index.ts";
 import {
@@ -127,6 +133,235 @@ async function sourceFixture() {
   await writeFile(manifest, JSON.stringify(source));
   return { root, privateRoot, manifest, source };
 }
+test("protected canonical permits retain metadata, exclude issuance from open filters, and reject broken bindings", async () => {
+  const f = await sourceFixture(),
+    out = path.join(f.root, "public"),
+    m = await buildCountySnapshot({
+      sourceManifest: f.manifest,
+      outputDir: out,
+      privateOutputDir: path.join(f.privateRoot, "owners"),
+    });
+  const observedAt = "2026-10-28T01:00:00.000Z";
+  const make = (number: string, property: string) => {
+    const obs = normalizeTroyIssued(
+      {
+        permitNumber: number,
+        issuedDate: "Apr 15, 2011",
+        siteAddress: "Synthetic site 1",
+        applicant: "Synthetic Roofing LLC",
+        parcel: "88-00-12-345-678",
+        reportedPermitType: "Res., Roof",
+        description: "Roof work",
+        value: "100",
+      },
+      { observedAt, receiptDigest: sha256("synthetic-receipt") },
+    );
+    const matched = matchTroyIssued(obs, [
+      {
+        propertyId: property,
+        parcelPin: "0012345678",
+        siteAddress: "Synthetic site 1",
+        city: "Troy",
+      },
+    ]);
+    return {
+      property_id: property,
+      permit_json: JSON.stringify(matched.permit),
+      public_snapshot_id: m.snapshotId,
+      source_id: TROY_SOURCE,
+      native_id: number,
+      record_digest: obs.recordDigest,
+      observed_at: observedAt,
+    };
+  };
+  const issued = make("SYN-ISSUED", "oakland-parcel-1"),
+    explicit = make("SYN-OPEN", "oakland-parcel-3");
+  const p = JSON.parse(explicit.permit_json);
+  Object.assign(p, {
+    status: "open",
+    statusBasis: "explicit_open",
+    reportedStatus: "Open",
+    statusObservedAt: observedAt,
+    openedAt: "2020-01-01",
+  });
+  p.provenance.push({
+    sourceId: "official-troy-permit-status",
+    recordId: "SYN-OPEN:status",
+    observedAt,
+    digest: sha256("synthetic-status"),
+    kind: "real-minimized",
+  });
+  explicit.permit_json = JSON.stringify(p);
+  const instance = await DuckDBInstance.create(":memory:"),
+    db = await instance.connect();
+  const create = async (rows: (typeof issued)[], name: string) => {
+    await db.run(
+      "CREATE OR REPLACE TABLE staged(property_id VARCHAR,permit_json VARCHAR,public_snapshot_id VARCHAR,source_id VARCHAR,native_id VARCHAR,record_digest VARCHAR,observed_at VARCHAR)",
+    );
+    for (const r of rows)
+      await db.run(
+        "INSERT INTO staged VALUES($property,$permit,$snapshot,$source,$native,$digest,$observed)",
+        {
+          property: r.property_id,
+          permit: r.permit_json,
+          snapshot: r.public_snapshot_id,
+          source: r.source_id,
+          native: r.native_id,
+          digest: r.record_digest,
+          observed: r.observed_at,
+        },
+      );
+    const file = path.join(f.privateRoot, name);
+    await db.run(
+      `COPY staged TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    return {
+      protectedPermitsFile: file,
+      protectedPermitsSha256: sha256(await readFile(file)),
+    };
+  };
+  try {
+    const ready = await create([issued, explicit], "permits.parquet"),
+      reader = await RealSnapshot.open(out, ready);
+    try {
+      expect(reader.permitCount).toBe(2);
+      const detail = await reader.detail("oakland-parcel-1", reader.snapshotId);
+      expect(detail.permits[0]).toMatchObject({
+        permitNumber: "SYN-ISSUED",
+        status: "unknown",
+        statusBasis: "issued_only",
+        kind: "roof_unspecified",
+        openedAt: null,
+        closedAt: null,
+        provenance: [{ kind: "real-minimized" }],
+      });
+      const result = await reader.search({
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 5000,
+        permitStatus: "open",
+        minOpenDays: 1827,
+      });
+      expect(result.rows.map((x) => x.id)).toEqual(["oakland-parcel-3"]);
+      expect(result.rows[0]?.permits[0]?.statusObservedAt).toBe(observedAt);
+      const publicReader = await RealSnapshot.open(out);
+      try {
+        expect(
+          (await publicReader.detail("oakland-parcel-1", m.snapshotId)).permits,
+        ).toEqual([]);
+      } finally {
+        publicReader.close();
+      }
+    } finally {
+      reader.close();
+    }
+    await expect(
+      RealSnapshot.open(
+        out,
+        await create(
+          [{ ...issued, property_id: "unknown-property" }],
+          "unknown.parquet",
+        ),
+      ),
+    ).rejects.toThrow("binding");
+    await expect(
+      RealSnapshot.open(
+        out,
+        await create(
+          [{ ...issued, public_snapshot_id: "different" }],
+          "wrong-base.parquet",
+        ),
+      ),
+    ).rejects.toThrow("rejected");
+    await expect(
+      RealSnapshot.open(
+        out,
+        await create([issued, issued], "duplicate.parquet"),
+      ),
+    ).rejects.toThrow("Duplicate");
+  } finally {
+    db.closeSync();
+    instance.closeSync();
+  }
+});
+test("reported-sale age uses the latest observed sale, excludes unknown/future dates, and never establishes tenure", async () => {
+  const f = await sourceFixture(),
+    out = path.join(f.root, "public");
+  await buildCountySnapshot({
+    sourceManifest: f.manifest,
+    outputDir: out,
+    privateOutputDir: path.join(f.privateRoot, "owners"),
+  });
+  const instance = await DuckDBInstance.create(":memory:"),
+    db = await instance.connect(),
+    file = path.join(f.privateRoot, "sales.parquet");
+  try {
+    const m = JSON.parse(
+      await readFile(path.join(out, "artifact-manifest.json"), "utf8"),
+    );
+    await db.run(
+      "CREATE TABLE observations(property_id VARCHAR,source_id VARCHAR,native_id VARCHAR,built_year INTEGER,sale_date VARCHAR,receipt_digest VARCHAR,observed_at VARCHAR,page INTEGER,line INTEGER,record_digest VARCHAR,public_snapshot_id VARCHAR)",
+    );
+    for (const [id, date, n] of [
+      ["oakland-parcel-1", "2008-01-01", 1],
+      ["oakland-parcel-1", "2025-10-27", 2],
+      ["oakland-parcel-2", "2010-05-15", 3],
+      ["oakland-parcel-3", null, 4],
+      ["oakland-address-4", "2027-01-01", 5],
+    ] as const)
+      await db.run(
+        "INSERT INTO observations VALUES($id,'official-novi-residential-sales-pdf',$native,NULL,$date,$digest,'2026-10-27T08:00:00.000Z',1,$line,$digest,$snapshot)",
+        {
+          id,
+          native: "synthetic-" + n,
+          date,
+          digest: sha256("synthetic-" + n),
+          line: n,
+          snapshot: m.snapshotId,
+        },
+      );
+    await db.run(
+      `COPY observations TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    const reader = await RealSnapshot.open(out, {
+      protectedEnrichmentFile: file,
+      protectedEnrichmentSha256: sha256(await readFile(file)),
+    });
+    try {
+      const q = {
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 5000,
+      };
+      expect(
+        (await reader.search({ ...q, minReportedSaleAgeYears: 10 })).rows.map(
+          (x) => x.id,
+        ),
+      ).toEqual(["oakland-parcel-2"]);
+      expect(
+        (await reader.search({ ...q, minReportedSaleAgeYears: 1 })).rows.map(
+          (x) => x.id,
+        ),
+      ).toEqual(["oakland-parcel-2"]);
+      expect(
+        (await reader.search({ ...q, minReportedSaleAgeYears: 0 })).total,
+      ).toBe(2);
+      const d = await reader.detail("oakland-parcel-1", reader.snapshotId);
+      expect(d.ownership.lastTransferDate).toBeNull();
+      expect(d.ownership.historyCoverage).toBe("partial");
+      await expect(
+        reader.search({ ...q, minOwnershipYears: 1 }),
+      ).rejects.toThrow("Ownership tenure is unknown");
+    } finally {
+      reader.close();
+    }
+  } finally {
+    db.closeSync();
+    instance.closeSync();
+  }
+});
 test("full projection preserves native IDs, all address associations, unmatched and stacked locations, with deterministic bytes", async () => {
   const f = await sourceFixture(),
     out = path.join(f.root, "public"),

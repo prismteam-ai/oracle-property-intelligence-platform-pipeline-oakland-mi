@@ -41,10 +41,10 @@ export class S3ObjectReader implements ObjectReader {
 }
 const hash = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
-function parse(bytes: Uint8Array): Manifest {
+function parse(bytes: Uint8Array, allowPrivateV2 = false): Manifest {
   const m = JSON.parse(Buffer.from(bytes).toString("utf8")) as Manifest;
   if (
-    m.version !== "1" ||
+    (m.version !== "1" && !(allowPrivateV2 && m.version === "2")) ||
     !m.snapshotId ||
     !Array.isArray(m.files) ||
     m.files.length < 1 ||
@@ -85,7 +85,11 @@ export async function verifiedSnapshotCache(opts: {
     throw new Error("Snapshot cache configuration rejected");
   const manifestName = opts.manifestName ?? "artifact-manifest.json";
   const checked = (bytes: Uint8Array) => {
-    const m = parse(bytes);
+    const m = parse(
+      bytes,
+      manifestName === "private-operational-manifest.json" &&
+        Boolean(opts.validateManifest),
+    );
     opts.validateManifest?.(JSON.parse(Buffer.from(bytes).toString("utf8")));
     return m;
   };
