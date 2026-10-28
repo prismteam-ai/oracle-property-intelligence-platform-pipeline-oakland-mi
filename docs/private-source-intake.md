@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](README.md). Preserve its dated claims as historical evidence.
+
 # Protected source intake
 
 The private working database retains all twelve visible Troy source fields, including source Applicants who are people or unclassified, Applicant postal fields, Lot, Subdivision, the source Work Description, and Value. The existing property model remains a separate minimized projection. An Applicant is not claimed to be a contractor.

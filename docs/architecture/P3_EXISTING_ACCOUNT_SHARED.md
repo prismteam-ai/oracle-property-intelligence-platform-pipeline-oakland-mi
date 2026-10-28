@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
+
 # Explicit existing-account shared capacity deviation
 
 The reserved default is two Oracle Lambda executions with3008MiB memory, retaining the memory size verified in this new Free-plan account. The account originally had quota10; AWS later approved the withdrawn request to1000, so final staging restores reserved2. The opt-in `existing-account-shared` route is a separate staging configuration for the already existing isolated Free account whose observed regional pool is10. It **does not provide two reserved executions** or equivalent isolation. The function omits ReservedConcurrentExecutions entirely (never0), competes in the unreserved pool, uses3008MiB memory and retains4GiB ephemeral storage and the29second timeout. The HTTP API is throttled to2requests/second with burst6; finite paced evaluation remains necessary. No paid upgrade, quota increase or future Support request is part of this route.

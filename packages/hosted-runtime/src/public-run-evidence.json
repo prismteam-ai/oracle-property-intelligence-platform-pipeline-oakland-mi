@@ -68,6 +68,66 @@
     "signedRecordExpiryIndependentlyVerified": false,
     "validityBeyondNovember17Verified": false,
     "automaticRenewalConfigured": false,
-    "meaning": "Recorded resolution only. The UI/default48h validity is not a verified signed-record expiry or a guarantee through November17; immutable CIDs remain the snapshot identity."
+    "meaning": "Historical recorded resolution only; no renewal mechanism or verified long-term expiry. Use immutable published CID1/CID2 identities; run4 remains unpublished.",
+    "status": "retired-historical-observation-only",
+    "authoritativeCurrentPointer": false
+  },
+  "publicationClassification": "immutable assessment-product snapshots; not an Atlas-conformant publication",
+  "publishedHistory": [
+    {
+      "runId": "run-01",
+      "kind": "full-baseline",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 1050476,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 0
+      }
+    },
+    {
+      "runId": "run-02",
+      "kind": "complete-content-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    },
+    {
+      "runId": "run-03",
+      "kind": "full-public-field-incremental-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-e08111dc398302e141d3",
+      "datasetRootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    }
+  ],
+  "activeWorkingSnapshot": {
+    "runId": "run-04",
+    "snapshotId": "oakland-real-ad414e5e71b11e3359ab",
+    "datasetDigest": "ad414e5e71b11e3359ab921a22f0227b84468324a797ff5e919882ab53501176",
+    "publicArtifactManifestSha256": "d3f82cc0b00eb8345f94c7e5ffb21e37fd928bc9c5af771d005e6f700d879bbb",
+    "localPreparedRootCid": "bafybeia7uiqaupc6gax5i7wlpga6ylabffauhj2asyl4ge6bauts4ubm6q",
+    "publicationState": "local-prepared-unpublished",
+    "stagingDelivery": "private authenticated AWS read plane",
+    "sourceFacts": {
+      "added": 0,
+      "changed": 0,
+      "deleted": 0,
+      "unchanged": 1050476
+    },
+    "freshness": "Only the selected public parcel/address fields and geometry were refreshed. Protected county attributes retain their actual earlier observation times."
   }
 }

@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](README.md). Preserve its dated claims as historical evidence.
+
 # Complete protected county source attributes
 
 Supplemental private manifest v4 requires exactly six roles: the existing owner, enrichment, permits and source-intake roles, plus county-parcels and county-addresses. Historical private manifest versions 1, 2 and 3 retain their exact earlier shapes. Canonical Property/Query contract 0.3.0 and public publication contents do not change. Novi Footprints is not an allowed v4 role: its explicit marketing restriction prevents promotion for the intended workflow.

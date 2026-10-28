@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
+
 # Contract 0.2 migration
 
 Version 0.2 preserves existing property, search and lead fields while adding optional public source-native parcel identifiers, jurisdiction/revision, one-to-many official site-address evidence, explicit representative/nearest coordinate basis, and observation classes. Provenance adds the real-public kind. Ownership-derived fields are optional and expose no owner names or postal values. They belong to the protected operational model; public snapshots use unknown.

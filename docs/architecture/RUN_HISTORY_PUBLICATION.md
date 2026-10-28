@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
+
 # Run history publication
 
 `pnpm publication:local <verified-snapshot-directory>` keeps the legacy eight-file data root. The explicit `--profile run-history-v2 --previous <trusted-legacy-publication-directory>` option adds `runs.json` and a strict, minimized `run-manifest.json` to those eight files. It strictly validates every history row and nested field, verifies the prior publication files and CAR, and binds prior CID/snapshot history and schema/provenance claims to that trusted local input. It also verifies source content digests, counts, dataset identity, and public field allowlists before creating a deterministic CAR. It makes no network requests or provider changes.

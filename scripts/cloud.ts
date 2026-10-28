@@ -708,7 +708,7 @@ try {
               contractVersion: report.identity.contractVersion,
               contractSha256: report.identity.contractSha256,
               mode: "real",
-              publicSnapshotId: "oakland-real-e08111dc398302e141d3",
+              publicSnapshotId: "oakland-real-ad414e5e71b11e3359ab",
             },
           }),
         ),

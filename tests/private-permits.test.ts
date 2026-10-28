@@ -5,6 +5,7 @@ import {
 } from "../packages/county/src/troy.ts";
 import {
   validateProtectedPermitRow,
+  PRIVATE_PERMIT_LIMIT,
   protectedPermitOpenDays,
   applyProtectedPermitObservations,
 } from "../packages/county/src/private-permits.ts";
@@ -284,7 +285,7 @@ describe("protected permit staging boundary", () => {
     ).toBeNull();
     expect(() =>
       applyProtectedPermitObservations(
-        Array.from({ length: 10001 }, () => base),
+        Array.from({ length: PRIVATE_PERMIT_LIMIT + 1 }, () => base),
         { version: "1", observations: [] },
         snapshot,
       ),

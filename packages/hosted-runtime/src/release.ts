@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 export const STAGING_REGION = "us-east-1" as const;
 export const STAGING_STAGE = "p3-review" as const;
 export const APPROVED_PUBLIC_MANIFEST_SHA256 =
-  "0ea109aae29cb7739ec166cddbb36782c170ef18ce97ef3b525ca9d7e50e7422";
+  "d3f82cc0b00eb8345f94c7e5ffb21e37fd928bc9c5af771d005e6f700d879bbb";
 export const APPROVED_PRIVATE_MANIFEST_SHA256 =
-  "a2836c423fd90e665432e79138f7f2631c585f60dbbc1b3bc441f8d287353b98";
+  "67e533f71ebe13db0aa1e8597d897d62ab392cc2af7b0362ed5327d671ddc43b";
 export interface SourceIdentity {
   head: string;
   tree: string;
@@ -45,7 +45,7 @@ export function validatedRegion(
     ambient.some((r) => r !== undefined && r !== "" && r !== region)
   )
     throw new Error(
-      "P3 deployment region must be us-east-1; mixed regions are rejected",
+      "Review deployment region must be us-east-1; mixed regions are rejected",
     );
   return STAGING_REGION;
 }
@@ -70,7 +70,7 @@ export function validateReleasePins(p: ReleasePins): ReleasePins {
       p.privateManifestSha256 !== APPROVED_PRIVATE_MANIFEST_SHA256)
   )
     throw new Error(
-      "Only the exact reviewed P4 public/protected manifests are authorized",
+      "Only the exact reviewed current public/protected manifests are authorized",
     );
   if (
     !/^prism-p3-[a-z0-9][a-z0-9.-]{1,52}[a-z0-9]$/.test(p.assetBucket) ||
@@ -105,7 +105,7 @@ export function assertCostEnvelope(cost: {
     cost.totalActual + cost.totalPending > 75
   )
     throw new Error(
-      "P3 cost envelope is missing, invalid or would exceed an authorized ceiling",
+      "Review cost envelope is missing, invalid or would exceed an authorized ceiling",
     );
 }
 export function runtimeIdentity(

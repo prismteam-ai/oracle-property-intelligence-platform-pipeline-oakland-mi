@@ -1068,7 +1068,7 @@ function App() {
                 </p>
                 <code>{publicationEvidence.priorRootCid}</code>
                 <p>
-                  <strong>Current public root · run 3</strong>
+                  <strong>Latest published public root · run 3</strong>
                 </p>
                 <code>{publicationEvidence.rootCid}</code>
                 <p>
@@ -1080,6 +1080,12 @@ function App() {
                 <p>
                   The protected working view includes separate permit and
                   enrichment observations. These are outside both public roots.
+                </p>
+                <p>
+                  The current working view uses run 4, which refreshed the
+                  selected public fields with no changed source facts. Its
+                  prepared IPFS root remains unpublished. Protected county
+                  attributes retain their own earlier observation times.
                 </p>
                 <p>
                   <a
@@ -1100,14 +1106,10 @@ function App() {
                   </a>
                 </p>
                 <p className="muted">
-                  IPNS name: <code>{publicationEvidence.ipns.name}</code>
-                  Recorded resolution:{" "}
-                  <code>{publicationEvidence.ipns.resolvedCid}</code>
-                  Provider UI/default validity is48hours; extended requests were
-                  rejected. The signed record expiry was not independently
-                  verified, validity beyond November17 is not verified, and
-                  automatic renewal is not configured. Immutable CIDs remain the
-                  snapshot identity.
+                  The historical IPNS pointer is retired from the current
+                  delivery path. Its expiry was not independently verified and
+                  automatic renewal is not configured. The two immutable
+                  published CIDs identify the public snapshots.
                 </p>
                 <p className="muted">
                   This interface performs no uploads, renewal, or provider

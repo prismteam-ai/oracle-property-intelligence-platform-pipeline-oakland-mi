@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](README.md). Preserve its dated claims as historical evidence.
+
 # Oracle Studio local demonstration
 
 Use [QUICKSTART](../QUICKSTART.md) for the current Node 24 commands and [P3 staging runbook](architecture/P3_STAGING.md) for guarded operator preparation. The assignment README is preserved unchanged.

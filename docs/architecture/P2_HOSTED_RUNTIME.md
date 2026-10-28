@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
+
 # P2 read plane and evaluator access
 
 This retained baseline design is superseded for deployment by [the P3 staging runbook](P3_STAGING.md). P3 freezes `us-east-1`, binds clean source/package identity and uses explicit S3 assets with direct CloudFormation; no default bootstrap/ECR is required.

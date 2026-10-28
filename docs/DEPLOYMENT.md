@@ -1,0 +1,11 @@
+# Deployment, rollback and retention
+
+The two existing review stacks use us-east-1; their legacy physical stage name p3-review is retained explicitly. The active release uses current clean head/tree, contract, package and snapshot pins. These names do not imply the runtime contains a P3 data snapshot. No new always-on database, NAT, EC2 or paid upgrade is required.
+
+`pnpm deploy`, `pnpm smoke`, `pnpm evidence`, `pnpm rotate-access` and `pnpm destroy` print guarded plans by default. Their effectful form requires the exact private account, role, cost, source, package, bucket and snapshot bindings. Never paste credential values into shared commands/evidence. The authorized operator uses a finite assume-only source identity and short role sessions, with key/user deletion and issued-session revocation at closeout. The user's official AWS browser session may be reused and the existing account selected automatically; human-only MFA remains with the user. Do not create long-lived root keys or weaken session/MFA controls.
+
+The read plane uses private encrypted S3 snapshot and operational buckets, CloudFront, API Gateway, Lambda, DynamoDB session/counter stores, Secrets Manager and bounded logs. Frontend and package objects are content hashed. A manifest is promoted only after every constituent object exists and matches its digest; deployment binds the intended current snapshot before switching frontend assets. The P5 packet records measured stack/resource bindings, access window and remaining cost envelope.
+
+Rollback means restoring the prior measured package, frontend object manifest and snapshot pins in these same stacks, then running authenticated smoke before acceptance. Preserve prior immutable object versions until the review retention decision. Destruction is a separate approved operator action: first revoke review sessions/map access, then remove only the owned stacks and explicitly disposition retained buckets, versions, tables, logs and secrets. A deleted stack does not prove billing has ceased. Final cost/retention/teardown receipts are in the P5 packet.
+
+Run 4 remains unpublished on IPFS. No deployment command authorizes a real IPFS upload, IPNS update, Atlas mutation, GitHub push or media release.

@@ -125,7 +125,7 @@ const stack = new Stack(app, "PrismOracleReview", {
   env: { region, ...(account ? { account: String(account) } : {}) },
   synthesizer: new BootstraplessSynthesizer(),
   description:
-    "P3 bounded evaluator read plane; deployment status is verified through hosted evidence",
+    "Bounded evaluator read plane; deployment status is verified through hosted evidence",
 });
 Tags.of(stack).add("Project", "prism-assessment");
 Tags.of(stack).add("Phase", "P3");
@@ -133,18 +133,18 @@ Tags.of(stack).add("Stage", stage);
 Tags.of(stack).add("Retention", "human-reviewed-14-day-window");
 const prefix = String(
     app.node.tryGetContext("snapshotPrefix") ??
-      "accepted/oakland-real-e08111dc398302e141d3/",
+      "accepted/oakland-real-ad414e5e71b11e3359ab/",
   ),
   manifestDigest = String(
     app.node.tryGetContext("snapshotManifestSha256") ??
       APPROVED_PUBLIC_MANIFEST_SHA256,
   );
 if (
-  prefix !== "accepted/oakland-real-e08111dc398302e141d3/" ||
+  prefix !== "accepted/oakland-real-ad414e5e71b11e3359ab/" ||
   manifestDigest !== APPROVED_PUBLIC_MANIFEST_SHA256
 )
   throw new Error(
-    "P4 requires the exact independently verified refreshed public baseline",
+    "The review requires the exact verified working public snapshot",
   );
 const assetBucket = Bucket.fromBucketName(
   stack,
@@ -160,13 +160,13 @@ const site = new Bucket(stack, "StaticSite", {
 const enablePrivate = app.node.tryGetContext("enableProtectedView") === "true",
   privatePrefix = String(
     app.node.tryGetContext("privateSnapshotPrefix") ??
-      `operational/oakland-real-e08111dc398302e141d3/${APPROVED_PRIVATE_MANIFEST_SHA256}/`,
+      `operational/oakland-real-ad414e5e71b11e3359ab/${APPROVED_PRIVATE_MANIFEST_SHA256}/`,
   ),
   privateDigest = String(app.node.tryGetContext("privateManifestSha256") ?? "");
 if (
   enablePrivate &&
   (privatePrefix !==
-    `operational/oakland-real-e08111dc398302e141d3/${APPROVED_PRIVATE_MANIFEST_SHA256}/` ||
+    `operational/oakland-real-ad414e5e71b11e3359ab/${APPROVED_PRIVATE_MANIFEST_SHA256}/` ||
     !/^[a-f0-9]{64}$/.test(privateDigest) ||
     privateDigest !== APPROVED_PRIVATE_MANIFEST_SHA256)
 )

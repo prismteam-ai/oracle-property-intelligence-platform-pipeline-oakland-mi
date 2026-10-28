@@ -1,3 +1,5 @@
+> Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
+
 # P3 bounded staging operator runbook
 
 Only the lead operator performs approved account actions. Local preparation and the commands without `--execute` do not authenticate or call AWS. Use Node 24 and the frozen lockfile with install scripts disabled. Do not run default CDK bootstrap: this stack uses an explicit task S3 asset bucket and a measured ZIP key, with no ECR or CDK assets.
