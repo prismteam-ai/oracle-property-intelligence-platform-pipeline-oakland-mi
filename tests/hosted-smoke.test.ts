@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, vi } from "vitest";
 import http from "node:http";
 import { authenticatedSmoke } from "../packages/hosted-runtime/src/smoke.ts";
 it("never follows an access-code redirect to another origin", async () => {
@@ -61,4 +61,60 @@ it("requires successful logout and bounds even non-cooperative transports", asyn
       timeoutMs: 10,
     }),
   ).rejects.toThrow("deadline");
+});
+
+it("reviewed29second client allowance completes a21second cold response while default remains10seconds", async () => {
+  vi.useFakeTimers();
+  const calls: string[] = [];
+  const transport = async (input: URL | RequestInfo, init?: RequestInit) => {
+    const route = new URL(String(input)).pathname;
+    calls.push((init?.method ?? "GET") + route);
+    if (route === "/api/health") {
+      await new Promise((resolve) => setTimeout(resolve, 21000));
+      return Response.json({ snapshotId: "synthetic-cold-timing" });
+    }
+    if (route === "/api/session" && init?.method === "POST")
+      return new Response("{}", {
+        headers: {
+          "Set-Cookie": "prism_review=synthetic-timing; Secure; HttpOnly",
+        },
+      });
+    return Response.json({});
+  };
+  try {
+    const defaultResult = authenticatedSmoke(
+      "https://fixture.invalid",
+      "synthetic-timing-code",
+      { transport: transport as typeof fetch },
+    );
+    const rejected = expect(defaultResult).rejects.toThrow("deadline");
+    await vi.advanceTimersByTimeAsync(10000);
+    await rejected;
+    expect(calls).toEqual(["GET/api/health"]);
+    vi.clearAllTimers();
+    calls.length = 0;
+    const reviewed = authenticatedSmoke(
+      "https://fixture.invalid",
+      "synthetic-timing-code",
+      { transport: transport as typeof fetch, timeoutMs: 29000 },
+    );
+    await vi.advanceTimersByTimeAsync(21000);
+    await expect(reviewed).resolves.toMatchObject({
+      health: true,
+      access: true,
+      coverage: true,
+      query: true,
+      logout: true,
+    });
+    expect(calls).toEqual([
+      "GET/api/health",
+      "POST/api/session",
+      "GET/api/coverage",
+      "POST/api/search",
+      "DELETE/api/session",
+    ]);
+  } finally {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  }
 });

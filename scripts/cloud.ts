@@ -735,6 +735,7 @@ try {
       console.log(
         JSON.stringify(
           await authenticatedSmoke(o.SiteUrl, code, {
+            timeoutMs: 29000,
             mcp: true,
             expectedHealth: {
               head: pins.head,
