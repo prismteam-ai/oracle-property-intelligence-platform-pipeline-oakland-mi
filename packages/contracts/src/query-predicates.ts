@@ -28,13 +28,13 @@ export function openDays(openedAt: string | null, asOf: string): number | null {
   return Math.floor((end - start) / 86400000);
 }
 export function observedPermitStatus(permit: Permit): Permit["status"] {
+  if (
+    permit.status === "closed" &&
+    permit.statusBasis !== "issued_only" &&
+    permit.statusBasis !== "unknown"
+  )
+    return "closed";
   if (permit.status === "open" && permit.closedAt !== null) return "unknown";
-  if (permit.statusBasis === "issued_only" || permit.statusBasis === "unknown")
-    return permit.sourceObservations?.some(
-      (row) => row.supportedLifecycle === "open",
-    )
-      ? "open"
-      : "unknown";
   if (permit.statusBasis === "explicit_closed" && permit.status !== "closed")
     return "unknown";
   if (
@@ -43,11 +43,25 @@ export function observedPermitStatus(permit: Permit): Permit["status"] {
   )
     return "unknown";
   if (
-    permit.status === "unknown" &&
+    permit.status === "open" &&
+    permit.statusBasis !== "issued_only" &&
+    permit.statusBasis !== "unknown"
+  )
+    return "open";
+  if (
+    permit.sourceObservations?.some(
+      (row) => row.supportedLifecycle === "closed",
+    )
+  )
+    return "closed";
+  if (
     permit.sourceObservations?.some((row) => row.supportedLifecycle === "open")
   )
     return "open";
-  return permit.status;
+  return permit.statusBasis === "issued_only" ||
+    permit.statusBasis === "unknown"
+    ? "unknown"
+    : permit.status;
 }
 /** Explicit observations are frozen at statusObservedAt; legacy fixtures retain their supplied asOf. */
 export function observedPermitOpenDays(

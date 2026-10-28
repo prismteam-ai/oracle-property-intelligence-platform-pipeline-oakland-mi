@@ -222,3 +222,28 @@ it("requires explicit typed source/deed filters and rejects unsupported extras",
     QuerySchema.safeParse({ ...query, ownershipContinuity: true }).success,
   ).toBe(false);
 });
+it("independently observed native closure defeats provider activity without rewriting retained municipal facts", () => {
+  const value = permit("IN_PROGRESS");
+  const closed = ProviderPermitObservationSchema.parse({
+    ...observation(),
+    nativeStatus: "CLOSED",
+    supportedLifecycle: "closed",
+    statusBasis: "independent_native_status",
+    provenance: {
+      ...observation().provenance,
+      nativeStatusReceiptSha256: hash,
+    },
+  });
+  value.sourceObservations!.push(closed);
+  expect(value.status).toBe("unknown");
+  expect(
+    permitMatchesQuery(
+      value,
+      { ...query, permitStatus: "closed" },
+      "2026-10-28",
+    ),
+  ).toBe(true);
+  expect(
+    permitMatchesQuery(value, { ...query, permitStatus: "open" }, "2026-10-28"),
+  ).toBe(false);
+});
