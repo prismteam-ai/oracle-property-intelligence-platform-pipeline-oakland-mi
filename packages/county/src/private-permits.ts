@@ -10,7 +10,7 @@ import {
   troyBusinessName,
   TROY_SCOPE_CLASSIFICATIONS,
 } from "./troy.ts";
-export const PRIVATE_PERMIT_LIMIT = 750;
+export const PRIVATE_PERMIT_LIMIT = 10_000;
 export const PRIVATE_PERMIT_JSON_BYTES = 16_384;
 const StrictLicense = PermitSchema.shape.contractor.shape.licenseEvidence
   .unwrap()
@@ -439,6 +439,7 @@ export function protectedPermitOpenDays(
 ): number | null {
   if (
     permit.status !== "open" ||
+    permit.kind === "other" ||
     permit.statusBasis !== "explicit_open" ||
     !permit.openedAt
   )

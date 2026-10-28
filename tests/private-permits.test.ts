@@ -269,6 +269,27 @@ describe("protected permit staging boundary", () => {
       ),
     ).toThrow("Duplicate");
   });
+  it("keeps non-roof duration out of roofing predicates and enforces the expanded finite row bound", () => {
+    expect(
+      protectedPermitOpenDays(
+        {
+          ...matched.permit,
+          status: "open",
+          statusBasis: "explicit_open",
+          kind: "other",
+          openedAt: "2011-01-01",
+        },
+        "2026-10-28",
+      ),
+    ).toBeNull();
+    expect(() =>
+      applyProtectedPermitObservations(
+        Array.from({ length: 10001 }, () => base),
+        { version: "1", observations: [] },
+        snapshot,
+      ),
+    ).toThrow("bound");
+  });
   it("rejects oversized and deeply nested JSON before it can become returned evidence", () => {
     expect(() =>
       validateProtectedPermitRow(

@@ -8,7 +8,10 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { applyProtectedPermitObservations } from "../packages/county/src/private-permits.ts";
+import {
+  applyProtectedPermitObservations,
+  PRIVATE_PERMIT_LIMIT,
+} from "../packages/county/src/private-permits.ts";
 import { sha256 } from "../packages/county/src/model.ts";
 import { verifySnapshotDirectory } from "../packages/query/src/real.ts";
 
@@ -49,7 +52,7 @@ for (const file of [sourceFile, overlayFile]) {
 }
 const source = await readFile(sourceFile),
   overlay = await readFile(overlayFile);
-if (sha256(source) !== sourceSha256 || overlay.length > 2 * 1024 ** 2)
+if (sha256(source) !== sourceSha256 || overlay.length > 16 * 1024 ** 2)
   throw new Error("Private input integrity/size rejected");
 // New directory only: never overwrite an earlier attempt or place protected bytes in public artifacts.
 const parent = await realpath(path.dirname(outputDirectory));
@@ -70,7 +73,7 @@ try {
   const count = await (
     await db.run(`SELECT count(*) AS n FROM read_parquet(${quote(sourceFile)})`)
   ).getRowObjectsJson();
-  if (Number(count[0]!.n) > 750)
+  if (Number(count[0]!.n) > PRIVATE_PERMIT_LIMIT)
     throw new Error("Protected permit cohort bound rejected");
   const rows = await (
     await db.run(`SELECT * FROM read_parquet(${quote(sourceFile)})`)
