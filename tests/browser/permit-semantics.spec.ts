@@ -57,7 +57,7 @@ test("synthetic responses exercise real-view issued, contractor and reported-sal
       },
       provenance: [
         {
-          sourceId: "synthetic-issued-source",
+          sourceId: "official-troy-issued-permits",
           recordId: "SYN-ISSUED",
           observedAt: "2026-10-28T01:00:00Z",
           digest: "a".repeat(64),
@@ -131,6 +131,9 @@ test("synthetic responses exercise real-view issued, contractor and reported-sal
   await expect(drawer).toContainText("Status unknown (issued only)");
   await expect(drawer).toContainText("Opened unknown · Closed unknown");
   await expect(drawer).toContainText("Verified company: Unresolved");
+  await expect(drawer).toContainText(
+    "Business applicant (contractor role unverified): Synthetic Roofing LLC",
+  );
   await expect(drawer).toContainText(
     "Residential Builder Company · Issued · medium match confidence",
   );
