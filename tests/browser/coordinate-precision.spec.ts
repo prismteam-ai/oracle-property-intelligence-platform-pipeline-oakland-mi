@@ -6,19 +6,33 @@ import {
 } from "../../packages/contracts/src/index.ts";
 
 // Synthetic transport only: exercise the actual React form and native browser validation.
-async function open(page: Page) {
+async function open(page: Page, baseURL: string | undefined) {
+  if (!baseURL) throw new Error("Explicit project baseURL required");
+  const base = new URL(baseURL);
+  if (
+    base.protocol !== "http:" ||
+    !["127.0.0.1", "localhost", "[::1]"].includes(base.hostname)
+  )
+    throw new Error("Only the configured loopback origin is permitted");
+  const origin = base.origin;
   const requests: Query[] = [];
   const errors: string[] = [],
     external: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/*", async (route) => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:4175")
+    if (new URL(route.request().url()).origin === origin)
       return route.continue();
     external.push("blocked external origin");
     await route.abort();
   });
   await page.route("**/api/**", async (route) => {
-    const name = new URL(route.request().url()).pathname;
+    const url = new URL(route.request().url());
+    if (url.origin !== origin) {
+      external.push("blocked external API origin");
+      await route.abort();
+      return;
+    }
+    const name = url.pathname;
     if (name === "/api/health")
       return route.fulfill({
         json: {
@@ -77,8 +91,9 @@ async function open(page: Page) {
 
 test("coordinate form submits full finite precision without rounding", async ({
   page,
+  baseURL,
 }) => {
-  const f = await open(page);
+  const f = await open(page, baseURL);
   const lat = Number("42.12345678901234"),
     lng = Number("-83.23456789012345");
   await f.latitude.fill(String(lat));
@@ -107,8 +122,9 @@ test("coordinate form submits full finite precision without rounding", async ({
 
 test("native coordinate bounds block every out-of-range direction before transport", async ({
   page,
+  baseURL,
 }) => {
-  const f = await open(page);
+  const f = await open(page, baseURL);
   for (const [lat, lng, field, flag] of [
     [-90.01, 0, "lat", "rangeUnderflow"],
     [90.01, 0, "lat", "rangeOverflow"],
@@ -131,8 +147,11 @@ test("native coordinate bounds block every out-of-range direction before transpo
   f.clean();
 });
 
-test("legal coordinate endpoints remain valid and exact", async ({ page }) => {
-  const f = await open(page);
+test("legal coordinate endpoints remain valid and exact", async ({
+  page,
+  baseURL,
+}) => {
+  const f = await open(page, baseURL);
   for (const [lat, lng] of [
     [-90, -180],
     [90, 180],
