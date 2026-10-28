@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -52,6 +52,143 @@ it("verifies cold and warm cache, repairs corruption, rejects bad hash and trave
         manifestDigest: h(bad),
       }),
     ).rejects.toThrow("rejected");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+it("fetches cache objects with at most three workers while preserving every hash", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "prism-cache-parallel-")),
+    data = Buffer.from("synthetic-file"),
+    hash = (b: Uint8Array) => createHash("sha256").update(b).digest("hex"),
+    files = Array.from({ length: 6 }, (_, i) => ({
+      name: `file-${i}.parquet`,
+      bytes: data.length,
+      sha256: hash(data),
+    })),
+    raw = Buffer.from(
+      JSON.stringify({ version: "1", snapshotId: "synthetic", files }),
+    );
+  let active = 0,
+    maximum = 0,
+    reads = 0;
+  try {
+    const directory = await verifiedSnapshotCache({
+      prefix: "parallel/",
+      manifestDigest: hash(raw),
+      cacheRoot: root,
+      reader: {
+        read: async (key) => {
+          if (key.endsWith("artifact-manifest.json")) return raw;
+          active++;
+          reads++;
+          maximum = Math.max(maximum, active);
+          await new Promise((resolve) => setImmediate(resolve));
+          active--;
+          return data;
+        },
+      },
+    });
+    expect(maximum).toBe(3);
+    expect(reads).toBe(6);
+    for (const file of files)
+      expect(await readFile(path.join(directory, file.name))).toEqual(data);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+it("drains all in-flight reads and writes before removing a failed partial cache", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "prism-cache-drain-")),
+    data = Buffer.from("synthetic"),
+    hash = (b: Uint8Array) => createHash("sha256").update(b).digest("hex"),
+    files = ["a.parquet", "b.parquet", "c.parquet", "d.parquet"].map(
+      (name) => ({ name, bytes: data.length, sha256: hash(data) }),
+    ),
+    raw = Buffer.from(
+      JSON.stringify({ version: "1", snapshotId: "synthetic", files }),
+    );
+  let started = 0,
+    finished = false,
+    releaseB = () => {},
+    releaseC = () => {},
+    allStarted = () => {};
+  const startedPromise = new Promise<void>((resolve) => (allStarted = resolve)),
+    heldB = new Promise<void>((resolve) => (releaseB = resolve)),
+    heldC = new Promise<void>((resolve) => (releaseC = resolve));
+  const operation = verifiedSnapshotCache({
+    prefix: "drain/",
+    manifestDigest: hash(raw),
+    cacheRoot: root,
+    reader: {
+      read: async (key) => {
+        if (key.endsWith("artifact-manifest.json")) return raw;
+        started++;
+        if (started === 3) allStarted();
+        if (key.endsWith("a.parquet"))
+          throw new Error("synthetic fetch failure");
+        await (key.endsWith("b.parquet") ? heldB : heldC);
+        return data;
+      },
+    },
+  }).then(
+    () => {
+      finished = true;
+      return null;
+    },
+    (error) => {
+      finished = true;
+      return error as Error;
+    },
+  );
+  try {
+    await startedPromise;
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(finished).toBe(false);
+    expect((await readdir(root)).some((x) => x.startsWith(".partial-"))).toBe(
+      true,
+    );
+    releaseB();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(finished).toBe(false);
+    releaseC();
+    expect((await operation)?.message).toBe("synthetic fetch failure");
+    expect(started).toBe(3);
+    expect(await readdir(root)).toEqual([]);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(await readdir(root)).toEqual([]);
+  } finally {
+    releaseB();
+    releaseC();
+    await operation;
+    await rm(root, { recursive: true, force: true });
+  }
+});
+it("never accepts private manifest versions on the public cache path", async () => {
+  const root = await mkdtemp(
+      path.join(tmpdir(), "prism-cache-public-version-"),
+    ),
+    raw = Buffer.from(
+      JSON.stringify({
+        version: "3",
+        snapshotId: "synthetic",
+        files: [
+          {
+            name: "source.parquet",
+            bytes: 0,
+            sha256: createHash("sha256").update("").digest("hex"),
+          },
+        ],
+      }),
+    );
+  try {
+    await expect(
+      verifiedSnapshotCache({
+        prefix: "public/",
+        manifestDigest: createHash("sha256").update(raw).digest("hex"),
+        cacheRoot: root,
+        validateManifest: () => {},
+        reader: { read: async () => raw },
+      }),
+    ).rejects.toThrow("manifest rejected");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

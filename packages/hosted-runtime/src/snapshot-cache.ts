@@ -156,12 +156,32 @@ export async function verifiedSnapshotCache(opts: {
     await writeFile(path.join(stage, manifestName), raw, {
       flag: "wx",
     });
-    for (const f of m.files) {
-      const bytes = await opts.reader.read(`${opts.prefix}${f.name}`, f.bytes);
-      if (bytes.length !== f.bytes || hash(bytes) !== f.sha256)
-        throw new Error("Snapshot file integrity mismatch");
-      await writeFile(path.join(stage, f.name), bytes, { flag: "wx" });
-    }
+    let next = 0,
+      failed = false;
+    const worker = async () => {
+      while (!failed) {
+        const f = m.files[next++];
+        if (!f) return;
+        try {
+          const bytes = await opts.reader.read(
+            `${opts.prefix}${f.name}`,
+            f.bytes,
+          );
+          if (bytes.length !== f.bytes || hash(bytes) !== f.sha256)
+            throw new Error("Snapshot file integrity mismatch");
+          await writeFile(path.join(stage, f.name), bytes, { flag: "wx" });
+        } catch (error) {
+          failed = true;
+          throw error;
+        }
+      }
+    };
+    // Drain every in-flight read/write before the finally block removes staging.
+    const completed = await Promise.allSettled(
+      Array.from({ length: Math.min(3, m.files.length) }, () => worker()),
+    );
+    const failure = completed.find((result) => result.status === "rejected");
+    if (failure?.status === "rejected") throw failure.reason;
     await verify(stage);
     await rm(target, { recursive: true, force: true });
     await rename(stage, target);
