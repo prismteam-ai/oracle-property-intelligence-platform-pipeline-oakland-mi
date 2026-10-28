@@ -1,10 +1,10 @@
 {
-  "version": "0.3.0",
-  "sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
+  "version": "0.4.0",
+  "sha256": "7981fa108aeef9156e5d03efedc177e943bbd759392511136f6ef77eff89910a",
   "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts/src/index.ts",
   "generatedConsumer": "roofing-crm/packages/contracts/src/index.ts",
-  "frozen_utc": "2026-10-28T02:03:00Z",
-  "prior_version": "0.2.1",
-  "prior_sha256": "ef0334150b553825338180bde8e2c07cc7753229b2c105b0966e545cb965ac4f",
-  "revision_reason": "Add explicit issued/status and contractor verification evidence, exact parcel match caveats, and last observed reported-sale-age query distinct from unsupported uninterrupted ownership tenure."
+  "frozen_utc": "2026-10-28T05:44:37.343718+00:00",
+  "prior_version": "0.3.0",
+  "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
+  "revision_reason": "Authoritative municipal-place references, explicit unknown permit status, evidence-presence predicates and typed sorting; no inference of contractor role, active license or unchanged tenure."
 }

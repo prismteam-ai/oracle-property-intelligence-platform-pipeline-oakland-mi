@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const CONTRACT_VERSION = "0.3.0" as const;
+export const CONTRACT_VERSION = "0.4.0" as const;
 export const EvidenceState = z.enum([
   "confirmed_present",
   "confirmed_empty",
@@ -160,6 +160,23 @@ export const PropertySchema = z.object({
       )
       .optional(),
     historyCoverage: z.enum(["full", "partial", "unknown"]),
+    transferHistoryCoverage: z
+      .object({
+        state: z.enum(["full", "partial", "unknown"]),
+        from: z.iso.date().nullable(),
+        through: z.iso.date().nullable(),
+        provenance: z.array(ProvenanceSchema),
+        limitations: z.array(z.string()),
+      })
+      .optional(),
+    uninterruptedTenure: z
+      .object({
+        state: z.enum(["supported", "insufficient_history", "unknown"]),
+        unchangedSince: z.iso.date().nullable(),
+        asOf: z.iso.date(),
+        provenance: z.array(ProvenanceSchema),
+      })
+      .optional(),
     ownerRegion: z.enum(["regional", "out_of_area", "unknown"]),
     locationClass: z
       .enum(["local", "in_county", "in_state", "out_of_state", "unknown"])
@@ -172,6 +189,28 @@ export const PropertySchema = z.object({
 });
 export type Property = z.infer<typeof PropertySchema>;
 export type Permit = z.infer<typeof PermitSchema>;
+/** Official Oakland municipal geography; coordinates are deterministic source-derived points. */
+export const PlaceReferenceSchema = z.object({
+  placeId: z.string().min(1).max(160),
+  name: z.string().min(1).max(120),
+  type: z.string().min(1).max(120),
+  stateFips: z.string().min(1).max(10),
+  countyFips: z.string().min(1).max(10),
+  localFips: z.string().min(1).max(20).nullable(),
+  geometrySha256: z.string().regex(/^[a-f0-9]{64}$/),
+  centroid: CoordinateSchema,
+  center: CoordinateSchema,
+  centerMethod: z.string().min(1).max(300),
+  aliases: z.array(z.string().min(1).max(200)).max(30),
+  sourceRecordId: z.string().min(1).max(120),
+  resolutionEligible: z.boolean(),
+  limitations: z.array(z.string().max(500)).max(20),
+  sourceUrl: z.url(),
+  observedAt: z.iso.datetime(),
+  revisionDate: z.string().nullable().optional(),
+  indexDigest: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export type PlaceReference = z.infer<typeof PlaceReferenceSchema>;
 export const QuerySchema = z
   .object({
     snapshotId: z.string().min(1),
@@ -179,7 +218,7 @@ export const QuerySchema = z
     lng: z.number().min(-180).max(180),
     radiusMeters: z.number().positive().max(32187),
     roofMinAgeYears: z.number().int().min(0).max(150).optional(),
-    permitStatus: z.enum(["any", "open", "closed"]).default("any"),
+    permitStatus: z.enum(["any", "open", "closed", "unknown"]).default("any"),
     minOpenDays: z.number().int().min(0).max(50000).default(0),
     minConfidence: z.enum(["any", "high", "medium", "low"]).default("any"),
     includeUnknown: z.boolean().default(false),
@@ -190,6 +229,17 @@ export const QuerySchema = z
       .optional(),
     minOwnershipYears: z.number().int().min(0).max(200).optional(),
     minReportedSaleAgeYears: z.number().int().min(0).max(200).optional(),
+    placeId: z.string().min(1).max(160).optional(),
+    placeIndexDigest: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    requiresContractor: z.boolean().optional(),
+    requiresVerifiedLicense: z.boolean().optional(),
+    requiresBbbRating: z.boolean().optional(),
+    sort: z
+      .enum(["distance", "roof_age_desc", "permit_open_days_desc"])
+      .optional(),
   })
   .strict();
 export type Query = z.infer<typeof QuerySchema>;
@@ -203,6 +253,7 @@ export const SearchResponseSchema = z.object({
   truncated: z.boolean(),
   nextCursor: z.string().nullable(),
   limitations: z.array(z.string()),
+  placeResolution: PlaceReferenceSchema.optional(),
 });
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 export const LeadCreateSchema = z
