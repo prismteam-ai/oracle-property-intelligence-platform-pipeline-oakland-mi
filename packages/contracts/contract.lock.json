@@ -5,5 +5,7 @@
     "index.ts": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
     "query-predicates.ts": "3c0924292ef01fb2e21f94ce76a9a50e544ab213e2a6e2e58c24e163f395bf90",
     "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
-  }
+  },
+  "moduleGraphSha256": "e552ef7a86d13fd5cc12a2f24294d3130e84274f64d942e3831794fde9b4256b",
+  "sha256Meaning": "compatibility_entry_file_sha256"
 }

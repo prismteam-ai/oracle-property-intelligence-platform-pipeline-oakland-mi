@@ -1,16 +1,19 @@
 {
-  "version": "0.4.0",
-  "sha256": "4d8d8016dd7af34c799375711bd7d6770c010fcc3ac74e540b0afdfebebed28e",
-  "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts/src/index.ts",
-  "generatedConsumer": "roofing-crm/packages/contracts/src/index.ts",
-  "frozen_utc": "2026-10-28T08:27:51.649620+00:00",
-  "prior_version": "0.3.0",
-  "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
-  "revision_reason": "Finalize unreleased P5 0.4.0 before first deployment with source-exact Owner/Owner Name1/2 observations, nullable related permit event, optional reported mailing fields and postal-state provenance. The added single official UI transcription remains explicitly partial and does not prove tenure. Public immutable wire bytes stay unchanged.",
-  "queryPredicateSha256": "0cd980a0c52997ae70d8ed79d03ba8475254bfb9312ad550c29373e037324401",
-  "superseded_unreleased_p5_draft_sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
-  "superseded_unreleased_p5_drafts": [
-    "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
-    "64177d6d301d67f77602ad1a378b945447992cbd52b8d092a875cbb569e8970e"
-  ]
+  "version": "0.5.0",
+  "sha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+  "sha256Meaning": "compatibility_entry_file_sha256",
+  "entryFile": "src/index.ts",
+  "moduleGraphSha256": "e552ef7a86d13fd5cc12a2f24294d3130e84274f64d942e3831794fde9b4256b",
+  "moduleGraphAlgorithm": "sha256(UTF-8 JSON.stringify of filename-to-sha256 object, filename keys sorted ascending; no whitespace)",
+  "files": {
+    "index.ts": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+    "query-predicates.ts": "3c0924292ef01fb2e21f94ce76a9a50e544ab213e2a6e2e58c24e163f395bf90",
+    "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
+  },
+  "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts",
+  "generatedConsumer": "roofing-crm/packages/contracts",
+  "frozen_utc": "2026-10-28T21:13:28.085579+00:00",
+  "prior_version": "0.4.0",
+  "prior_entry_sha256": "4d8d8016dd7af34c799375711bd7d6770c010fcc3ac74e540b0afdfebebed28e",
+  "revision_reason": "Single P6 API/private bump distinguishes protected provider-normalized permit observations, native status/continuous-history evidence, and bounded current-PIN official deed-index gaps. Original municipal and public immutable artifact facts remain retained. Entry hash is a compatibility field; the full module inventory and graph digest bind all canonical source modules."
 }

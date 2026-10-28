@@ -8,7 +8,13 @@ if (action === "contract") {
   const raw = await readFile("packages/contracts/src/index.ts");
   const lock = JSON.parse(
     await readFile("packages/contracts/contract.lock.json", "utf8"),
-  ) as { version: string; sha256: string; files?: Record<string, string> };
+  ) as {
+    version: string;
+    sha256: string;
+    files?: Record<string, string>;
+    moduleGraphSha256?: string;
+    sha256Meaning?: string;
+  };
   const version = raw.toString().match(/CONTRACT_VERSION\s*=\s*"([^"]+)"/)?.[1];
   if (hash(raw) !== lock.sha256 || version !== lock.version)
     throw new Error("Explicit shared contract lock drift");
@@ -26,6 +32,29 @@ if (action === "contract") {
       lock.files[name]
     )
       throw new Error("Shared contract module hash drift");
+  const graph = hash(
+    Buffer.from(
+      JSON.stringify(
+        Object.fromEntries(names.map((name) => [name, lock.files![name]])),
+      ),
+    ),
+  );
+  const manifest = JSON.parse(
+    await readFile("packages/contracts/contract_manifest.json", "utf8"),
+  ) as typeof lock & { entryFile?: string };
+  if (
+    lock.moduleGraphSha256 !== graph ||
+    lock.sha256Meaning !== "compatibility_entry_file_sha256" ||
+    manifest.version !== lock.version ||
+    manifest.sha256 !== lock.sha256 ||
+    manifest.sha256Meaning !== lock.sha256Meaning ||
+    manifest.entryFile !== "src/index.ts" ||
+    manifest.moduleGraphSha256 !== graph ||
+    JSON.stringify(manifest.files) !== JSON.stringify(lock.files)
+  )
+    throw new Error(
+      "Canonical contract manifest/lock/module-graph metadata drift",
+    );
   console.log("PASS_EXPLICIT_CONTRACT_VERSION_AND_HASH");
 } else if (action === "source") {
   const files = execFileSync(
