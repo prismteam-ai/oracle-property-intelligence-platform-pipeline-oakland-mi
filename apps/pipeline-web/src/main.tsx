@@ -1100,9 +1100,14 @@ function App() {
                   </a>
                 </p>
                 <p className="muted">
-                  The existing IPNS name resolves to the current CID. Extended
-                  validity was rejected; the provider's current default is 48
-                  hours. Immutable CIDs remain the durable identity.
+                  IPNS name: <code>{publicationEvidence.ipns.name}</code>
+                  Recorded resolution:{" "}
+                  <code>{publicationEvidence.ipns.resolvedCid}</code>
+                  Provider UI/default validity is48hours; extended requests were
+                  rejected. The signed record expiry was not independently
+                  verified, validity beyond November17 is not verified, and
+                  automatic renewal is not configured. Immutable CIDs remain the
+                  snapshot identity.
                 </p>
                 <p className="muted">
                   This interface performs no uploads, renewal, or provider

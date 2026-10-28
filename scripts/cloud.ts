@@ -1,3 +1,7 @@
+import {
+  prestageReviewedUpdate,
+  type ExistingStackBindings,
+} from "../packages/hosted-runtime/src/prestage.ts";
 import { writeReviewerAssetManifest } from "../packages/hosted-runtime/src/reviewer-assets.ts";
 import { buildConcurrencyPolicy } from "../packages/hosted-runtime/src/concurrency.ts";
 import { loadConcurrencyProof } from "../packages/hosted-runtime/src/concurrency-file.ts";
@@ -241,6 +245,8 @@ let receipt: {
   steps: string[];
   status: string;
   awsOperations?: number;
+  dataPrestage?: Awaited<ReturnType<typeof prestageReviewedUpdate>>;
+  dataActivation?: "not_activated" | "prestage_verified";
 } = { version: 1, action, steps: [], status: "started", awsOperations: 0 };
 try {
   receipt = JSON.parse(await readFile(receiptFile, "utf8")) as typeof receipt;
@@ -482,6 +488,56 @@ try {
         "--only-show-errors",
       ]);
     });
+    // Existing-stack updates must verify exact immutable data before the stack can activate new prefixes.
+    // A missing stack/bucket is a separate reviewed first-create/bootstrap flow; never claim it was pre-staged.
+    receipt.dataActivation = "not_activated";
+    await save();
+    let existing: ExistingStackBindings;
+    try {
+      existing = {
+        outputs: outputs(),
+        resources: (
+          JSON.parse(
+            aws([
+              "cloudformation",
+              "describe-stack-resources",
+              "--stack-name",
+              pins.stackName,
+              "--output",
+              "json",
+            ]),
+          ) as { StackResources: ExistingStackBindings["resources"] }
+        ).StackResources,
+      };
+    } catch {
+      throw new Error(
+        "Existing review stack required for checksum-first update; first-create/bootstrap must be performed separately",
+      );
+    }
+    receipt.dataPrestage = await prestageReviewedUpdate({
+      existing,
+      expectedAccountId: pins.expectedAccountId,
+      snapshotId: verified.manifest.snapshotId,
+      public: {
+        directory: verified.directory,
+        manifestName: "artifact-manifest.json",
+        manifestSha256: pins.publicManifestSha256,
+        files: verified.manifest.files,
+      },
+      ...(privateInput
+        ? {
+            protected: {
+              directory: privateInput.directory,
+              manifestName: "private-operational-manifest.json" as const,
+              manifestSha256: pins.privateManifestSha256!,
+              files: privateInput.manifest.files,
+            },
+          }
+        : {}),
+      command: (args) => JSON.parse(aws(args)),
+    });
+    receipt.dataActivation = "prestage_verified";
+    await save();
     const context = {
       deploymentRegion: pins.region,
       deploymentAccount: pins.expectedAccountId,
@@ -540,39 +596,7 @@ try {
     assertDeployed(o);
     for (const key of ["SnapshotBucket", "StaticBucket", "DistributionId"])
       if (!o[key]) throw new Error("Task deployment outputs incomplete");
-    await step("public_uploaded", () => {
-      for (const name of [
-        ...verified.manifest.files.map((f) => f.name),
-        "artifact-manifest.json",
-      ])
-        aws([
-          "s3",
-          "cp",
-          path.join(verified.directory, name),
-          `s3://${o.SnapshotBucket}/accepted/${verified.manifest.snapshotId}/${name}`,
-          "--sse",
-          "AES256",
-          "--only-show-errors",
-        ]);
-    });
-    if (privateInput)
-      await step("protected_uploaded", () => {
-        if (!o.PrivateSnapshotBucket)
-          throw new Error("Private task bucket output missing");
-        for (const name of [
-          ...privateInput!.manifest.files.map((f) => f.name),
-          "private-operational-manifest.json",
-        ])
-          aws([
-            "s3",
-            "cp",
-            path.join(privateInput!.directory, name),
-            `s3://${o.PrivateSnapshotBucket}/operational/${verified.manifest.snapshotId}/${pins.privateManifestSha256}/${name}`,
-            "--sse",
-            "AES256",
-            "--only-show-errors",
-          ]);
-      });
+    // Data was checksum-verified before activation. Do not perform a second post-activation upload.
     await step("frontend_uploaded", () => {
       aws([
         "s3",

@@ -56,5 +56,18 @@
   "publicationVerification": "Exact root retained by Filebase and Pinata on Free plans; every file matched size/SHA256 through both public operators",
   "metadataExplanation": "New provenance, contract0.3.0 and run history; no changed county facts",
   "publicManifestPath": "/assessment-publication-manifest.json",
-  "operatorGatewayProofPath": "/assessment-gateway-proof.json"
+  "operatorGatewayProofPath": "/assessment-gateway-proof.json",
+  "ipns": {
+    "name": "k51qzi5uqu5dhw010uk4t6axj2dnlofvyptarqfp74cuq1f74rzuzssv4zkf8h",
+    "path": "/ipns/k51qzi5uqu5dhw010uk4t6axj2dnlofvyptarqfp74cuq1f74rzuzssv4zkf8h",
+    "resolvedCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+    "resolutionObservedAt": "2026-10-28T02:22:31.597905+00:00",
+    "providerUiDefaultValidity": "48h",
+    "validityUiObservedAt": "2026-10-28T02:23:18.273827+00:00",
+    "extendedValidityRequestStatus": "504h requests rejected withHTTP422",
+    "signedRecordExpiryIndependentlyVerified": false,
+    "validityBeyondNovember17Verified": false,
+    "automaticRenewalConfigured": false,
+    "meaning": "Recorded resolution only. The UI/default48h validity is not a verified signed-record expiry or a guarantee through November17; immutable CIDs remain the snapshot identity."
+  }
 }
