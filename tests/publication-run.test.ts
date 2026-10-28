@@ -205,3 +205,21 @@ test("publication rejects a changed history, private fields and inconsistent cla
     rehearsePublication(directory, { profile: "run-history-v2" }),
   ).rejects.toThrow();
 });
+test("a schema-valid run cannot relabel the verified source content", async () => {
+  const { directory, run } = await fixture();
+  const altered = {
+    ...run,
+    sourceLayers: [
+      { ...run.sourceLayers[0], contentDigest: "0".repeat(64) },
+      run.sourceLayers[1],
+    ],
+  };
+  expect(() => PublicRunManifestSchema.parse(altered)).not.toThrow();
+  await writeFile(
+    path.join(directory, "run-manifest.json"),
+    JSON.stringify(altered),
+  );
+  await expect(
+    rehearsePublication(directory, { profile: "run-history-v2" }),
+  ).rejects.toThrow("verified data/history identity");
+});
