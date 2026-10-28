@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, lstat } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { execFile } from "node:child_process";
@@ -18,7 +18,13 @@ import {
 import {
   rehearsePublication,
   verifiedPreviousPublication,
+  PUBLICATION_FILES,
 } from "../packages/publication/src/local.ts";
+import { CarReader, CarWriter } from "@ipld/car";
+import { CID } from "multiformats/cid";
+import { sha256 as multihashSha256 } from "multiformats/hashes/sha2";
+import { importer } from "ipfs-unixfs-importer";
+import { MemoryBlockstore } from "blockstore-core/memory";
 import {
   PublicRunHistorySchema,
   appendPublicRun,
@@ -156,6 +162,103 @@ async function baseline(root: string) {
   expect(publication).not.toHaveProperty("publicationProfile");
   return out;
 }
+test("restore rejects unreachable blocks and extra root entries before creating output", async () => {
+  async function all<T>(items: Iterable<T> | AsyncIterable<T>): Promise<T[]> {
+    const result: T[] = [];
+    for await (const item of items) result.push(item);
+    return result;
+  }
+  const root = await mkdtemp(path.join(os.tmpdir(), "prism-restore-boundary-"));
+  const source = await baseline(root);
+  const original = await readFile(path.join(source, "snapshot.car"));
+  const publication = JSON.parse(
+    await readFile(path.join(source, "publication-manifest.json"), "utf8"),
+  );
+  const invoke = (output: string) =>
+    execute(
+      process.execPath,
+      ["--import", "tsx", "scripts/restore-publication.ts", source, output],
+      { cwd: process.cwd(), maxBuffer: 1024 ** 2 },
+    );
+  const validOutput = path.join(root, "valid-output");
+  await invoke(validOutput);
+  expect(await readFile(path.join(validOutput, "snapshot.car"))).toEqual(
+    original,
+  );
+  const canary = Buffer.from("SYNTHETIC_UNAPPROVED_PRIVATE_CANARY");
+  const canaryCid = CID.createV1(0x55, await multihashSha256.digest(canary));
+  async function encoded(
+    rootCid: CID,
+    blocks:
+      | AsyncIterable<{ cid: CID; bytes: Uint8Array }>
+      | { cid: CID; bytes: Uint8Array }[],
+  ) {
+    const { writer, out } = CarWriter.create([rootCid]);
+    const collected = (async () => {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of out) chunks.push(chunk);
+      return Buffer.concat(chunks);
+    })();
+    for await (const block of blocks) await writer.put(block);
+    await writer.close();
+    return collected;
+  }
+  async function rejectBeforeOutput(
+    bytes: Buffer,
+    rootCid: string,
+    reason: RegExp,
+    suffix: string,
+  ) {
+    await writeFile(path.join(source, "snapshot.car"), bytes);
+    await json(path.join(source, "publication-manifest.json"), {
+      ...publication,
+      rootCid,
+      car: { ...publication.car, bytes: bytes.length, sha256: sha256(bytes) },
+    });
+    const output = path.join(root, suffix);
+    await expect(invoke(output)).rejects.toThrow(reason);
+    await expect(lstat(output)).rejects.toMatchObject({ code: "ENOENT" });
+  }
+  const reader = await CarReader.fromBytes(original);
+  const originalRoot = (await reader.getRoots())[0]!;
+  const extraBlockCar = await encoded(originalRoot, [
+    ...(await all(reader.blocks())),
+    { cid: canaryCid, bytes: canary },
+  ]);
+  await rejectBeforeOutput(
+    extraBlockCar,
+    originalRoot.toString(),
+    /Unreachable/,
+    "orphan-output",
+  );
+  const store = new MemoryBlockstore();
+  const files = await Promise.all(
+    PUBLICATION_FILES.map(async (name) => ({
+      path: name,
+      content: await readFile(path.join(source, name)),
+    })),
+  );
+  const imported = await all(
+    importer([...files, { path: "canary.json", content: canary }], store, {
+      cidVersion: 1,
+      rawLeaves: true,
+      wrapWithDirectory: true,
+    }),
+  );
+  const newRoot = imported.find((entry) => entry.path === "")!.cid;
+  const blocks = await Promise.all(
+    imported.map(async ({ cid }) => ({
+      cid,
+      bytes: Buffer.concat(await all(store.get(cid))),
+    })),
+  );
+  await rejectBeforeOutput(
+    await encoded(newRoot, blocks),
+    newRoot.toString(),
+    /Unexpected CAR root/,
+    "extra-file-output",
+  );
+});
 async function buildRun(root: string, n: number, previous: string) {
   const obs = await observation(root, n, [2, 3, 4], true),
     prior = await verifiedPreviousPublication(previous),

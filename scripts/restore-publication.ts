@@ -12,6 +12,7 @@ import { sha256 } from "../packages/county/src/model.ts";
 import {
   PUBLICATION_FILES,
   RUN_PUBLICATION_FILES,
+  verifyLocalCar,
 } from "../packages/publication/src/local.ts";
 assert(
   process.argv[2] && process.argv[3],
@@ -19,7 +20,6 @@ assert(
 );
 const source = path.resolve(process.argv[2]!),
   output = path.resolve(process.argv[3]!);
-await mkdir(output, { mode: 0o700 });
 const publication = JSON.parse(
   await readFile(path.join(source, "publication-manifest.json"), "utf8"),
 ) as {
@@ -43,6 +43,18 @@ assert(
     carInfo.size <= 128 * 1024 ** 2,
 );
 assert.equal(sha256(await readFile(carFile)), publication.car.sha256);
+// Hashing the packaging bytes and extracting listed files alone does not prove
+// that every block is reachable or that the root has no additional entries.
+// Reuse the publication boundary verifier before creating any output artifact.
+await verifyLocalCar(
+  carFile,
+  publication.rootCid,
+  publication.files,
+  publication.files.length === PUBLICATION_FILES.length
+    ? "legacy-data-v1"
+    : "run-history-v2",
+);
+await mkdir(output, { mode: 0o700 });
 const reader = await CarReader.fromIterable(createReadStream(carFile)),
   roots = await reader.getRoots();
 assert.equal(roots.length, 1);
