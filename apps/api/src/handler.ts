@@ -57,6 +57,16 @@ export interface ApiOptions {
   mcpAllowedOrigins?: readonly string[];
 }
 export function createApi(options: ApiOptions) {
+  const manifest = options.snapshot.manifest;
+  if (
+    options.local &&
+    manifest !== null &&
+    typeof manifest === "object" &&
+    (manifest as { protectedView?: unknown }).protectedView === true
+  )
+    throw new Error(
+      "Protected snapshots cannot use unauthenticated local access",
+    );
   const clock = options.clock ?? Date.now;
   const send = (
     statusCode: number,

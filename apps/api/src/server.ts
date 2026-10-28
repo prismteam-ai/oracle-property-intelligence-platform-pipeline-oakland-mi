@@ -14,11 +14,6 @@ import { AccessService } from "../../../packages/hosted-runtime/src/access.ts";
 import { MemoryQuotaStore } from "../../../packages/hosted-runtime/src/quota.ts";
 import { createApi } from "./handler.ts";
 const local = process.env.PRISM_ACCESS_MODE === "local";
-if (
-  local &&
-  (process.env.PRISM_OWNER_DERIVATIVES || process.env.PRISM_PRIVATE_ENRICHMENT)
-)
-  throw new Error("Protected derivatives require authenticated review access");
 const snapshot = await createActiveSnapshot();
 if (process.env.AWS_LAMBDA_FUNCTION_NAME)
   throw new Error("Use the Lambda entry point in Lambda");
