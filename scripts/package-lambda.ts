@@ -21,6 +21,11 @@ import {
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
+import {
+  collectThirdPartyNotices,
+  NOTICE_FILE,
+  NOTICE_MANIFEST,
+} from "./third-party-notices.ts";
 const root = process.cwd(),
   out = path.resolve(root, "dist-lambda");
 await rm(out, { recursive: true, force: true });
@@ -45,7 +50,7 @@ const identity = runtimeIdentity(
     process.env.AWS_DEFAULT_REGION,
   ]),
 );
-await build({
+const result = await build({
   entryPoints: [path.join(root, "apps/api/src/lambda.ts")],
   outfile: path.join(out, "index.mjs"),
   bundle: true,
@@ -60,13 +65,13 @@ await build({
   minify: false,
   sourcemap: false,
   metafile: true,
-}).then(async (result) => {
-  await writeFile(
-    path.join(out, "bundle-metafile.json"),
-    JSON.stringify(result.metafile),
-  );
 });
+await writeFile(
+  path.join(out, "bundle-metafile.json"),
+  JSON.stringify(result.metafile),
+);
 const copied = new Set<string>();
+const copiedPackageFiles: string[] = [];
 async function copyPackage(name: string, from: string) {
   if (copied.has(name)) return;
   copied.add(name);
@@ -92,6 +97,7 @@ async function copyPackage(name: string, from: string) {
   const pkg = JSON.parse(
     await readFile(path.join(folder, "package.json"), "utf8"),
   ) as { dependencies?: Record<string, string> };
+  copiedPackageFiles.push(path.join(folder, "package.json"));
   await cp(folder, path.join(out, "node_modules", name), {
     recursive: true,
     dereference: true,
@@ -103,6 +109,19 @@ async function copyPackage(name: string, from: string) {
     await copyPackage("@duckdb/node-bindings-linux-x64", folder);
 }
 await copyPackage("@duckdb/node-api", root);
+const notices = await collectThirdPartyNotices({
+  root,
+  modules: [
+    ...Object.values(result.metafile!.outputs).flatMap((output) =>
+      Object.entries(output.inputs)
+        .filter(([, value]) => value.bytesInOutput > 0)
+        .map(([name]) => name),
+    ),
+    ...copiedPackageFiles,
+  ],
+});
+await writeFile(path.join(out, NOTICE_FILE), notices.notices);
+await writeFile(path.join(out, NOTICE_MANIFEST), notices.manifest);
 
 await writeFile(
   path.join(out, "package.json"),
@@ -159,6 +178,7 @@ const report = {
   zipBytes: zipped.length,
   zipSha256: createHash("sha256").update(zipped).digest("hex"),
   files,
+  noticePackageCount: notices.packageCount,
   snapshotPackaging:
     "S3 integrity-verified cache; snapshot data excluded from deployment zip",
   emulationOnlyEnvironment: "PRISM_RUNTIME_EMULATION=1 never configured by CDK",
