@@ -1,4 +1,6 @@
-import { lstat, readFile, realpath } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import {
@@ -127,6 +129,7 @@ export class RealSnapshot {
     readonly permitCount: number,
     readonly sourceIntakeCount: number,
     readonly fullSourceAudits: readonly FullSourceAudit[],
+    private temporaryDirectory: string,
   ) {
     this.publicSnapshotId = manifest.snapshotId;
     this.protectedSignals = overlayDigests.length > 0;
@@ -237,11 +240,30 @@ export class RealSnapshot {
   ): Promise<RealSnapshot> {
     const verified = await verifySnapshotDirectory(directory);
     const root = verified.directory;
-    const instance = await DuckDBInstance.create(":memory:", {
-      threads: "2",
-      memory_limit: "1024MB",
-    });
-    const db = await instance.connect();
+    // Lambda's task directory is read-only. Spill files may contain protected
+    // observations, so use an isolated owner-only directory in writable /tmp.
+    const temporaryDirectory = await mkdtemp(
+      path.join(tmpdir(), "prism-duckdb-"),
+    );
+    let instance: DuckDBInstance;
+    let db: DuckDBConnection;
+    try {
+      instance = await DuckDBInstance.create(":memory:", {
+        threads: "2",
+        memory_limit: "1024MB",
+        temp_directory: temporaryDirectory,
+        max_temp_directory_size: "512MB",
+      });
+      try {
+        db = await instance.connect();
+      } catch (error) {
+        instance.closeSync();
+        throw error;
+      }
+    } catch (error) {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+      throw error;
+    }
     const overlayDigests: string[] = [];
     let permitCount = 0;
     let sourceIntakeCount = 0;
@@ -635,10 +657,12 @@ export class RealSnapshot {
         permitCount,
         sourceIntakeCount,
         fullSourceAudits,
+        temporaryDirectory,
       );
     } catch (error) {
       db.closeSync();
       instance.closeSync();
+      await rm(temporaryDirectory, { recursive: true, force: true });
       throw error;
     }
   }
@@ -1032,7 +1056,14 @@ export class RealSnapshot {
     });
   }
   close(): void {
-    this.connection.closeSync();
-    this.instance.closeSync();
+    try {
+      this.connection.closeSync();
+    } finally {
+      try {
+        this.instance.closeSync();
+      } finally {
+        rmSync(this.temporaryDirectory, { recursive: true, force: true });
+      }
+    }
   }
 }

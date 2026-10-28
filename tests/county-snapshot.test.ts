@@ -1,5 +1,12 @@
 import { expect, test } from "vitest";
-import { mkdtemp, mkdir, writeFile, readFile, symlink } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  readFile,
+  symlink,
+  stat,
+} from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { buildCountySnapshot } from "../packages/county/src/build.ts";
@@ -15,7 +22,7 @@ import {
   verifySnapshotDirectory,
 } from "../packages/query/src/real.ts";
 import { buildProtectedEnrichment } from "../packages/county/src/enrichment.ts";
-import { DuckDBInstance } from "@duckdb/node-api";
+import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import {
   createPrivateSourceIntakeRow,
   SOURCE_INTAKE_COLUMNS,
@@ -682,7 +689,27 @@ test("full projection preserves native IDs, all address associations, unmatched 
   expect(second.digest).toBe(m.digest);
   expect(second.files).toEqual(m.files);
   const real = await RealSnapshot.open(out);
+  let spillDirectory = "";
   try {
+    const connection = (real as unknown as { connection: DuckDBConnection })
+      .connection;
+    const scratchSettings = await (
+      await connection.run(
+        "SELECT name,value FROM duckdb_settings() WHERE name IN ('temp_directory','max_temp_directory_size')",
+      )
+    ).getRowObjectsJson();
+    spillDirectory = String(
+      scratchSettings.find((s) => s.name === "temp_directory")!.value,
+    );
+    expect(path.dirname(spillDirectory)).toBe(os.tmpdir());
+    expect(path.basename(spillDirectory)).toMatch(/^prism-duckdb-/);
+    expect((await stat(spillDirectory)).mode & 0o777).toBe(0o700);
+    expect(
+      String(
+        scratchSettings.find((s) => s.name === "max_temp_directory_size")!
+          .value,
+      ),
+    ).toBe("488.2 MiB");
     const q = {
       snapshotId: m.snapshotId,
       lat: 42.66,
@@ -741,6 +768,7 @@ test("full projection preserves native IDs, all address associations, unmatched 
   } finally {
     real.close();
   }
+  await expect(stat(spillDirectory)).rejects.toThrow();
   const protectedFile = path.join(privateOut, "owner-derivatives.parquet");
   const protectedReader = await RealSnapshot.open(out, {
     protectedDerivativeFile: protectedFile,
