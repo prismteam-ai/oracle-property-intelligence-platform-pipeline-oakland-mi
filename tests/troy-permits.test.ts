@@ -7,6 +7,7 @@ import {
   troyIssuedDate,
   matchTroyIssued,
   classifyTroyPermit,
+  indexTroyCandidates,
 } from "../packages/county/src/troy.ts";
 const raw = {
   permitNumber: "SYN-PERMIT-1",
@@ -205,5 +206,32 @@ describe("Troy issued-roof source boundary", () => {
     expect(
       matchTroyIssued(obs, [{ ...candidate, city: "Other city" }]).propertyId,
     ).toBeNull();
+  });
+  it("indexed county joins preserve literal match and quarantine semantics", () => {
+    const candidates = [
+      {
+        propertyId: "SYN-P1",
+        parcelPin: "2001001001",
+        siteAddress: "100 N EXAMPLE RD",
+        city: "Troy",
+      },
+      {
+        propertyId: "SYN-P2",
+        parcelPin: "2002001001",
+        siteAddress: "102 N EXAMPLE RD",
+        city: "Troy",
+      },
+    ];
+    const index = indexTroyCandidates(candidates);
+    for (const row of [
+      raw,
+      { ...raw, parcel: "", siteAddress: "102 N EXAMPLE RD" },
+      { ...raw, siteAddress: "Unexpected conflicting site" },
+    ]) {
+      const observation = normalizeTroyIssued(row, provenance);
+      expect(matchTroyIssued(observation, index)).toEqual(
+        matchTroyIssued(observation, candidates),
+      );
+    }
   });
 });

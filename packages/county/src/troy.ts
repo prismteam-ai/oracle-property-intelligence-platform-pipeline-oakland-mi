@@ -323,26 +323,43 @@ export function normalizeTroyIssued(
   };
 }
 export type TroyIssuedObservation = ReturnType<typeof normalizeTroyIssued>;
+export interface TroyJoinIndex {
+  byParcel: ReadonlyMap<string, readonly CanonicalJoinCandidate[]>;
+  byTroyAddress: ReadonlyMap<string, readonly CanonicalJoinCandidate[]>;
+}
+/** Normalize the county candidate keys once; bounded full cohorts must not rescan every address per permit. */
+export function indexTroyCandidates(
+  candidates: readonly CanonicalJoinCandidate[],
+): TroyJoinIndex {
+  const byParcel = new Map<string, CanonicalJoinCandidate[]>(),
+    byTroyAddress = new Map<string, CanonicalJoinCandidate[]>();
+  for (const candidate of candidates) {
+    const pin = normalizeTroyPin(candidate.parcelPin ?? "");
+    if (pin) byParcel.set(pin, [...(byParcel.get(pin) ?? []), candidate]);
+    const address = normalizeTroyAddress(candidate.siteAddress);
+    if (address && /^TROY(?:\s|$)/i.test(candidate.city ?? ""))
+      byTroyAddress.set(address, [
+        ...(byTroyAddress.get(address) ?? []),
+        candidate,
+      ]);
+  }
+  return { byParcel, byTroyAddress };
+}
 export function matchTroyIssued(
   observation: TroyIssuedObservation,
-  candidates: readonly CanonicalJoinCandidate[],
+  candidates: readonly CanonicalJoinCandidate[] | TroyJoinIndex,
 ) {
+  const index: TroyJoinIndex =
+    "byParcel" in candidates ? candidates : indexTroyCandidates(candidates);
   const byParcel = observation.normalizedParcel
-    ? candidates.filter(
-        (p) =>
-          normalizeTroyPin(p.parcelPin ?? "") === observation.normalizedParcel,
-      )
+    ? (index.byParcel.get(observation.normalizedParcel) ?? [])
     : [];
   const unique = (rows: readonly CanonicalJoinCandidate[]) => [
     ...new Map(rows.map((p) => [p.propertyId, p])).values(),
   ];
   const exactParcel = unique(byParcel);
   const addressMatches = unique(
-    candidates.filter(
-      (p) =>
-        normalizeTroyAddress(p.siteAddress) === observation.normalizedAddress &&
-        /^TROY(?:\s|$)/i.test(p.city ?? ""),
-    ),
+    index.byTroyAddress.get(observation.normalizedAddress) ?? [],
   );
   const selected = exactParcel.length ? exactParcel : addressMatches;
   const basis = exactParcel.length
