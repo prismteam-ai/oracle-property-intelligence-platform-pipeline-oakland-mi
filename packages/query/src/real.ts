@@ -150,10 +150,26 @@ export class RealSnapshot {
                 "Owner location is derived from postal state, not a county or tenure inference.",
                 "Official sales cohorts are partial; built year is a low-confidence roof proxy, not an observed replacement.",
                 "No private observation is promoted to public bytes without redistribution approval.",
-                "Troy permit observations are a stratified partial cohort selected by a roof mention. Original non-roof permit types remain retained; only explicit roofing scope qualifies for roofing predicates. Issuance does not establish open status or completed work.",
+                "Troy permit observations are a bounded cohort selected by the visible roof-description filter. Original non-roof permit types remain retained; only explicit roofing scope qualifies for roofing predicates. Issuance does not establish open status or completed work.",
                 "The Troy Applicant field is retained only for clearly reported businesses. It does not establish contractor role; license metadata describes that reported business.",
               ],
               permitCount,
+            },
+          ]
+        : []),
+      ...(overlayDigests.some((digest) => digest.startsWith("permits:"))
+        ? [
+            {
+              source: "Official Troy issued permits",
+              scope:
+                "Acquired roof-description results linked to current properties; this is not countywide permit coverage",
+              state: "partial",
+              count: permitCount,
+              limitations: [
+                "Count includes roofing-qualified and other permit types with conservative property assignments. Unmatched or conflicting records are excluded from property results.",
+                "Issued-only records have unknown open/closed status and do not prove completed roofing work.",
+                "The source Applicant business is not a verified contractor role; business-license observations preserve their own reported status and date.",
+              ],
             },
           ]
         : []),
