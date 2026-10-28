@@ -499,7 +499,7 @@ try {
         ? {
             enableProtectedView: "true",
             privateManifestSha256: pins.privateManifestSha256,
-            privateSnapshotPrefix: `operational/${verified.manifest.snapshotId}/`,
+            privateSnapshotPrefix: `operational/${verified.manifest.snapshotId}/${pins.privateManifestSha256}/`,
           }
         : {}),
       ...(process.env.PRISM_MCP_ALLOWED_ORIGINS
@@ -567,7 +567,7 @@ try {
             "s3",
             "cp",
             path.join(privateInput!.directory, name),
-            `s3://${o.PrivateSnapshotBucket}/operational/${verified.manifest.snapshotId}/${name}`,
+            `s3://${o.PrivateSnapshotBucket}/operational/${verified.manifest.snapshotId}/${pins.privateManifestSha256}/${name}`,
             "--sse",
             "AES256",
             "--only-show-errors",

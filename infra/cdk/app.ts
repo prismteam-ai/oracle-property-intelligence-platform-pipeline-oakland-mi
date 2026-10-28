@@ -160,12 +160,13 @@ const site = new Bucket(stack, "StaticSite", {
 const enablePrivate = app.node.tryGetContext("enableProtectedView") === "true",
   privatePrefix = String(
     app.node.tryGetContext("privateSnapshotPrefix") ??
-      "operational/oakland-real-e08111dc398302e141d3/",
+      `operational/oakland-real-e08111dc398302e141d3/${APPROVED_PRIVATE_MANIFEST_SHA256}/`,
   ),
   privateDigest = String(app.node.tryGetContext("privateManifestSha256") ?? "");
 if (
   enablePrivate &&
-  (privatePrefix !== "operational/oakland-real-e08111dc398302e141d3/" ||
+  (privatePrefix !==
+    `operational/oakland-real-e08111dc398302e141d3/${APPROVED_PRIVATE_MANIFEST_SHA256}/` ||
     !/^[a-f0-9]{64}$/.test(privateDigest) ||
     privateDigest !== APPROVED_PRIVATE_MANIFEST_SHA256)
 )
