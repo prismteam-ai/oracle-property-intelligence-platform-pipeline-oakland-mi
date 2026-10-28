@@ -21,6 +21,10 @@ import {
   SOURCE_INTAKE_COLUMNS,
 } from "../packages/county/src/private-source-intake.ts";
 import {
+  FULL_SOURCE_COLUMNS,
+  type FullSourceConfig,
+} from "../packages/county/src/private-full-source.ts";
+import {
   matchTroyIssued,
   normalizeTroyIssued,
   TROY_SOURCE,
@@ -137,6 +141,159 @@ async function sourceFixture() {
   await writeFile(manifest, JSON.stringify(source));
   return { root, privateRoot, manifest, source };
 }
+test("hash-pinned complete county attributes stay lazy and private under an exact read allowlist", async () => {
+  const f = await sourceFixture(),
+    out = path.join(f.root, "public"),
+    m = await buildCountySnapshot({
+      sourceManifest: f.manifest,
+      outputDir: out,
+      privateOutputDir: path.join(f.privateRoot, "owners"),
+    }),
+    instance = await DuckDBInstance.create(":memory:"),
+    db = await instance.connect();
+  const sourceJson = JSON.stringify({
+      OBJECTID_12: 1,
+      NAME1: "PRIVATE_FULL_COUNTY_PARTY_SENTINEL",
+      NAME2: "PRIVATE_FULL_COUNTY_SECOND_PARTY",
+      POSTALADDRESS: "PRIVATE_FULL_COUNTY_POSTAL_SENTINEL",
+      ASSESSEDVALUE: 12345,
+      NUM_BEDS: 3,
+      STRUCTURE_DESC: "Synthetic structure",
+    }),
+    schema = sha256("synthetic-full-schema");
+  const rows = [
+    {
+      version: "county-full-attributes-v1",
+      source_id: "official-oakland-tax-parcel-full-attributes",
+      native_id: "1",
+      public_snapshot_id: m.snapshotId,
+      source_schema_sha256: schema,
+      source_record_json: sourceJson,
+      record_digest: sha256(sourceJson),
+      observed_at: "2026-10-28T01:00:00.000Z",
+      property_id: "oakland-parcel-1",
+    },
+    {
+      version: "county-full-attributes-v1",
+      source_id: "official-oakland-tax-parcel-full-attributes",
+      native_id: "2",
+      public_snapshot_id: m.snapshotId,
+      source_schema_sha256: schema,
+      source_record_json: JSON.stringify({
+        ...JSON.parse(sourceJson),
+        OBJECTID_12: 2,
+      }),
+      record_digest: sha256(
+        JSON.stringify({ ...JSON.parse(sourceJson), OBJECTID_12: 2 }),
+      ),
+      observed_at: "2026-10-28T01:00:00.000Z",
+      property_id: null,
+    },
+  ];
+  const create = async (
+    input: typeof rows,
+    name: string,
+  ): Promise<FullSourceConfig> => {
+    await db.run(
+      "CREATE OR REPLACE TABLE full_source(" +
+        FULL_SOURCE_COLUMNS.map((k) => k + " VARCHAR").join(",") +
+        ")",
+    );
+    for (const row of input)
+      await db.run(
+        "INSERT INTO full_source VALUES(" +
+          FULL_SOURCE_COLUMNS.map((_, i) => "$" + (i + 1)).join(",") +
+          ")",
+        FULL_SOURCE_COLUMNS.map((k) => row[k]),
+      );
+    const file = path.join(f.privateRoot, name);
+    await db.run(
+      `COPY full_source TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    return {
+      role: "county-parcels",
+      file,
+      sha256: sha256(await readFile(file)),
+      sourceSchemaSha256: schema,
+      sourceRecordCount: input.length,
+      sourceValidationSha256: sha256("synthetic-offline-proof"),
+      sourceValidatedOffline: true,
+    };
+  };
+  try {
+    const config = await create(rows, "county-full.parquet"),
+      reader = await RealSnapshot.open(out, { protectedFullSources: [config] });
+    try {
+      expect(reader.fullSourceAudits).toMatchObject([
+        {
+          records: 2,
+          uniqueNativeIds: 2,
+          matched: 1,
+          unassigned: 1,
+          sourceValidatedOffline: true,
+          rawRowsReturned: false,
+        },
+      ]);
+      const connection = (reader as unknown as { connection: typeof db })
+        .connection;
+      const definition = await (
+        await connection.run(
+          "SELECT sql FROM duckdb_views() WHERE view_name='private_county_parcels'",
+        )
+      ).getRowObjectsJson();
+      expect(String(definition[0]!.sql)).toContain("read_parquet");
+      const privateValue = await (
+        await connection.run(
+          "SELECT json_extract_string(source_record_json,'$.NAME1') AS source_party FROM private_county_parcels WHERE native_id='1'",
+        )
+      ).getRowObjectsJson();
+      expect(privateValue[0]!.source_party).toBe(
+        "PRIVATE_FULL_COUNTY_PARTY_SENTINEL",
+      );
+      await expect(
+        connection.run("SELECT * FROM read_text('/etc/hosts')"),
+      ).rejects.toThrow();
+      await expect(
+        connection.run("SET enable_external_access=true"),
+      ).rejects.toThrow();
+      const detail = await reader.detail("oakland-parcel-1", reader.snapshotId),
+        search = await reader.search({
+          snapshotId: reader.snapshotId,
+          lat: 42.66,
+          lng: -83.29,
+          radiusMeters: 5000,
+        });
+      expect(
+        JSON.stringify({
+          detail,
+          search,
+          coverage: reader.coverage,
+          audit: reader.fullSourceAudits,
+        }),
+      ).not.toContain("PRIVATE_FULL_COUNTY_");
+    } finally {
+      reader.close();
+    }
+    await expect(
+      RealSnapshot.open(out, {
+        protectedFullSources: [{ ...config, sourceRecordCount: 3 }],
+      }),
+    ).rejects.toThrow("metadata/native/count");
+    await expect(
+      RealSnapshot.open(out, {
+        protectedFullSources: [
+          await create(
+            [{ ...rows[0]!, property_id: "missing" }],
+            "invalid-full-fk.parquet",
+          ),
+        ],
+      }),
+    ).rejects.toThrow("property binding");
+  } finally {
+    db.closeSync();
+    instance.closeSync();
+  }
+});
 test("private full-source intake retains unmatched/source-only fields in DuckDB without exporting them to property/search DTOs", async () => {
   const f = await sourceFixture(),
     out = path.join(f.root, "public"),

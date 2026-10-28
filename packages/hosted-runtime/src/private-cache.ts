@@ -6,18 +6,29 @@ import {
   type ObjectReader,
 } from "./snapshot-cache.ts";
 import { stableJson, sha256 } from "../../county/src/model.ts";
+import {
+  FULL_SOURCE_DEFINITIONS,
+  type FullSourceRole,
+  type FullSourceConfig,
+} from "../../county/src/private-full-source.ts";
 export interface PrivateFile {
   name:
     | "owner-derivatives.parquet"
     | "protected-enrichment.parquet"
     | "protected-permits.parquet"
-    | "private-source-intake.parquet";
-  role: "owner" | "enrichment" | "permits" | "source-intake";
+    | "private-source-intake.parquet"
+    | "county-parcels.parquet"
+    | "county-addresses.parquet";
+  role: "owner" | "enrichment" | "permits" | "source-intake" | FullSourceRole;
   bytes: number;
   sha256: string;
+  sourceSchemaSha256?: string;
+  sourceRecordCount?: number;
+  sourceValidationSha256?: string;
+  sourceValidatedOffline?: true;
 }
 export interface PrivateManifest {
-  version: "1" | "2" | "3";
+  version: "1" | "2" | "3" | "4";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -41,41 +52,83 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    !["1", "2", "3"].includes(m.version) ||
+    !["1", "2", "3", "4"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    m.files.length !== (m.version === "3" ? 4 : m.version === "2" ? 3 : 2)
+    (m.version === "4"
+      ? m.files.length !== 6
+      : m.files.length !== (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
     roles = new Set<string>();
   for (const f of m.files) {
+    const full =
+      f && Object.hasOwn(FULL_SOURCE_DEFINITIONS, f.role)
+        ? FULL_SOURCE_DEFINITIONS[f.role as FullSourceRole]
+        : null;
     if (
       !f ||
       Object.keys(f).some(
-        (k) => !["name", "role", "bytes", "sha256"].includes(k),
+        (k) =>
+          ![
+            "name",
+            "role",
+            "bytes",
+            "sha256",
+            ...(full && m.version === "4"
+              ? [
+                  "sourceSchemaSha256",
+                  "sourceRecordCount",
+                  "sourceValidationSha256",
+                  "sourceValidatedOffline",
+                ]
+              : []),
+          ].includes(k),
       ) ||
       (f.role === "owner"
         ? f.name !== "owner-derivatives.parquet"
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
-          : f.role === "permits" && ["2", "3"].includes(m.version)
+          : f.role === "permits" && ["2", "3", "4"].includes(m.version)
             ? f.name !== "protected-permits.parquet"
-            : f.role === "source-intake" && m.version === "3"
+            : f.role === "source-intake" && ["3", "4"].includes(m.version)
               ? f.name !== "private-source-intake.parquet"
-              : true) ||
+              : full && m.version === "4"
+                ? f.name !== full.name
+                : true) ||
       names.has(f.name) ||
       roles.has(f.role) ||
       !Number.isSafeInteger(f.bytes) ||
       f.bytes < 0 ||
       f.bytes > 128 * 1024 * 1024 ||
-      !/^[a-f0-9]{64}$/.test(f.sha256)
+      !/^[a-f0-9]{64}$/.test(f.sha256) ||
+      (full &&
+        (!Number.isSafeInteger(f.sourceRecordCount) ||
+          f.sourceRecordCount! < 0 ||
+          f.sourceRecordCount! > full.maximum ||
+          !/^[a-f0-9]{64}$/.test(f.sourceSchemaSha256 ?? "") ||
+          !/^[a-f0-9]{64}$/.test(f.sourceValidationSha256 ?? "") ||
+          f.sourceValidatedOffline !== true))
     )
       throw new Error("Protected file role/name/size rejected");
     names.add(f.name);
     roles.add(f.role);
   }
+  if (
+    m.version === "4" &&
+    (!roles.has("owner") ||
+      !roles.has("enrichment") ||
+      !roles.has("permits") ||
+      !roles.has("source-intake") ||
+      !roles.has("county-parcels") ||
+      !roles.has("county-addresses") ||
+      m.files
+        .filter((f) => ["county-parcels", "county-addresses"].includes(f.role))
+        .reduce((n, f) => n + f.sourceRecordCount!, 0) > 1_200_000)
+  )
+    throw new Error("Protected v4 exact role/count set rejected");
   const canonical = [...m.files].sort((a, b) =>
     a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
   );
@@ -114,6 +167,20 @@ export async function loadPrivateCache(options: {
     permitsSha256: permits?.sha256,
     sourceIntakeFile: intake ? path.join(directory, intake.name) : undefined,
     sourceIntakeSha256: intake?.sha256,
+    fullSources: m.files
+      .filter((f) => Object.hasOwn(FULL_SOURCE_DEFINITIONS, f.role))
+      .map(
+        (f) =>
+          ({
+            role: f.role as FullSourceRole,
+            file: path.join(directory, f.name),
+            sha256: f.sha256,
+            sourceSchemaSha256: f.sourceSchemaSha256!,
+            sourceRecordCount: f.sourceRecordCount!,
+            sourceValidationSha256: f.sourceValidationSha256!,
+            sourceValidatedOffline: true,
+          }) satisfies FullSourceConfig,
+      ),
   };
 }
 export async function preparePrivateCache(publicSnapshotId: string) {
@@ -156,4 +223,5 @@ export async function preparePrivateCache(publicSnapshotId: string) {
     delete process.env.PRISM_PRIVATE_SOURCE_INTAKE;
     delete process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256;
   }
+  process.env.PRISM_PRIVATE_FULL_SOURCES = JSON.stringify(prepared.fullSources);
 }

@@ -198,3 +198,92 @@ it("v3 pins exactly four private roles and keeps source intake forbidden in hist
     await rm(root, { recursive: true, force: true });
   }
 });
+it("v4 pins exactly six roles and offline schema/count/proof metadata for full county views", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "prism-private-v4-")),
+    base = "oakland-real-" + "d".repeat(20),
+    data = Buffer.from("synthetic-private"),
+    baseFiles = [
+      { name: "owner-derivatives.parquet", role: "owner" },
+      { name: "protected-enrichment.parquet", role: "enrichment" },
+      { name: "protected-permits.parquet", role: "permits" },
+      { name: "private-source-intake.parquet", role: "source-intake" },
+    ].map((f) => ({ ...f, bytes: data.length, sha256: sha256(data) })),
+    countyFiles = [
+      { name: "county-parcels.parquet", role: "county-parcels" },
+      { name: "county-addresses.parquet", role: "county-addresses" },
+    ].map((f) => ({
+      ...f,
+      bytes: data.length,
+      sha256: sha256(data),
+      sourceSchemaSha256: sha256("synthetic-schema"),
+      sourceRecordCount: 2,
+      sourceValidationSha256: sha256("synthetic-offline-proof"),
+      sourceValidatedOffline: true,
+    })),
+    files = [...baseFiles, ...countyFiles],
+    canonical = [...files].sort((a, b) =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    ),
+    manifest = {
+      version: "4",
+      publicSnapshotId: base,
+      snapshotId: base,
+      digest: sha256(stableJson(canonical)),
+      files,
+    };
+  expect(() => validatePrivateManifest(manifest, base)).not.toThrow();
+  for (const invalid of [
+    { ...manifest, version: "3" },
+    { ...manifest, files: files.slice(0, 5) },
+    {
+      ...manifest,
+      files: [
+        ...files,
+        {
+          ...countyFiles[0],
+          name: "novi-footprints.parquet",
+          role: "novi-footprints",
+        },
+      ],
+    },
+    {
+      ...manifest,
+      files: [
+        ...baseFiles,
+        { ...countyFiles[0], sourceValidatedOffline: false },
+        countyFiles[1],
+      ],
+    },
+    {
+      ...manifest,
+      files: [
+        ...baseFiles,
+        { ...countyFiles[0], sourceSchemaSha256: "unknown" },
+        countyFiles[1],
+      ],
+    },
+  ])
+    expect(() => validatePrivateManifest(invalid, base)).toThrow();
+  const raw = Buffer.from(JSON.stringify(manifest));
+  try {
+    const ready = await loadPrivateCache({
+      publicSnapshotId: base,
+      reader: {
+        read: async (key) =>
+          key.endsWith("private-operational-manifest.json") ? raw : data,
+      },
+      prefix: "private/v4/",
+      manifestDigest: sha256(raw),
+      cacheRoot: root,
+    });
+    expect(ready.fullSources).toHaveLength(2);
+    expect(ready.fullSources[0]).toMatchObject({
+      role: "county-parcels",
+      sourceRecordCount: 2,
+      sourceValidatedOffline: true,
+    });
+    expect(ready.fullSources[0]?.file).toContain("county-parcels.parquet");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

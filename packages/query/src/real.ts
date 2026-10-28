@@ -27,6 +27,13 @@ import {
   TROY_SOURCE_FIELDS,
   validatePrivateSourceIntakeRow,
 } from "../../county/src/private-source-intake.ts";
+import {
+  FULL_SOURCE_COLUMNS,
+  FULL_SOURCE_DEFINITIONS,
+  parseFullSourceConfigs,
+  type FullSourceConfig,
+  type FullSourceAudit,
+} from "../../county/src/private-full-source.ts";
 const CORE_FILES = [
   "parcels.parquet",
   "site-addresses.parquet",
@@ -119,6 +126,7 @@ export class RealSnapshot {
     overlayDigests: readonly string[],
     readonly permitCount: number,
     readonly sourceIntakeCount: number,
+    readonly fullSourceAudits: readonly FullSourceAudit[],
   ) {
     this.publicSnapshotId = manifest.snapshotId;
     this.protectedSignals = overlayDigests.length > 0;
@@ -197,6 +205,20 @@ export class RealSnapshot {
           ]
         : []),
     ];
+    this.coverage.push(
+      ...fullSourceAudits.map((audit) => ({
+        source: FULL_SOURCE_DEFINITIONS[audit.role].title,
+        scope:
+          "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
+        state: "source_retained_private",
+        count: audit.records,
+        limitations: [
+          "Raw source fields are not Property, agent/model or public-publication projections.",
+          "Source name/party fields do not establish verified ownership, contractor role or tenure.",
+          "All JSON keys/types/digests were validated offline against the pinned source schema and file hash; runtime checks metadata, native IDs and non-null canonical bindings setwise.",
+        ],
+      })),
+    );
     this.runs = runs;
   }
   static async open(
@@ -210,6 +232,7 @@ export class RealSnapshot {
       protectedPermitsSha256?: string;
       protectedSourceIntakeFile?: string;
       protectedSourceIntakeSha256?: string;
+      protectedFullSources?: readonly FullSourceConfig[];
     } = {},
   ): Promise<RealSnapshot> {
     const verified = await verifySnapshotDirectory(directory);
@@ -222,6 +245,11 @@ export class RealSnapshot {
     const overlayDigests: string[] = [];
     let permitCount = 0;
     let sourceIntakeCount = 0;
+    const fullSourceAudits: FullSourceAudit[] = [],
+      allowedSourcePaths: string[] = [];
+    const fullSources = parseFullSourceConfigs(
+      options.protectedFullSources ?? [],
+    );
     const checkPrivate = async (file: string, expected: string | undefined) => {
       const meta = await lstat(file);
       const resolved = await realpath(file);
@@ -504,6 +532,69 @@ export class RealSnapshot {
           ).join(",") +
           " FROM private_source_intake",
       );
+      // Full source JSON remains in hash-verified local Parquet. Only narrow metadata
+      // columns are scanned at boot; producer/schema validation is pinned separately.
+      for (const config of fullSources) {
+        const definition = FULL_SOURCE_DEFINITIONS[config.role];
+        await checkPrivate(config.file, config.sha256);
+        const file = await realpath(config.file);
+        await db.run(
+          `CREATE VIEW ${definition.table} AS SELECT * FROM read_parquet(${quote(file)})`,
+        );
+        const columns = await (
+          await db.run(`PRAGMA table_info('${definition.table}')`)
+        ).getRowObjectsJson();
+        if (
+          columns.length !== FULL_SOURCE_COLUMNS.length ||
+          columns.some(
+            (c, i) => c.name !== FULL_SOURCE_COLUMNS[i] || c.type !== "VARCHAR",
+          )
+        )
+          throw new Error("Protected full-source outer schema rejected");
+        const summary = await (
+          await db.run(
+            `SELECT count(*) AS records,count(DISTINCT native_id) AS unique_ids,count(*) FILTER(WHERE property_id IS NOT NULL) AS matched,count(*) FILTER(WHERE property_id IS NULL) AS unassigned,count(*) FILTER(WHERE version IS NULL OR version!=$version OR source_id IS NULL OR source_id!=$source OR public_snapshot_id IS NULL OR public_snapshot_id!=$snapshot OR source_schema_sha256 IS NULL OR source_schema_sha256!=$schema OR native_id IS NULL OR NOT regexp_full_match(native_id,'[0-9]{1,20}') OR record_digest IS NULL OR NOT regexp_full_match(record_digest,'[a-f0-9]{64}') OR observed_at IS NULL OR NOT regexp_full_match(observed_at,'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z')) AS invalid FROM ${definition.table}`,
+            {
+              version: definition.version,
+              source: definition.sourceId,
+              snapshot: verified.manifest.snapshotId,
+              schema: config.sourceSchemaSha256,
+            },
+          )
+        ).getRowObjectsJson();
+        const row = summary[0]!;
+        if (
+          Number(row.records) !== config.sourceRecordCount ||
+          Number(row.records) > definition.maximum ||
+          Number(row.unique_ids) !== Number(row.records) ||
+          Number(row.invalid) !== 0
+        )
+          throw new Error(
+            "Protected full-source metadata/native/count binding rejected",
+          );
+        const bindings = await (
+          await db.run(
+            `WITH canonical AS(SELECT id,count(*) AS n FROM properties GROUP BY id) SELECT count(*) AS invalid FROM ${definition.table} r LEFT JOIN canonical p ON p.id=r.property_id WHERE r.property_id IS NOT NULL AND coalesce(p.n,0)!=1`,
+          )
+        ).getRowObjectsJson();
+        if (Number(bindings[0]!.invalid))
+          throw new Error("Protected full-source property binding rejected");
+        fullSourceAudits.push({
+          role: config.role,
+          sourceId: definition.sourceId,
+          table: definition.table,
+          records: Number(row.records),
+          uniqueNativeIds: Number(row.unique_ids),
+          matched: Number(row.matched),
+          unassigned: Number(row.unassigned),
+          sourceSchemaSha256: config.sourceSchemaSha256,
+          sourceValidationSha256: config.sourceValidationSha256,
+          sourceValidatedOffline: true,
+          rawRowsReturned: false,
+        });
+        allowedSourcePaths.push(file);
+        overlayDigests.push(config.role + ":" + config.sha256);
+      }
       await db.run("CREATE INDEX address_location ON site_addresses(lat,lng)");
       await db.run(
         "CREATE INDEX link_property ON parcel_address_links(property_id)",
@@ -523,7 +614,12 @@ export class RealSnapshot {
         Number(count[0]!.addresses) !== verified.manifest.addressCount
       )
         throw new Error("Snapshot count reconciliation failed");
+      if (allowedSourcePaths.length)
+        await db.run(
+          "SET allowed_paths=[" + allowedSourcePaths.map(quote).join(",") + "]",
+        );
       await db.run("SET enable_external_access=false");
+      await db.run("SET lock_configuration=true");
       return new RealSnapshot(
         verified.manifest,
         db,
@@ -538,6 +634,7 @@ export class RealSnapshot {
         overlayDigests,
         permitCount,
         sourceIntakeCount,
+        fullSourceAudits,
       );
     } catch (error) {
       db.closeSync();

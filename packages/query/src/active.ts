@@ -8,6 +8,7 @@ import {
 import { SnapshotReader } from "./index.ts";
 import { DuckSnapshot } from "./duckdb.ts";
 import { RealSnapshot } from "./real.ts";
+import { parseFullSourceConfigs } from "../../county/src/private-full-source.ts";
 import { digest } from "../../identity/src/index.ts";
 import { RunLedger } from "../../run-ledger/src/index.ts";
 import { dryManifest } from "../../publication/src/index.ts";
@@ -36,11 +37,15 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
     const protectedEnrichmentFile = process.env.PRISM_PRIVATE_ENRICHMENT;
     const protectedPermitsFile = process.env.PRISM_PRIVATE_PERMITS;
     const protectedSourceIntakeFile = process.env.PRISM_PRIVATE_SOURCE_INTAKE;
+    const protectedFullSources = parseFullSourceConfigs(
+      JSON.parse(process.env.PRISM_PRIVATE_FULL_SOURCES || "[]"),
+    );
     if (
       (protectedDerivativeFile ||
         protectedEnrichmentFile ||
         protectedPermitsFile ||
-        protectedSourceIntakeFile) &&
+        protectedSourceIntakeFile ||
+        protectedFullSources.length > 0) &&
       process.env.PRISM_REQUIRE_AUTH !== "1"
     )
       throw new Error(
@@ -58,6 +63,7 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
         protectedSourceIntakeFile,
         protectedSourceIntakeSha256:
           process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256,
+        protectedFullSources,
       },
     );
   }
