@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const CONTRACT_VERSION = "0.2.1" as const;
+export const CONTRACT_VERSION = "0.3.0" as const;
 export const EvidenceState = z.enum([
   "confirmed_present",
   "confirmed_empty",
@@ -29,7 +29,37 @@ export const ProvenanceSchema = z.object({
 export const PermitSchema = z.object({
   id: z.string(),
   status: z.enum(["open", "closed", "unknown"]),
-  kind: z.enum(["roof_replacement", "roof_repair", "other"]),
+  kind: z.enum([
+    "roof_replacement",
+    "roof_repair",
+    "roof_unspecified",
+    "other",
+  ]),
+  permitNumber: z.string().max(120).optional(),
+  jurisdiction: z.string().max(120).optional(),
+  issuedAt: z.iso.date().nullable().optional(),
+  statusBasis: z
+    .enum(["issued_only", "explicit_open", "explicit_closed", "unknown"])
+    .optional(),
+  reportedStatus: z.string().max(120).nullable().optional(),
+  reportedPermitType: z.string().max(120).optional(),
+  proposedWorkScope: z.string().max(300).optional(),
+  statusObservedAt: z.iso.datetime().optional(),
+  matchEvidence: z
+    .object({
+      basis: z.enum([
+        "exact_normalized_parcel",
+        "exact_normalized_site_address",
+        "unmatched",
+        "ambiguous",
+      ]),
+      confidence: z.enum(["high", "medium", "low", "unknown"]),
+      score: z.number().min(0).max(1),
+      candidateCount: z.number().int().nonnegative(),
+      addressAgreement: z.enum(["agrees", "differs", "unknown"]),
+      caveats: z.array(z.string().max(300)).max(10),
+    })
+    .optional(),
   openedAt: z.iso.date().nullable(),
   closedAt: z.iso.date().nullable(),
   contractor: z.object({
@@ -37,6 +67,28 @@ export const PermitSchema = z.object({
     verifiedCompanyId: z.string().nullable(),
     license: z.string().nullable(),
     rating: z.number().min(0).max(100).nullable(),
+    licenseEvidence: z
+      .object({
+        identifier: z.string().max(120),
+        type: z.string().max(200),
+        status: z.string().max(120),
+        sourceUrl: z.string().url(),
+        observedAt: z.iso.datetime(),
+        matchBasis: z.string().max(300),
+        confidence: z.enum(["high", "medium", "low", "unknown"]),
+      })
+      .nullable()
+      .optional(),
+    ratingEvidence: z
+      .object({
+        value: z.string().max(40),
+        scale: z.literal("BBB"),
+        sourceUrl: z.string().url(),
+        observedAt: z.iso.datetime(),
+        matchConfidence: z.enum(["high", "medium", "low", "unknown"]),
+      })
+      .nullable()
+      .optional(),
   }),
   provenance: z.array(ProvenanceSchema),
 });
@@ -137,6 +189,7 @@ export const QuerySchema = z
       .enum(["any", "regional", "out_of_area", "unknown"])
       .optional(),
     minOwnershipYears: z.number().int().min(0).max(200).optional(),
+    minReportedSaleAgeYears: z.number().int().min(0).max(200).optional(),
   })
   .strict();
 export type Query = z.infer<typeof QuerySchema>;
