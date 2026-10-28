@@ -68,7 +68,7 @@ export async function verifySnapshotDirectory(
   ) as ArtifactManifest;
   if (
     raw.version !== "1" ||
-    ![CONTRACT_VERSION, "0.2.1"].includes(raw.contractVersion) ||
+    ![CONTRACT_VERSION, "0.3.0", "0.2.1"].includes(raw.contractVersion) ||
     !/^oakland-real-[a-f0-9]{20}$/.test(raw.snapshotId) ||
     !/^[a-f0-9]{64}$/.test(raw.digest) ||
     !Number.isSafeInteger(raw.count) ||
