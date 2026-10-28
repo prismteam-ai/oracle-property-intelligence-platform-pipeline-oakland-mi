@@ -26,6 +26,6 @@ export function assertRuntimeRegion(identity: RuntimeIdentity) {
     process.env.AWS_REGION,
     process.env.AWS_DEFAULT_REGION,
   ]);
-  if (identity.stage === "p3-review" && identity.sourceDirty)
+  if (identity.stage === "review" && identity.sourceDirty)
     throw new Error("Dirty staging code is forbidden");
 }

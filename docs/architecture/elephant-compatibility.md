@@ -1,3 +1,5 @@
+> Historical baseline reference. Current operating instructions are in the [documentation index](../README.md). Source identities and observations below describe their recorded earlier revision.
+
 # Current Elephant compatibility, local preparation
 
 The assessment DuckDB/Parquet snapshot remains an assessment product artifact. Its

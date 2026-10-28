@@ -1,21 +1,11 @@
 # Architecture
 
-Official acquisition adapters write bounded, paced responses and source receipts outside Git. Pure normalization preserves source-native identity and derives stable canonical IDs. Reconciliation emits arbitrary ordered immutable run history, deltas, tombstones and predecessor hashes. A public allowlist produces the assessment-product Parquet/CAR output; protected attributes never enter that publication path.
+A bounded local producer captures source receipts, validates fields, reconciles canonical parcels and preserves immutable run deltas. Approved public tables/manifests/CARs remain provider- and owner-data-free. Protected source observations stay in separate pinned sidecars; raw source/provider intake remains private.
 
-```mermaid
-flowchart LR
-  Source[Official sources] --> Receipts[Private receipts]
-  Receipts --> Normalize[Normalize and reconcile]
-  Normalize --> Public[Public allowlist snapshot]
-  Normalize --> Private[Protected operational companion]
-  Public --> Reader[Verified DuckDB reader]
-  Private --> Reader
-  Reader --> API[Authenticated API and MCP]
-  API --> CRM[Separate CRM]
-```
+CloudFront and private S3 serve the UI and proxy the HTTP API. An AWS Lambda read plane loads the hash-verified public and optional protected snapshots into native DuckDB. DynamoDB stores sessions and quotas, Secrets Manager holds access configuration, and the query/MCP interfaces expose bounded source-backed projections. No always-on ingestion worker or database server is required.
 
-Oracle owns source acquisition, normalization, provenance, query predicates, API/MCP and publication preparation. CRM owns map/lead workflow and natural-language intent. The copied 0.4.0 contract and shared predicate digest are checked; both endpoints preserve applied queries and deterministic ordering. Named places bind a source-derived center, place ID and index digest. Polygon containment is not silently substituted with a radius.
+`packages/query/src/real-utils.ts` validates immutable files. `real-loader.ts` manages bounded native connections and sidecars, while `real-full-sources.ts` projects validated full-source observations. `real.ts` retains query/property response assembly. Pipeline UI panels are split into overview, artifacts, detail/source-context and the App that owns abort/generation state. The decomposition preserves query semantics and keeps stale-response protection in one owner.
 
-Runtime startup verifies file hashes, schemas, IDs and bindings. Full county raw JSON remains in lazy Parquet views; pinned offline validation plus exact non-binding-column equality proves the private rebind, avoiding a million-row JavaScript JSON parse at boot. Municipal source JSON is aligned with every assigned normalized observation. The hosted reader locks external access after its bounded file allowlist is established.
+The release candidate uses the standard CDK default synthesizer with qualifier `prismrvw`, measured ZIP assets and actual CDK deployment. Exact source, contract, account, region, package, snapshot and budget pins guard effects. Existing-stack updates checksum-stage data before activation; acknowledged first creation remains fail closed with an unconfigured access secret until its exact data uploads are verified.
 
-S3/CloudFront/API Gateway/Lambda provide a scale-to-zero read plane. Separate DynamoDB stores hold sessions, leads and durable request/model counters. Secrets Manager holds access material. The existing-account shared concurrency route is measured separately; account quota is not reserved capacity. Source acquisition is an operator job, never a model tool. [Security](SECURITY_PRIVACY.md) and [deployment](DEPLOYMENT.md) define these boundaries.
+See [security](SECURITY_PRIVACY.md), [deployment](DEPLOYMENT.md) and [observability](OBSERVABILITY.md).

@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -14,8 +14,8 @@ const sha = (data: Uint8Array | string) =>
   account = "123456789012";
 const existing = {
   outputs: {
-    Region: "us-east-1",
-    Stage: "p3-review",
+    Region: "us-east-2",
+    Stage: "review",
     SnapshotBucket: "task-public-bucket",
     PrivateSnapshotBucket: "task-private-bucket",
   },
@@ -206,15 +206,60 @@ it("public access drift aborts before the first data upload", async () => {
     await rm(f.root, { recursive: true, force: true });
   }
 });
-it("repository update entrypoint cannot activate before its checksum prestage or fall back to post-activation data writes", async () => {
-  const source = await readFile(
-    new URL("../scripts/cloud.ts", import.meta.url),
-    "utf8",
-  );
-  expect(source.indexOf("await prestageReviewedUpdate(")).toBeGreaterThan(0);
-  expect(source.indexOf("await prestageReviewedUpdate(")).toBeLessThan(
-    source.indexOf('await step("stack_deployed"'),
-  );
-  expect(source).not.toContain('await step("protected_uploaded"');
-  expect(source).not.toContain('await step("public_uploaded"');
+it("actual deployment seam refuses unapproved first creation and preserves checksum-before-update ordering", async () => {
+  const { reviewedDeployment } =
+    await import("../packages/hosted-runtime/src/deploy-sequence.ts");
+  const events: string[] = [];
+  const effects = {
+    prestage: async () => {
+      events.push("checksum-verified");
+      return { checked: true };
+    },
+    deploy: async () => {
+      events.push("cdk-publish-deploy");
+    },
+    describeCreated: async () => {
+      events.push("describe-created");
+      return existing;
+    },
+  };
+  await expect(
+    reviewedDeployment({
+      ...effects,
+      existing: undefined,
+      firstCreateApproved: false,
+    }),
+  ).rejects.toThrow("acknowledgment");
+  expect(events).toEqual([]);
+  const update = await reviewedDeployment({
+    ...effects,
+    existing,
+    firstCreateApproved: false,
+  });
+  expect(events).toEqual(["checksum-verified", "cdk-publish-deploy"]);
+  expect(update.activation).toBe("prestage_verified");
+  events.length = 0;
+  const created = await reviewedDeployment({
+    ...effects,
+    existing: undefined,
+    firstCreateApproved: true,
+  });
+  expect(events).toEqual([
+    "cdk-publish-deploy",
+    "describe-created",
+    "checksum-verified",
+  ]);
+  expect(created.activation).toBe("first_create_post_provision_verified");
+  events.length = 0;
+  await expect(
+    reviewedDeployment({
+      ...effects,
+      existing,
+      firstCreateApproved: true,
+      prestage: async () => {
+        throw new Error("wrong source/hash/rights");
+      },
+    }),
+  ).rejects.toThrow("wrong source/hash/rights");
+  expect(events).toEqual([]);
 });

@@ -13,21 +13,21 @@ import {
 } from "../packages/hosted-runtime/src/release.ts";
 const p: ReleasePins = {
   expectedAccountId: "234567890123",
-  region: "us-east-1",
-  stage: "p3-review",
+  region: "us-east-2",
+  stage: "review",
   head: "a".repeat(40),
   tree: "b".repeat(40),
   archiveSha256: "c".repeat(64),
   publicManifestSha256: APPROVED_PUBLIC_MANIFEST_SHA256,
   privateManifestSha256: APPROVED_PRIVATE_MANIFEST_SHA256,
-  assetBucket: "prism-p3-test-assets",
-  assetPrefix: "prism-p3/oracle/",
-  stackName: "PrismOracleReview",
+  assetBucket: "cdk-prismrvw-assets-234567890123-us-east-2",
+  assetPrefix: "",
+  stackName: "PrismOracleAssessmentReview",
 };
 it("freezes one region and rejects mixed ambient region and unreviewed pins", () => {
   expect(validateReleasePins(p)).toEqual(p);
   for (const delta of [
-    { region: "us-east-2" },
+    { region: "us-east-1" },
     { head: "0".repeat(40) },
     { expectedAccountId: "123456789012" },
     { publicManifestSha256: "d".repeat(64) },
@@ -36,7 +36,7 @@ it("freezes one region and rejects mixed ambient region and unreviewed pins", ()
     { assetBucket: "replace-me" },
   ])
     expect(() => validateReleasePins({ ...p, ...delta })).toThrow();
-  expect(() => validatedRegion("us-east-1", ["us-east-2"])).toThrow();
+  expect(() => validatedRegion("us-east-2", ["us-east-1"])).toThrow();
 });
 it("enforces exact clean source, account and measured package before effects", () => {
   const source = { head: p.head, tree: p.tree, dirty: false };
@@ -47,7 +47,7 @@ it("enforces exact clean source, account and measured package before effects", (
     "oracle",
     source,
     { version: "0.2.1", sha256: "d".repeat(64) },
-    "p3-review",
+    "review",
   );
   assertPackageIdentity(p, identity, p.archiveSha256);
   expect(() =>
@@ -62,7 +62,7 @@ it("enforces exact clean source, account and measured package before effects", (
       "oracle",
       { ...source, dirty: true },
       { version: "0.2.1", sha256: "d".repeat(64) },
-      "p3-review",
+      "review",
     ),
   ).toThrow();
 });

@@ -1,3 +1,5 @@
+import { deployWithCdk } from "../packages/hosted-runtime/src/cdk-deploy.ts";
+import { reviewedDeployment } from "../packages/hosted-runtime/src/deploy-sequence.ts";
 import {
   prestageReviewedUpdate,
   type ExistingStackBindings,
@@ -5,7 +7,7 @@ import {
 import { writeReviewerAssetManifest } from "../packages/hosted-runtime/src/reviewer-assets.ts";
 import { buildConcurrencyPolicy } from "../packages/hosted-runtime/src/concurrency.ts";
 import { loadConcurrencyProof } from "../packages/hosted-runtime/src/concurrency-file.ts";
-/** P3 guarded operator entry point. No effect occurs without --execute and exact private release pins. */
+/** Guarded assessment operator entry point. No effect occurs without --execute and exact private release pins. */
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir, lstat, readdir } from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -14,6 +16,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { sourceIdentity } from "../packages/hosted-runtime/src/source-identity.ts";
 import {
   STAGING_REGION,
+  BOOTSTRAP_QUALIFIER,
   STAGING_STAGE,
   validateReleasePins,
   validatedRegion,
@@ -54,17 +57,15 @@ const required = [
   "PRISM_PRIVATE_OPERATIONS_DIR",
   "PRISM_AWS_ACTUAL_USD",
   "PRISM_AWS_PENDING_USD",
-  "PRISM_P3_ACTUAL_USD",
-  "PRISM_P3_PENDING_USD",
+  "PRISM_PROJECT_ACTUAL_USD",
+  "PRISM_PROJECT_PENDING_USD",
   ...(capacity.mode === "existing-account-shared"
     ? [
         ...(action === "deploy" ? ["PRISM_ACCOUNT_CONCURRENCY_PROOF"] : []),
         "PRISM_SHARED_ACCOUNT_OPERATION_LIMIT",
       ]
     : []),
-  ...(action === "deploy"
-    ? ["PRISM_CFN_EXECUTION_ROLE_ARN", "PRISM_SNAPSHOT_DIR"]
-    : []),
+  ...(action === "deploy" ? ["PRISM_SNAPSHOT_DIR"] : []),
 ];
 if (!execute) {
   console.log(
@@ -81,14 +82,14 @@ if (!execute) {
         approvedPublicManifestSha256: APPROVED_PUBLIC_MANIFEST_SHA256,
         approvedPrivateManifestSha256: APPROVED_PRIVATE_MANIFEST_SHA256,
         assetStrategy:
-          "Explicit pre-existing private task S3 bucket; measured content-hash ZIP key; BootstraplessSynthesizer; no CDK bootstrap or ECR",
+          "Standard task-qualified CDK bootstrap; exact measured ZIP asset; DefaultStackSynthesizer and cdk deploy",
         steps:
           action === "deploy"
             ? [
                 "Verify clean source, measured staging ZIP and exact public/private artifacts",
                 "Verify caller account, frozen region, budget and private asset bucket",
-                "Upload ZIP to prism-p3/oracle/lambda/<sha>.zip",
-                "Synthesize with no lookups; deploy CloudFormation using approved execution role",
+                "Verify the exact task-qualified CDK bootstrap asset bucket",
+                "Synthesize with no lookups; publish exact assets and deploy through CDK CLI",
                 "Upload exact public allowlist and optional exact protected companion to separate private prefixes",
                 "Upload frontend; invalidate root/index; save redacted output and private receipts",
               ]
@@ -112,7 +113,7 @@ if (!execute) {
   process.exit(0);
 }
 if (process.env.PRISM_CLOUD_EXECUTION_APPROVED !== "yes")
-  throw new Error("Explicit P3 cloud execution approval required");
+  throw new Error("Explicit assessment cloud execution approval required");
 const get = (k: string) => {
   const v = process.env[k];
   if (!v) throw new Error(`Missing private operator input: ${k}`);
@@ -133,8 +134,8 @@ const pins: ReleasePins = validateReleasePins({
     ? { privateManifestSha256: APPROVED_PRIVATE_MANIFEST_SHA256 }
     : {}),
   assetBucket: get("PRISM_DEPLOY_ASSET_BUCKET"),
-  assetPrefix: "prism-p3/oracle/",
-  stackName: "PrismOracleReview",
+  assetPrefix: "",
+  stackName: "PrismOracleAssessmentReview",
 });
 assertPinnedSource(pins, sourceIdentity());
 const capacityProof =
@@ -161,8 +162,8 @@ if (
 const costs = {
   awsActual: Number(get("PRISM_AWS_ACTUAL_USD")),
   awsPending: Number(get("PRISM_AWS_PENDING_USD")),
-  totalActual: Number(get("PRISM_P3_ACTUAL_USD")),
-  totalPending: Number(get("PRISM_P3_PENDING_USD")),
+  totalActual: Number(get("PRISM_PROJECT_ACTUAL_USD")),
+  totalPending: Number(get("PRISM_PROJECT_PENDING_USD")),
 };
 assertCostEnvelope(costs);
 const archive = await readFile("oracle-lambda.zip"),
@@ -233,7 +234,7 @@ const deploymentConfig = {
   mcpAllowedOrigins: process.env.PRISM_MCP_ALLOWED_ORIGINS ?? "",
   crmMapOrigin: process.env.PRISM_CRM_MAP_ORIGIN ?? null,
   mapKeyExpiresAt: process.env.PRISM_MAP_KEY_EXPIRES_AT ?? null,
-  executionRole: process.env.PRISM_CFN_EXECUTION_ROLE_ARN ?? null,
+  bootstrapQualifier: BOOTSTRAP_QUALIFIER,
 };
 const receiptFile = path.join(
   operations,
@@ -246,7 +247,11 @@ let receipt: {
   status: string;
   awsOperations?: number;
   dataPrestage?: Awaited<ReturnType<typeof prestageReviewedUpdate>>;
-  dataActivation?: "not_activated" | "prestage_verified";
+  dataActivation?:
+    | "not_activated"
+    | "prestage_verified"
+    | "first_create_post_provision_verified";
+  cdkInvocations?: number;
 } = { version: 1, action, steps: [], status: "started", awsOperations: 0 };
 try {
   receipt = JSON.parse(await readFile(receiptFile, "utf8")) as typeof receipt;
@@ -257,6 +262,7 @@ const save = async () =>
   writeFile(receiptFile, JSON.stringify(receipt, null, 2) + "\n", {
     mode: 0o600,
   });
+class MissingTaskStackError extends Error {}
 function aws(args: string[], input?: string) {
   if (
     sharedOperationLimit !== null &&
@@ -267,6 +273,7 @@ function aws(args: string[], input?: string) {
   writeFileSync(receiptFile, JSON.stringify(receipt, null, 2) + "\n", {
     mode: 0o600,
   });
+  let missingTaskStack: boolean;
   try {
     return execFileSync("aws", ["--region", pins.region, ...args], {
       encoding: "utf8",
@@ -279,11 +286,28 @@ function aws(args: string[], input?: string) {
         AWS_DEFAULT_REGION: pins.region,
       },
     }).trim();
-  } catch {
-    throw new Error(
-      `AWS ${args[0]}/${args[1]} failed; private arguments and provider output redacted`,
+  } catch (error) {
+    const stderr =
+      error && typeof error === "object" && "stderr" in error
+        ? String(error.stderr)
+        : "";
+    writeFileSync(
+      path.join(operations, `aws-failure-${receipt.awsOperations}.private.log`),
+      stderr,
+      { mode: 0o600 },
     );
+    missingTaskStack =
+      args[0] === "cloudformation" &&
+      args[1] === "describe-stacks" &&
+      /ValidationError[\s\S]*does not exist/.test(stderr);
   }
+  // Detailed provider errors are retained privately, never attached to a public
+  // uncaught error cause that could print credentials or private arguments.
+  if (missingTaskStack)
+    throw new MissingTaskStackError("Exact task stack does not exist");
+  throw new Error(
+    `AWS ${args[0]}/${args[1]} failed; private provider output retained`,
+  );
 }
 const account = JSON.parse(
   aws(["sts", "get-caller-identity", "--output", "json"]),
@@ -333,7 +357,7 @@ const assertDeployed = (o: Record<string, string>) => {
   )
     throw new Error("Deployed stack does not match the exact approved release");
   if (
-    !/^PrismOracleReview-ReadApiB934CF2C-[A-Za-z0-9]+$/.test(
+    !/^PrismOracleAssessmentReview-ReadApiB934CF2C-[A-Za-z0-9]+$/.test(
       o.RuntimeFunctionName ?? "",
     ) ||
     !/^[a-z0-9]{1,20}$/.test(o.HttpApiId ?? "") ||
@@ -392,7 +416,9 @@ try {
         path.join(verified.directory, "artifact-manifest.json"),
       );
     if (hash(publicRaw) !== pins.publicManifestSha256)
-      throw new Error("Public artifact differs from accepted P2 bytes");
+      throw new Error(
+        "Public artifact differs from the exact accepted immutable bytes",
+      );
     let privateInput:
       { directory: string; manifest: PrivateManifest } | undefined;
     if (process.env.PRISM_PRIVATE_OPERATIONAL_DIR) {
@@ -408,7 +434,9 @@ try {
           path.join(directory, "private-operational-manifest.json"),
         );
       if (hash(raw) !== pins.privateManifestSha256)
-        throw new Error("Protected manifest differs from reviewed P2 bytes");
+        throw new Error(
+          "Protected manifest differs from the exact reviewed bytes",
+        );
       const manifest: unknown = JSON.parse(raw.toString("utf8"));
       validatePrivateManifest(manifest, verified.manifest.snapshotId);
       for (const f of manifest.files) {
@@ -436,10 +464,7 @@ try {
     const location = JSON.parse(
       aws(["s3api", "get-bucket-location", "--bucket", pins.assetBucket]),
     ) as { LocationConstraint: string | null };
-    if (
-      location.LocationConstraint !== null &&
-      location.LocationConstraint !== pins.region
-    )
+    if (location.LocationConstraint !== pins.region)
       throw new Error("Deployment asset bucket is outside the frozen region");
     const publicAccess = JSON.parse(
       aws(["s3api", "get-public-access-block", "--bucket", pins.assetBucket]),
@@ -468,31 +493,11 @@ try {
       )
     )
       throw new Error("Deployment asset bucket requires default encryption");
-    const role = get("PRISM_CFN_EXECUTION_ROLE_ARN");
-    if (
-      !new RegExp(
-        `^arn:aws:iam::${pins.expectedAccountId}:role/prism-p3-[A-Za-z0-9_+=,.@/-]+$`,
-      ).test(role)
-    )
-      throw new Error(
-        "Exact task-scoped CloudFormation execution role required",
-      );
-    await step("asset_uploaded", () => {
-      aws([
-        "s3",
-        "cp",
-        "oracle-lambda.zip",
-        `s3://${pins.assetBucket}/${pins.assetPrefix}lambda/${pins.archiveSha256}.zip`,
-        "--sse",
-        "AES256",
-        "--only-show-errors",
-      ]);
-    });
     // Existing-stack updates must verify exact immutable data before the stack can activate new prefixes.
     // A missing stack/bucket is a separate reviewed first-create/bootstrap flow; never claim it was pre-staged.
     receipt.dataActivation = "not_activated";
     await save();
-    let existing: ExistingStackBindings;
+    let existing: ExistingStackBindings | undefined;
     try {
       existing = {
         outputs: outputs(),
@@ -509,35 +514,37 @@ try {
           ) as { StackResources: ExistingStackBindings["resources"] }
         ).StackResources,
       };
-    } catch {
-      throw new Error(
-        "Existing review stack required for checksum-first update; first-create/bootstrap must be performed separately",
-      );
+    } catch (error) {
+      if (!(error instanceof MissingTaskStackError)) throw error;
+      if (process.env.PRISM_FIRST_CREATE_APPROVED !== "yes")
+        throw new Error(
+          "First creation requires the explicit neutral assessment-stack acknowledgment",
+          { cause: error },
+        );
     }
-    receipt.dataPrestage = await prestageReviewedUpdate({
-      existing,
-      expectedAccountId: pins.expectedAccountId,
-      snapshotId: verified.manifest.snapshotId,
-      public: {
-        directory: verified.directory,
-        manifestName: "artifact-manifest.json",
-        manifestSha256: pins.publicManifestSha256,
-        files: verified.manifest.files,
-      },
-      ...(privateInput
-        ? {
-            protected: {
-              directory: privateInput.directory,
-              manifestName: "private-operational-manifest.json" as const,
-              manifestSha256: pins.privateManifestSha256!,
-              files: privateInput.manifest.files,
-            },
-          }
-        : {}),
-      command: (args) => JSON.parse(aws(args)),
-    });
-    receipt.dataActivation = "prestage_verified";
-    await save();
+    const uploadVerifiedData = async (bindings: ExistingStackBindings) =>
+      prestageReviewedUpdate({
+        existing: bindings,
+        expectedAccountId: pins.expectedAccountId,
+        snapshotId: verified.manifest.snapshotId,
+        public: {
+          directory: verified.directory,
+          manifestName: "artifact-manifest.json",
+          manifestSha256: pins.publicManifestSha256,
+          files: verified.manifest.files,
+        },
+        ...(privateInput
+          ? {
+              protected: {
+                directory: privateInput.directory,
+                manifestName: "private-operational-manifest.json" as const,
+                manifestSha256: pins.privateManifestSha256!,
+                files: privateInput.manifest.files,
+              },
+            }
+          : {}),
+        command: (args) => JSON.parse(aws(args)),
+      });
     const context = {
       deploymentRegion: pins.region,
       deploymentAccount: pins.expectedAccountId,
@@ -547,10 +554,11 @@ try {
         capacity.existingAccountConcurrency === null
           ? ""
           : String(capacity.existingAccountConcurrency),
-      deploymentAssetBucket: pins.assetBucket,
-      deploymentAssetPrefix: pins.assetPrefix,
       snapshotManifestSha256: pins.publicManifestSha256,
       snapshotPrefix: `accepted/${verified.manifest.snapshotId}/`,
+      ...(process.env.PRISM_PAGERDUTY_ENABLED === "1"
+        ? { enablePagerDuty: "true" }
+        : {}),
       ...(privateInput
         ? {
             enableProtectedView: "true",
@@ -573,30 +581,43 @@ try {
       stdio: "inherit",
       env: { ...process.env, CDK_CONTEXT_JSON: JSON.stringify(context) },
     });
-    await step("stack_deployed", () => {
-      aws([
-        "cloudformation",
-        "deploy",
-        "--template-file",
-        "cdk.out/PrismOracleReview.template.json",
-        "--stack-name",
-        pins.stackName,
-        "--capabilities",
-        "CAPABILITY_IAM",
-        "--role-arn",
-        role,
-        "--s3-bucket",
-        pins.assetBucket,
-        "--s3-prefix",
-        pins.assetPrefix + "templates",
-        "--no-fail-on-empty-changeset",
-      ]);
+    const deploy = async () =>
+      step("stack_deployed", async () => {
+        receipt.cdkInvocations = (receipt.cdkInvocations ?? 0) + 1;
+        if (receipt.cdkInvocations > 3)
+          throw new Error("Finite CDK invocation envelope exhausted");
+        await save();
+        await deployWithCdk(pins, operations);
+      });
+    const activation = await reviewedDeployment({
+      existing,
+      firstCreateApproved: process.env.PRISM_FIRST_CREATE_APPROVED === "yes",
+      prestage: uploadVerifiedData,
+      deploy,
+      describeCreated: async () => ({
+        outputs: outputs(),
+        resources: (
+          JSON.parse(
+            aws([
+              "cloudformation",
+              "describe-stack-resources",
+              "--stack-name",
+              pins.stackName,
+              "--output",
+              "json",
+            ]),
+          ) as { StackResources: ExistingStackBindings["resources"] }
+        ).StackResources,
+      }),
     });
+    receipt.dataPrestage = activation.proof;
+    receipt.dataActivation = activation.activation;
+    await save();
     const o = outputs();
     assertDeployed(o);
     for (const key of ["SnapshotBucket", "StaticBucket", "DistributionId"])
       if (!o[key]) throw new Error("Task deployment outputs incomplete");
-    // Data was checksum-verified before activation. Do not perform a second post-activation upload.
+    // Existing updates pre-stage data; first creation verifies uploads before releasing access.
     await step("frontend_uploaded", () => {
       aws([
         "s3",

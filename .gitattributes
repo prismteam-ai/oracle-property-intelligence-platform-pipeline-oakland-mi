@@ -1,0 +1,3 @@
+# Preserve hash-pinned upstream license text bytes, including publisher whitespace.
+# Source code retains the normal whitespace checks; license hashes are checked at build.
+third-party/licenses/*.txt whitespace=-blank-at-eol

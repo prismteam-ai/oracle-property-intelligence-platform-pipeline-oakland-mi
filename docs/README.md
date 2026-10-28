@@ -1,15 +1,18 @@
-# Current documentation
+# Documentation index and authority
 
-The documents linked below are authoritative for the current implementation. Earlier P1–P4 runbooks remain historical evidence and their old identities, limits and outcomes must not be applied to the current release.
+The [frozen employer README](history/ASSIGNMENT_README.md) defines the original assessment; it is not replaced by this implementation guide. Current public engineering references are pinned in the operator evidence. Moving-reference expectations are distinguished from original requirements and unavailable organization services.
 
-- [Implementation orientation](../IMPLEMENTATION.md)
 - [Architecture](ARCHITECTURE.md)
-- [Coverage and source rights](DATA_COVERAGE.md)
+- [Data coverage](DATA_COVERAGE.md)
 - [Local development](LOCAL_DEVELOPMENT.md)
 - [Deployment and rollback](DEPLOYMENT.md)
 - [Security and privacy](SECURITY_PRIVACY.md)
+- [Observability](OBSERVABILITY.md)
 - [Evaluator guide](EVALUATOR_GUIDE.md)
 - [Known limitations](KNOWN_LIMITATIONS.md)
 - [Release checklist](RELEASE_CHECKLIST.md)
+- [Current decision records](decisions/README.md)
+- [Immutable reference pins](reference-pins.json)
+- [Historical authority and decisions](history/README.md)
 
-The original assignment README remains unchanged. Exact observations and failed/repaired attempts live in the P5 review packet. Local, synthetic, hosted and historical results are identified separately. Public release, Atlas mutation and video work have separate authorization gates.
+Files explicitly marked historical describe their recorded revision. They are retained for provenance, not current commands or deployment identity. Current commands are validated through `pnpm docs:check` and the full operator campaign; cloud mutations require private pinned inputs and explicit execution acknowledgment.

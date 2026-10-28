@@ -4,6 +4,7 @@ export default ts.config(
   {
     ignores: [
       "dist/**",
+      "ci-results/**",
       "dist-lambda/**",
       "node_modules/**",
       "cdk.out/**",

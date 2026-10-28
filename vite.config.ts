@@ -9,7 +9,7 @@ import { CONTRACT_VERSION } from "./packages/contracts/src/index.ts";
 import { defineConfig } from "vite";
 import { thirdPartyNoticesPlugin } from "./scripts/third-party-notices.ts";
 const stage = process.env.PRISM_RELEASE_STAGE ?? "local";
-if (stage !== "local" && stage !== "p3-review")
+if (stage !== "local" && stage !== "review")
   throw new Error("Invalid UI release stage");
 const identity = runtimeIdentity(
   "oracle",
@@ -21,7 +21,7 @@ const identity = runtimeIdentity(
       .digest("hex"),
   },
   stage,
-  validatedRegion(process.env.PRISM_DEPLOY_REGION ?? "us-east-1", [
+  validatedRegion(process.env.PRISM_DEPLOY_REGION ?? "us-east-2", [
     process.env.AWS_REGION,
     process.env.AWS_DEFAULT_REGION,
   ]),

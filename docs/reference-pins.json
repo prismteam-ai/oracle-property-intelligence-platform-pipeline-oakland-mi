@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "asOf": "2026-10-28",
+  "originalAssignmentBaseline": "e3a7f869eb6bca40db8fc22ad0e25874aa3aab60",
+  "currentTeamKit": {
+    "repository": "https://github.com/soofi-xyz/soofi-xyz-team-kit",
+    "commit": "d68d6aac36b51c8ed006218cd43ef4227f3fb753",
+    "classification": "moving-current-engineering-guidance-not-rewritten-original-assignment"
+  },
+  "runtime": {
+    "node": "24",
+    "pnpm": "11.25.0",
+    "aws-cdk-lib": "2.275.0",
+    "aws-cdk": "2.1146.1",
+    "powertools": "2.36.0"
+  },
+  "actionlint": {
+    "version": "1.7.12",
+    "archiveSha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+    "binarySha256": "c872d6db8c6bf83a8eaa704fc93999f027d55dffbc63b8a6abdccb47df5f4cd4"
+  },
+  "actions": {
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "actions/setup-node": "949feb2413d6458794dcd2491c4babbbce0c15c1",
+    "pnpm/action-setup": "ea17c68df8912ef543352723c149a84f56e3d413",
+    "actions/upload-artifact": "cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+  },
+  "upstreamLicenses": {
+    "powertoolsCommit": "0595159ed90c72cc9a004a98923b9778b876726a",
+    "powertoolsLicenseSha256": "5cf66a4554832601b0277c7a539b8d8e8cf5912f53d91e4f83ecf6cb67f1cce6",
+    "emitterMissingLicenseGitHead": "7586fba839cf87774d5df224ce479c3b7e2b9964",
+    "emitterSpdxTemplateSha256": "f32fb3b417a194167cfad068223fc975ba96c5960513a10f66a3c28720aec1df",
+    "emitterLimitation": "Publisher-supplied license file/copyright absent; exact SPDX standard template and author metadata disclosed, not fabricated upstream notice."
+  }
+}

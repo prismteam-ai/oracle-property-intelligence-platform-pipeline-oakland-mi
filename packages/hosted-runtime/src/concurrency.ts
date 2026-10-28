@@ -10,7 +10,7 @@ export interface AccountConcurrencyProof {
   version: 1;
   observedAt: string;
   accountId: string;
-  region: "us-east-1";
+  region: "us-east-2";
   concurrentExecutions: 10;
   unreservedConcurrentExecutions: 10;
   totalFunctionCount: number;
@@ -70,8 +70,10 @@ export function buildConcurrencyPolicy(
 }
 
 const functionPatterns = [
-  /^PrismOracleReview-ReadApiB934CF2C-[A-Za-z0-9]+$/,
-  /^PrismCrmP3Review-CrmHandler98FEA697-[A-Za-z0-9]+$/,
+  /^PrismOracleAssessmentReview-ReadApiB934CF2C-[A-Za-z0-9]+$/,
+  /^PrismCrmAssessmentReview-CrmHandler98FEA697-[A-Za-z0-9]+$/,
+  /^PrismOracleAssessmentReview-AlertNotifier[A-F0-9]{8}-[A-Za-z0-9]+$/,
+  /^PrismCrmAssessmentReview-AlertNotifier[A-F0-9]{8}-[A-Za-z0-9]+$/,
 ];
 function exactKeys(value: Record<string, unknown>, keys: readonly string[]) {
   return (
@@ -101,14 +103,14 @@ export function validateConcurrencyProof(
     p.version !== 1 ||
     !/^\d{12}$/.test(expectedAccountId) ||
     p.accountId !== expectedAccountId ||
-    p.region !== "us-east-1" ||
+    p.region !== "us-east-2" ||
     p.concurrentExecutions !== 10 ||
     p.unreservedConcurrentExecutions !== 10 ||
     typeof p.observedAt !== "string" ||
     !/Z$/.test(p.observedAt) ||
     !Number.isInteger(p.totalFunctionCount) ||
     (p.totalFunctionCount as number) < 0 ||
-    (p.totalFunctionCount as number) > 2 ||
+    (p.totalFunctionCount as number) > 4 ||
     !Array.isArray(p.functions) ||
     p.functions.length !== p.totalFunctionCount
   )
@@ -140,7 +142,7 @@ export function validateConcurrencyProof(
       kind < 0 ||
       used.has(kind) ||
       f.functionArn !==
-        `arn:aws:lambda:us-east-1:${expectedAccountId}:function:${f.functionName}`
+        `arn:aws:lambda:us-east-2:${expectedAccountId}:function:${f.functionName}`
     )
       throw new Error("Non-task or duplicate function inventory rejected");
     used.add(kind);

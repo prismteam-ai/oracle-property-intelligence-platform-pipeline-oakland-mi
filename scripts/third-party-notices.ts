@@ -202,6 +202,66 @@ export async function collectThirdPartyNotices(input: {
       );
     }
     let readmeLicense: { file: string; bytes: Buffer } | undefined;
+    let pinnedUpstreamLicense:
+      | {
+          file: string;
+          bytes: Buffer;
+          sourcePackage: string;
+          disclosure?: string;
+        }
+      | undefined;
+    if (
+      files.length === 0 &&
+      metadata.version === "2.36.0" &&
+      metadata.license === "MIT-0" &&
+      [
+        "@aws-lambda-powertools/commons",
+        "@aws-lambda-powertools/logger",
+        "@aws-lambda-powertools/tracer",
+        "@aws-lambda-powertools/metrics",
+      ].includes(metadata.name)
+    ) {
+      const bytes = await readFile(
+        path.join(root, "third-party/licenses/powertools-2.36.0-LICENSE.txt"),
+      );
+      if (
+        digest(bytes) !==
+        "5cf66a4554832601b0277c7a539b8d8e8cf5912f53d91e4f83ecf6cb67f1cce6"
+      )
+        throw new Error("Pinned Powertools upstream MIT-0 text differs");
+      pinnedUpstreamLicense = {
+        file: "LICENSE",
+        sourcePackage:
+          "aws-powertools/powertools-lambda-typescript@0595159ed90c72cc9a004a98923b9778b876726a",
+        bytes,
+      };
+    }
+    if (
+      files.length === 0 &&
+      metadata.name === "emitter-listener" &&
+      metadata.version === "1.1.2" &&
+      metadata.license === "BSD-2-Clause"
+    ) {
+      const bytes = await readFile(
+        path.join(
+          root,
+          "third-party/licenses/emitter-listener-1.1.2-SPDX-BSD-2-Clause.txt",
+        ),
+      );
+      if (
+        digest(bytes) !==
+        "f32fb3b417a194167cfad068223fc975ba96c5960513a10f66a3c28720aec1df"
+      )
+        throw new Error("Pinned SPDX BSD-2-Clause standard text differs");
+      pinnedUpstreamLicense = {
+        file: "BSD-2-Clause.txt",
+        bytes,
+        sourcePackage:
+          "SPDX-BSD-2-Clause@dfd2f7dbba761cb3d60147f0187884a120f1f2a2d888c8a9b6a09610921bb969",
+        disclosure:
+          "Publisher declares BSD-2-Clause but supplies no license file or package-specific copyright notice in its tarball or pinned gitHead7586fba839cf87774d5df224ce479c3b7e2b9964. The exact SPDX standard text is included with its placeholders unchanged; author metadata is preserved separately. This is not a recovered upstream copyright notice.",
+      };
+    }
     if (
       files.length === 0 &&
       metadata.name === "murmurhash-js" &&
@@ -224,11 +284,13 @@ export async function collectThirdPartyNotices(input: {
         bytes: Buffer.from(section),
       };
     }
-    if (files.length === 0 && !readmeLicense)
+    if (files.length === 0 && !readmeLicense && !pinnedUpstreamLicense)
       throw new Error(
         `Redistributed package has no license/notice text: ${key}`,
       );
-    const sourcePackage = `${textPackage.metadata.name}@${textPackage.metadata.version}`;
+    const sourcePackage =
+      pinnedUpstreamLicense?.sourcePackage ??
+      `${textPackage.metadata.name}@${textPackage.metadata.version}`;
     const entry = {
       name: metadata.name,
       version: metadata.version,
@@ -245,6 +307,9 @@ export async function collectThirdPartyNotices(input: {
           }
         : {}),
       ...(metadata.homepage ? { homepage: metadata.homepage } : {}),
+      ...(pinnedUpstreamLicense?.disclosure
+        ? { licenseTextDisclosure: pinnedUpstreamLicense.disclosure }
+        : {}),
       ...(embeddedEvidence.has(key)
         ? {
             embeddedEvidence: embeddedEvidence
@@ -257,7 +322,10 @@ export async function collectThirdPartyNotices(input: {
     sections.push(
       `\n===== ${key} =====\nLicense: ${entry.license}\n` +
         (entry.author ? `Author: ${entry.author}\n` : "") +
-        (entry.homepage ? `Homepage: ${entry.homepage}\n` : ""),
+        (entry.homepage ? `Homepage: ${entry.homepage}\n` : "") +
+        (pinnedUpstreamLicense?.disclosure
+          ? `License text provenance: ${pinnedUpstreamLicense.disclosure}\n`
+          : ""),
     );
     const texts: { file: string; bytes: Buffer }[] = await Promise.all(
       files.map(async (file) => ({
@@ -266,6 +334,7 @@ export async function collectThirdPartyNotices(input: {
       })),
     );
     if (readmeLicense) texts.push(readmeLicense);
+    if (pinnedUpstreamLicense) texts.push(pinnedUpstreamLicense);
     for (const { file, bytes } of texts) {
       entry.texts.push({ file, sha256: digest(bytes), sourcePackage });
       sections.push(

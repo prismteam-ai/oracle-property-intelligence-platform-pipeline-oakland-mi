@@ -1,16 +1,9 @@
 # Release checklist
 
-Each item needs an observed receipt bound to the final source/package/runtime. Earlier local or synthetic proofs do not substitute for current hosted results.
+Before local release promotion, reconstruct the exact sources, use Node24/pnpm11.25.0, install the frozen lockfile, run `pnpm ci:verify`, repeat the measured package build, verify native real/protected runtime behavior and compare exact contract/source/archive/snapshot identities. Run independent code and privacy review; repair all material findings.
 
-- Reconstruct clean source from bundle and verify the patch from the frozen P4 base; check Node 24, pnpm 11.25.0 and frozen lockfiles.
-- Run formatting, lint, typecheck, all tests, build, contract drift checks and deterministic package comparison; synthesize/assert CDK and emulate the measured ZIP.
-- Reconcile real source counts/IDs, arbitrary run history, tombstones/idempotence/tamper tests, private-v5/v6/v7 lineage/alignment and dense-property no-truncation.
-- Verify API/MCP and real map/GPS/pin/radius/mobile/lead workflows, three concurrent fresh desktop sessions, mobile and direct client, access isolation/revocation and no unexpected errors.
-- Validate the current compositional NL corpus, original prompts and bounded live-model campaign against source predicates and durable usage/cost readback.
-- Revalidate every CID1/CID2 object through two independent operators and classify CLI/Atlas stages truthfully.
-- Review dependencies/licenses, IAM/cookies/headers, prompt/tool abuse and secrets/private data across source history, bundles, ZIPs and screenshots.
-- Complete independent code review and fix/retest findings; preserve failed attempts and corrections.
-- Validate docs links/commands and preserve all 114 exact original requirement rows with current evidence/status.
-- Record costs, retained resources, rollback and teardown; delete temporary deployment identities/keys and revoke sessions.
-- Return one verified reconstruction ZIP with a finite ruling. No Git push, PR, Atlas mutation or final submission in this phase.
-- Produce no video/audio until operator and independent lead explicitly greenlight original-objective alignment. Media script work is deferred under that user instruction.
+Before hosted promotion, validate exact account/region/qualifier/budget and source rights, preserve the historical rollback stacks, deploy Oracle before CRM through CDK, and run the complete clean-browser/direct API/MCP/model/session/lead/concurrency/error campaign. Inspect actual tags, active X-Ray, 90-day logs, low-cardinality metrics, alarms and any live PagerDuty receipt. Source outcomes and partial/unknown evidence remain explicit.
+
+Before return, close/revoke temporary deployment access, preserve existing review stacks and the current private access guide, verify documentation/114-row traceability, scan all source/package/image boundaries, and create one compact reconstruction-grade bundle. Do not ship bulk private/provider data or redundant historical handoff archives.
+
+Before media or GitHub work, obtain the operator and independent lead greenlights against the original objectives. No checklist item alone authorizes a PR, push, recording, upload, Ready-for-review transition, employer message or submission.

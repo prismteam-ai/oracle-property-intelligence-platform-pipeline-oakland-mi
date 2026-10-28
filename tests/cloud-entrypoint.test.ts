@@ -32,7 +32,7 @@ it("dry-run and rejected execution never invoke the account CLI", async () => {
   try {
     expect(JSON.parse(run(["deploy"]))).toMatchObject({
       mode: "dry_run",
-      region: "us-east-1",
+      region: "us-east-2",
       cloudServiceCalls: 0,
     });
     expect(() => run(["deploy", "--execute"])).toThrow();
@@ -42,5 +42,34 @@ it("dry-run and rejected execution never invoke the account CLI", async () => {
     await expect(access(marker)).rejects.toThrow();
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+});
+it("documented pnpm run argument forwarding reaches the guard without an extra npm separator", () => {
+  const env = { ...process.env, PRISM_CLOUD_EXECUTION_APPROVED: "" };
+  expect(
+    JSON.parse(
+      execFileSync("pnpm", ["run", "deploy"], {
+        encoding: "utf8",
+        env,
+        stdio: "pipe",
+      }),
+    ),
+  ).toMatchObject({ mode: "dry_run", cloudServiceCalls: 0 });
+  try {
+    execFileSync("pnpm", ["run", "deploy", "--execute"], {
+      encoding: "utf8",
+      env,
+      stdio: "pipe",
+    });
+    throw new Error("Expected execution approval refusal");
+  } catch (error) {
+    const stderr =
+      error && typeof error === "object" && "stderr" in error
+        ? String(error.stderr)
+        : "";
+    expect(stderr).toContain(
+      "Explicit assessment cloud execution approval required",
+    );
+    expect(stderr).not.toContain("Expected deploy|smoke");
   }
 });

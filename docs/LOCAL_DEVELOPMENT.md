@@ -1,21 +1,15 @@
 # Local development
 
-Use Node 24 and pnpm 11.25.0 as pinned in package.json. Keep credentials and protected data outside the checkout. From a clean clone:
+Use Node 24, pnpm 11.25.0 and Linux x64 for the pinned native tooling. Install with `pnpm install --frozen-lockfile`. The workspace explicitly permits the pinned esbuild build script; a string placeholder previously broke clean installs and is now repaired.
+
+Run `pnpm tooling:install` for the checksum-pinned official actionlint binary and `pnpm exec playwright install chromium` for the synthetic browser campaign. Run `pnpm api` and `pnpm dev` in separate terminals for the synthetic local UI at http://127.0.0.1:4173. The API listens at http://127.0.0.1:4310.
+
+`pnpm ci:verify` runs format, lint, typecheck, tests, contract drift, source scan, workflow validation, production build, Lambda package, CDK policy assertions, production dependency audit, native runtime emulation, synthetic browser and documentation checks. Before the canonical campaign, obtain the exact official runtime image:
 
 ```sh
-pnpm install --frozen-lockfile --ignore-scripts
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm package:lambda
-pnpm cdk:synth
-pnpm cdk:check
+docker pull public.ecr.aws/lambda/nodejs@sha256:92b7cccd985332238af80ac8da42d6965d418552e88955e315da4e3c0c76ca79
 ```
 
-These commands are local; the package command writes the ignored measured ZIP and package report. CDK uses that exact package and performs no account lookup. Native DuckDB comes from the lockfile-pinned Linux package, with no install-time source compilation. Final clean-clone receipts in the P5 packet identify each result and tool version.
+`pnpm runtime:emulate` runs the measured API package with networking disabled. `pnpm runtime:alert:emulate` separately checks the packaged disabled alert entrypoint at its 128 MiB limit, with no secret/provider call and a private-log canary. Hosted tests and real protected data checks are separate operator campaigns. Local test fixtures do not satisfy real positive source outcomes.
 
-A deliberately separate synthetic demonstration starts with `PRISM_DATA_MODE=synthetic PRISM_ACCESS_MODE=local pnpm api` and `pnpm dev` in a second terminal. It uses labeled fixture records and never falls back from a failed real database. Real mode requires PRISM_SNAPSHOT_DIR to identify an externally supplied, hash-verified artifact directory; omitted/corrupt artifacts fail startup. Protected companions require the authenticated runtime and explicit role/file/manifest pins. Public local-access mode refuses protected sidecars.
-
-`pnpm snapshot:run` consumes a receipt-backed plan with explicit baseline, request-state, output and evidence paths. It never acquires sources itself. See [run history](architecture/RUN_HISTORY_PUBLICATION.md) for background and the P5 packet for exact executed run-4 arguments. `pnpm runtime:emulate` requires a previously downloaded pinned official AWS image and runs the measured ZIP with Docker networking disabled. It is distinct from hosted evidence.
+Producer commands require explicit receipt-backed plans and private destinations. `pnpm snapshot:run`, `pnpm snapshot:build`, `pnpm publication:local`, `pnpm publication:restore` and `pnpm benchmark:real` are documented in their source entrypoints and historical design records; running without required inputs fails rather than silently using another dataset. The continuous producer does not acquire sources inside the CRM.

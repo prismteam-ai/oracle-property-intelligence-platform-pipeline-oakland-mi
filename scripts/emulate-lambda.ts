@@ -44,7 +44,7 @@ const source = sourceIdentity();
 if (
   source.head !== packageReport.identity.head ||
   source.tree !== packageReport.identity.tree ||
-  (packageReport.identity.stage === "p3-review" && source.dirty)
+  (packageReport.identity.stage === "review" && source.dirty)
 )
   throw new Error("Emulation must match measured clean staging source");
 const archive = path.join(root, "oracle-lambda.zip"),
@@ -90,7 +90,7 @@ const args = [
   "-e",
   `PRISM_EMULATION_CODE_DIGEST=${createHash("sha256").update(code).digest("hex")}`,
   "-e",
-  "AWS_REGION=us-east-1",
+  "AWS_REGION=us-east-2",
 ];
 if (snapshot)
   args.push(
@@ -270,7 +270,7 @@ try {
   await rpc(1, "initialize", {
     protocolVersion: "2025-11-25",
     capabilities: {},
-    clientInfo: { name: "prism-p3-rie", version: "1" },
+    clientInfo: { name: "prism-review-rie", version: "1" },
   });
   const tools = (await rpc(2, "tools/list", {})).tools as unknown[];
   if (!Array.isArray(tools) || tools.length !== 3)

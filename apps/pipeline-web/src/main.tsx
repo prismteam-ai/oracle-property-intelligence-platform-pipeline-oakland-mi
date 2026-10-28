@@ -1,4 +1,3 @@
-import publicationEvidence from "../../../packages/hosted-runtime/src/public-run-evidence.json";
 import { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type {
@@ -6,179 +5,23 @@ import type {
   QueryInput,
   SearchResponse,
 } from "../../../packages/contracts/src/index.ts";
-import type { SourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
 import type { RuntimeIdentity } from "../../../packages/hosted-runtime/src/release.ts";
 import "./style.css";
 declare const __PRISM_UI_IDENTITY__: RuntimeIdentity;
 const uiIdentity = __PRISM_UI_IDENTITY__;
-const roofBasis = (basis: string) =>
-  basis === "built_year" ? "building year proxy" : basis.replaceAll("_", " ");
-function MunicipalSource({
-  sourceId,
-  recordId,
-}: {
-  sourceId: string;
-  recordId: string;
-}) {
-  const [source, setSource] = useState<SourceContext | null>(null),
-    [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setSource(null);
-    setFailed(false);
-    const abort = new AbortController(),
-      page = recordId.match(/:page:(\d+)/)?.[1];
-    let active = true;
-    void get<{ source: SourceContext }>(
-      `source-context?sourceId=${encodeURIComponent(sourceId)}${page ? `&page=${page}` : ""}`,
-      abort.signal,
-    )
-      .then((v) => {
-        if (active) setSource(v.source);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      abort.abort();
-    };
-  }, [sourceId, recordId]);
-  if (!source)
-    return (
-      <p className="muted">
-        {failed
-          ? "Report context unavailable. No additional source facts inferred."
-          : "Loading report context…"}
-      </p>
-    );
-  return (
-    <div className="source-context">
-      <p>
-        <a
-          href={source.pageUrl ?? source.officialReportUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {source.visibleTitle}
-          {source.page ? ` · page ${source.page}` : ""}
-        </a>{" "}
-        ·{" "}
-        <a
-          href={source.officialLandingPageUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Official report page
-        </a>
-      </p>
-      <p>
-        Retrieved {source.sourceObservedAt}. Declared report period: not stated
-        in reviewed headers.
-      </p>
-      <p>
-        Observed sale dates: {source.observedSaleDateRange.from}–
-        {source.observedSaleDateRange.to}. This range is not the declared report
-        period.
-      </p>
-      <p>{source.exactPinMatchMethod}.</p>
-      <p>
-        Low-confidence building year proxy. Roof replacement and condition are
-        unverified. Reported sales are partial history and do not establish
-        ten-year ownership.
-      </p>
-    </div>
-  );
-}
-interface Run {
-  id: string;
-  at: string;
-  source: string;
-  sourceCount: number | null;
-  processed: number | null;
-  added: number | null;
-  changed: number | null;
-  deleted: number | null;
-  unchanged: number | null;
-  state: string;
-  limitations: string[];
-  raw?: unknown;
-}
-interface Coverage {
-  source: string;
-  scope: string;
-  state: string;
-  count: number | null;
-  limitations: string[];
-}
-const object = (v: unknown): Record<string, unknown> =>
-  v && typeof v === "object" ? (v as Record<string, unknown>) : {};
-const number = (v: unknown): number | null =>
-  typeof v === "number" ? v : null;
-function normalizeRun(value: unknown): Run {
-  const r = object(value);
-  if ("at" in r) return value as Run;
-  return {
-    id: String(r.id ?? "Source run"),
-    at: String(r.completedAt ?? r.startedAt ?? ""),
-    source: String(r.kind ?? "official source"),
-    sourceCount: number(r.sourceCount),
-    processed: number(r.processed),
-    added: number(r.added),
-    changed: number(r.changed),
-    deleted: number(r.deleted),
-    unchanged: number(r.unchanged),
-    state: r.complete ? "COMPLETE" : "INCOMPLETE",
-    limitations: Array.isArray(r.limitations)
-      ? r.limitations.map(String)
-      : ["Source-layer counts differ from canonical property counts."],
-    raw: value,
-  };
-}
-function normalizeCoverage(value: unknown): Coverage {
-  const c = object(value);
-  if ("source" in c) return value as Coverage;
-  const counts = object(c.counts);
-  return {
-    source: "Official selected layers",
-    scope: `${number(counts.parcels)?.toLocaleString() ?? "Unknown"} parcels · ${number(counts.addresses)?.toLocaleString() ?? "Unknown"} official site addresses`,
-    state: c.completeSelectedLayers ? "complete_selected_layers" : "partial",
-    count: number(counts.properties),
-    limitations: Array.isArray(c.limitations)
-      ? c.limitations.map(String)
-      : ["Coverage unknown"],
-  };
-}
-interface Manifest {
-  snapshotId: string;
-  files?: { name: string; bytes: number; sha256: string }[];
-  items?: { name: string; size: number; digest: string; cid: string | null }[];
-  car?: { state: string; reason: string };
-  limitations?: string[];
-  [key: string]: unknown;
-}
-interface Health {
-  snapshotId: string;
-  snapshotDigest: string;
-  mode: "real" | "synthetic";
-  count: number;
-  addressCount?: number;
-  buildId: string;
-  accessMode: string;
-  dataMode?: "synthetic" | "real-public" | "protected-real";
-  head?: string;
-  tree?: string;
-  stage?: string;
-  region?: string;
-  contractVersion?: string;
-  contractSha256?: string;
-}
-async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const r = await fetch(`/api/${path}`, { signal });
-  if (r.status === 401) throw new Error("REVIEW_ACCESS_REQUIRED");
-  if (!r.ok)
-    throw new Error("The data service could not complete this request.");
-  return r.json() as Promise<T>;
-}
+import {
+  get,
+  normalizeRun,
+  normalizeCoverage,
+  roofBasis,
+  type Run,
+  type Coverage,
+  type Manifest,
+  type Health,
+} from "./model.ts";
+import { OverviewPanel } from "./overview.tsx";
+import { ArtifactsPanel } from "./artifacts.tsx";
+import { EvidenceDetails } from "./details.tsx";
 function App() {
   const [tab, setTab] = useState("overview"),
     [runs, setRuns] = useState<Run[]>([]),
@@ -222,7 +65,6 @@ function App() {
     (["127.0.0.1", "localhost"].includes(window.location.hostname)
       ? "http://127.0.0.1:4174"
       : "");
-  const latest = runs.at(-1);
   function closeEvidence() {
     detailSequence.current++;
     detailController.current?.abort();
@@ -555,152 +397,14 @@ function App() {
           </div>
         )}
         {tab === "overview" && (
-          <>
-            <section className="metrics" aria-label="Run metrics">
-              <div>
-                <span>CANONICAL PROPERTIES</span>
-                <strong>{health?.count.toLocaleString() ?? "—"}</strong>
-                <small>
-                  {health?.addressCount?.toLocaleString() ?? "—"} official site
-                  addresses
-                </small>
-              </div>
-              <div>
-                <span>RECORDED RUNS</span>
-                <strong>{runs.length.toString().padStart(2, "0")}</strong>
-                <small>Incremental state preserved</small>
-              </div>
-              <div>
-                <span>LATEST RUN DELTA</span>
-                <strong>
-                  {latest?.added === null
-                    ? "Unknown"
-                    : `+${latest?.added ?? 0}`}
-                  <i> / {latest?.changed ?? "Unknown"} changed</i>
-                </strong>
-                <small>
-                  {latest?.deleted ?? "Unknown"} tombstones recorded
-                </small>
-              </div>
-              <div>
-                <span>PUBLIC REPLICAS</span>
-                <strong>2</strong>
-                <small>Public P2 base · verified October 27</small>
-              </div>
-            </section>
-            <section className="two-columns">
-              <div className="panel">
-                <div className="section-heading">
-                  <div>
-                    <span className="eyebrow">INGESTION JOURNAL</span>
-                    <h2>Runs that tell the whole story</h2>
-                  </div>
-                  <span className="subtle-tag">{runs.length} runs</span>
-                </div>
-                <div className="timeline">
-                  {runs.map((run, index) => (
-                    <article key={run.id} className="run">
-                      <div className="timeline-dot" />
-                      <div className="run-content">
-                        <div className="run-title">
-                          <h3>{run.id}</h3>
-                          <span className="state">{run.state}</span>
-                        </div>
-                        <time>
-                          {new Date(run.at).toLocaleString("en-US", {
-                            timeZone: "UTC",
-                          })}{" "}
-                          UTC
-                        </time>
-                        <p>
-                          {run.sourceCount ?? "Unknown"} source records ·{" "}
-                          {run.processed ?? "Unknown"} processed
-                        </p>
-                        <div className="delta">
-                          <span>
-                            {run.added === null
-                              ? "Added: unknown"
-                              : `+${run.added} added`}
-                          </span>
-                          <span>{run.changed ?? "Unknown"} changed</span>
-                          <span>{run.deleted ?? "Unknown"} removed</span>
-                          <span>{run.unchanged ?? "Unknown"} unchanged</span>
-                        </div>
-                        {run.raw !== undefined && (
-                          <details>
-                            <summary>Exact source run receipt</summary>
-                            <pre>{JSON.stringify(run.raw, null, 2)}</pre>
-                          </details>
-                        )}
-                        {health?.mode === "synthetic" &&
-                          index === runs.length - 1 && (
-                            <p className="muted">
-                              Idempotent replay returns this same completed
-                              receipt. Corrected content and tombstones advance
-                              the working state.
-                            </p>
-                          )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                {!runs.length && (
-                  <p className="muted">
-                    {loading
-                      ? "Loading the local run journal…"
-                      : "The local service has not returned a run."}
-                  </p>
-                )}
-              </div>
-              <div className="panel coverage">
-                <div className="section-heading">
-                  <div>
-                    <span className="eyebrow">SOURCE BOUNDARIES</span>
-                    <h2>Coverage, with caveats</h2>
-                  </div>
-                </div>
-                {coverage.map((c) => (
-                  <article key={c.source}>
-                    <div className="coverage-title">
-                      <h3>{c.source}</h3>
-                      <span
-                        className={
-                          c.state === "fixture_only" ? "badge teal" : "badge"
-                        }
-                      >
-                        {c.state === "fixture_only"
-                          ? "Fixture"
-                          : c.count === null
-                            ? "Not measured"
-                            : c.state === "complete_selected_layers"
-                              ? "Complete selected layers"
-                              : "Partial"}
-                      </span>
-                    </div>
-                    <p>{c.scope}</p>
-                    <ul>
-                      {c.limitations.map((l) => (
-                        <li key={l}>{l}</li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </section>
-            <section className="snapshot-strip">
-              <div>
-                <span className="eyebrow">SERVED SNAPSHOT</span>
-                <code>{snapshot}</code>
-              </div>
-              <p>
-                Every query and detail view uses this immutable snapshot
-                identity.
-              </p>
-              <button className="text-button" onClick={() => setTab("query")}>
-                Explore the snapshot →
-              </button>
-            </section>
-          </>
+          <OverviewPanel
+            health={health}
+            runs={runs}
+            coverage={coverage}
+            snapshot={snapshot}
+            loading={loading}
+            onExplore={() => setTab("query")}
+          />
         )}
         {tab === "query" && (
           <section
@@ -1020,342 +724,24 @@ function App() {
             </div>
           </section>
         )}
-        {tab === "artifacts" && (
-          <section className="panel artifact-panel">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">ARTIFACT IDENTITY</span>
-                <h2>Snapshot integrity and publication evidence</h2>
-                <p>
-                  Runtime file hashes are verified. The public P2 base has a
-                  separate publication receipt. The current working view is
-                  verified independently; protected staging includes private
-                  enrichment.
-                </p>
-              </div>
-              <span className="badge">Runtime + recorded public proof</span>
-            </div>
-            <div className="artifact-grid">
-              <article>
-                <span className="eyebrow">SNAPSHOT IDENTITY</span>
-                <h3>{manifest?.snapshotId}</h3>
-                {(
-                  manifest?.items ??
-                  manifest?.files?.map((f) => ({
-                    name: f.name,
-                    size: f.bytes,
-                    digest: f.sha256,
-                    cid: null,
-                  }))
-                )?.map((item) => (
-                  <div key={item.name} className="artifact">
-                    <strong>{item.name}</strong>
-                    <p>{item.size.toLocaleString()} bytes · SHA-256</p>
-                    <code>{item.digest}</code>
-                    <p className="muted">
-                      CID: {item.cid ?? "Not included in this runtime manifest"}
-                    </p>
-                  </div>
-                ))}
-              </article>
-              <article className="publication-gate">
-                <h3>Two immutable public snapshots</h3>
-                <p>
-                  Filebase and Pinata retain both roots on Free plans. Every
-                  file in both snapshots matched its size and SHA-256 through
-                  each operator's public gateway. This is recorded verification,
-                  not an availability monitor.
-                </p>
-                <p>
-                  <strong>Previous root · runs 1 and 2</strong>
-                </p>
-                <code>{publicationEvidence.priorRootCid}</code>
-                <p>
-                  <strong>Latest published public root · run 3</strong>
-                </p>
-                <code>{publicationEvidence.rootCid}</code>
-                <p>
-                  Run 3 freshly reconciled 1,050,476 source records: zero added,
-                  changed or deleted facts. The new root records observation
-                  provenance, contract 0.3.0 and immutable run history. A new
-                  CID alone does not establish changed county facts.
-                </p>
-                <p>
-                  The protected working view includes separate permit and
-                  enrichment observations. These are outside both public roots.
-                </p>
-                <p>
-                  The current working view uses run 4, which refreshed the
-                  selected public fields with no changed source facts. Its
-                  prepared IPFS root remains unpublished. Protected county
-                  attributes retain their own earlier observation times.
-                </p>
-                <p>
-                  <a
-                    href="/assessment-publication-manifest.json"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Public file manifest and CAR identity ↗
-                  </a>
-                </p>
-                <p>
-                  <a
-                    href="/assessment-gateway-proof.json"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Independent public gateway verification ↗
-                  </a>
-                </p>
-                <p className="muted">
-                  The historical IPNS pointer is retired from the current
-                  delivery path. Its expiry was not independently verified and
-                  automatic renewal is not configured. The two immutable
-                  published CIDs identify the public snapshots.
-                </p>
-                <p className="muted">
-                  This interface performs no uploads, renewal, or provider
-                  changes.
-                </p>
-              </article>
-            </div>
-            <details>
-              <summary>View machine-readable runtime manifest</summary>
-              <pre>{JSON.stringify(manifest, null, 2)}</pre>
-            </details>
-          </section>
-        )}
+        {tab === "artifacts" && <ArtifactsPanel manifest={manifest} />}
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
           <span>
-            P5 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
+            Assessment · {health?.stage ?? "local"} ·{" "}
+            {health?.region ?? "us-east-2"} ·{" "}
             {health?.dataMode ?? health?.mode ?? "loading"}
           </span>
         </footer>
       </main>
       {selected && (
-        <div className="drawer-backdrop" onClick={closeEvidence}>
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="evidence-title"
-            className="drawer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="close"
-              aria-label="Close evidence"
-              onClick={closeEvidence}
-            >
-              ×
-            </button>
-            <span className="eyebrow">RECORD EVIDENCE</span>
-            <h2 id="evidence-title">{selected.address}</h2>
-            <span className="badge teal">
-              {health?.mode === "real"
-                ? "Official source evidence"
-                : "Synthetic fixture"}
-            </span>
-            <p className="muted">
-              Snapshot {result?.snapshotId} · query{" "}
-              {result?.queryHash.slice(0, 16)} · generation{" "}
-              {binding?.generation}
-            </p>
-            <dl>
-              <dt>Canonical ID</dt>
-              <dd>{selected.id}</dd>
-              <dt>Jurisdiction</dt>
-              <dd>{selected.jurisdiction?.name ?? "Unknown"}</dd>
-              <dt>Parcel PIN / KEYPIN</dt>
-              <dd>
-                {selected.parcelIdentifiers?.pin ?? "Unknown"} /{" "}
-                {selected.parcelIdentifiers?.keypin ?? "Unknown"}
-              </dd>
-              <dt>Official site addresses</dt>
-              <dd>
-                {selected.siteAddressCount ?? "Unknown"} · coordinate basis:{" "}
-                {selected.coordinateBasis ?? "unknown"}
-              </dd>
-              <dt>Source-native ID</dt>
-              <dd>{selected.nativeId}</dd>
-              <dt>Roof evidence</dt>
-              <dd>
-                {selected.roof.ageYears ?? "Unknown"} years ·{" "}
-                {roofBasis(selected.roof.basis)} · {selected.roof.confidence}{" "}
-                confidence
-              </dd>
-              <dt>As of</dt>
-              <dd>{selected.roof.asOf}</dd>
-              <dt>Ownership</dt>
-              <dd>
-                {selected.ownership.lastTransferDate ??
-                  "Transfer history unavailable"}{" "}
-                · {selected.ownership.historyCoverage} coverage
-              </dd>
-            </dl>
-            {selected.roof.caveats.map((c) => (
-              <p className="notice compact" key={c}>
-                {c}
-              </p>
-            ))}
-            {!!selected.roof.provenance?.length && (
-              <>
-                <h3>Roof proxy source evidence</h3>
-                {selected.roof.provenance.map((p) => (
-                  <article className="lineage" key={p.recordId}>
-                    <strong>{p.sourceId}</strong>
-                    <p>
-                      {p.recordId} · {p.observedAt}
-                    </p>
-                    <code>{p.digest}</code>
-                    {health?.dataMode === "protected-real" && (
-                      <MunicipalSource
-                        sourceId={p.sourceId}
-                        recordId={p.recordId}
-                      />
-                    )}
-                  </article>
-                ))}
-              </>
-            )}
-            {!!selected.ownership.events?.length && (
-              <>
-                <h3>Reported ownership events</h3>
-                <p className="muted">
-                  A reported sale date is not a verified transfer event or proof
-                  of continuous ownership.
-                </p>
-                {selected.ownership.events.map((event) => (
-                  <article className="detail-permit" key={event.id}>
-                    <strong>
-                      {event.kind === "reported_sale"
-                        ? "Reported sale"
-                        : "Recorded transfer"}{" "}
-                      · {event.date}
-                    </strong>
-                    {event.provenance.map((p) => (
-                      <p key={p.recordId}>
-                        {p.sourceId} · {p.recordId} · observed {p.observedAt}
-                      </p>
-                    ))}
-                  </article>
-                ))}
-              </>
-            )}
-            <h3>Permits and contractor evidence</h3>
-            {selected.permits.map((p) => (
-              <article className="detail-permit" key={p.id}>
-                <strong>{p.permitNumber ?? p.id}</strong>
-                <p>
-                  {p.jurisdiction ?? "Jurisdiction unavailable"} ·{" "}
-                  {p.reportedPermitType?.trim() || "Permit type unavailable"}
-                </p>
-                <p>
-                  Issued {p.issuedAt ?? "date unavailable"} · Status {p.status}
-                  {p.statusBasis
-                    ? ` (${p.statusBasis.replaceAll("_", " ")})`
-                    : ""}
-                </p>
-                {p.statusBasis === "issued_only" && (
-                  <p className="notice compact">
-                    Issuance does not establish that this permit remains open or
-                    that work was completed.
-                  </p>
-                )}
-                {p.proposedWorkScope && <p>{p.proposedWorkScope}</p>}
-                <p>
-                  Opened {p.openedAt ?? "unknown"} · Closed{" "}
-                  {p.closedAt ?? "unknown"}
-                  {p.statusObservedAt
-                    ? ` · status observed ${p.statusObservedAt}`
-                    : ""}
-                </p>
-                <p>
-                  {p.provenance.some(
-                    (source) =>
-                      source.sourceId === "official-troy-issued-permits",
-                  )
-                    ? "Business applicant (contractor role unverified): "
-                    : "Reported contractor: "}
-                  {p.contractor.reportedName ?? "Unavailable"}
-                </p>
-                <p>
-                  Verified company:{" "}
-                  {p.contractor.verifiedCompanyId ?? "Unresolved"}
-                </p>
-                <p>
-                  License: {p.contractor.license ?? "Unavailable"} · Rating:{" "}
-                  {p.contractor.ratingEvidence
-                    ? `${p.contractor.ratingEvidence.value} on the BBB letter-grade scale`
-                    : (p.contractor.rating ?? "Unavailable")}
-                </p>
-                {p.contractor.licenseEvidence && (
-                  <p>
-                    {p.contractor.licenseEvidence.type} ·{" "}
-                    {p.contractor.licenseEvidence.status} ·{" "}
-                    {p.contractor.licenseEvidence.confidence} match confidence ·{" "}
-                    <a
-                      href={p.contractor.licenseEvidence.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Official license source
-                    </a>{" "}
-                    · observed {p.contractor.licenseEvidence.observedAt}.{" "}
-                    {p.contractor.licenseEvidence.matchBasis}
-                  </p>
-                )}
-                {p.contractor.ratingEvidence && (
-                  <p>
-                    <a
-                      href={p.contractor.ratingEvidence.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      BBB profile
-                    </a>{" "}
-                    · {p.contractor.ratingEvidence.matchConfidence} match
-                    confidence · observed{" "}
-                    {p.contractor.ratingEvidence.observedAt}. A BBB grade is not
-                    a numeric score or a license.
-                  </p>
-                )}
-                {p.matchEvidence && (
-                  <p>
-                    Property match: {p.matchEvidence.basis.replaceAll("_", " ")}{" "}
-                    · {p.matchEvidence.confidence} confidence.{" "}
-                    {p.matchEvidence.caveats.join(" ")}
-                  </p>
-                )}
-                {p.provenance.map((source) => (
-                  <p key={`${source.sourceId}:${source.recordId}`}>
-                    {source.sourceId} · {source.recordId} · observed{" "}
-                    {source.observedAt}
-                    <br />
-                    <code>{source.digest}</code>
-                  </p>
-                ))}
-              </article>
-            ))}
-            {!selected.permits.length && (
-              <p>
-                Permit evidence is unavailable for this record. This is not
-                proof of permit absence.
-              </p>
-            )}
-            <h3>Source lineage</h3>
-            {selected.provenance.map((p) => (
-              <article key={p.recordId} className="lineage">
-                <strong>{p.sourceId}</strong>
-                <p>
-                  {p.recordId} · {p.observedAt}
-                </p>
-                <code>{p.digest}</code>
-              </article>
-            ))}
-          </section>
-        </div>
+        <EvidenceDetails
+          selected={selected}
+          health={health}
+          result={result}
+          binding={binding}
+          closeEvidence={closeEvidence}
+        />
       )}
     </div>
   );

@@ -20,7 +20,7 @@ const proof = {
   version: 1,
   observedAt: new Date(now).toISOString(),
   accountId: account,
-  region: "us-east-1",
+  region: "us-east-2",
   concurrentExecutions: 10,
   unreservedConcurrentExecutions: 10,
   totalFunctionCount: 0,
@@ -63,11 +63,11 @@ it("accepts fresh empty or two exact task functions and returns no account or AR
     totalFunctionCount: 0,
   });
   const functions = [
-    "PrismOracleReview-ReadApiB934CF2C-abc123",
-    "PrismCrmP3Review-CrmHandler98FEA697-xyz456",
+    "PrismOracleAssessmentReview-ReadApiB934CF2C-abc123",
+    "PrismCrmAssessmentReview-CrmHandler98FEA697-xyz456",
   ].map((functionName) => ({
     functionName,
-    functionArn: `arn:aws:lambda:us-east-1:${account}:function:${functionName}`,
+    functionArn: `arn:aws:lambda:us-east-2:${account}:function:${functionName}`,
   }));
   expect(
     validateConcurrencyProof(
@@ -80,7 +80,7 @@ it("accepts fresh empty or two exact task functions and returns no account or AR
 it("rejects stale/future, quota, account, inventory and unrelated-function proof", () => {
   const unrelated = {
     functionName: "OtherProduction",
-    functionArn: `arn:aws:lambda:us-east-1:${account}:function:OtherProduction`,
+    functionArn: `arn:aws:lambda:us-east-2:${account}:function:OtherProduction`,
   };
   for (const delta of [
     { observedAt: new Date(now - 900001).toISOString() },
@@ -96,10 +96,10 @@ it("rejects stale/future, quota, account, inventory and unrelated-function proof
     expect(() =>
       validateConcurrencyProof({ ...proof, ...delta }, account, now),
     ).toThrow();
-  const functionName = "PrismOracleReview-ReadApiB934CF2C-abc123";
+  const functionName = "PrismOracleAssessmentReview-ReadApiB934CF2C-abc123";
   const f = {
     functionName,
-    functionArn: `arn:aws:lambda:us-east-1:${account}:function:${functionName}`,
+    functionArn: `arn:aws:lambda:us-east-2:${account}:function:${functionName}`,
   };
   expect(() =>
     validateConcurrencyProof(

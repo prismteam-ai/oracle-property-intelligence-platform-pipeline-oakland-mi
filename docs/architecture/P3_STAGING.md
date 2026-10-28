@@ -1,3 +1,5 @@
+> Historical baseline reference. Current operating instructions are in the [documentation index](../README.md). Source identities and observations below describe their recorded earlier revision.
+
 > Historical implementation/reference document, superseded for current operation by [the current documentation index](../README.md). Preserve its dated claims as historical evidence.
 
 # P3 bounded staging operator runbook

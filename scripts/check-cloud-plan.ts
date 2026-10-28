@@ -28,7 +28,7 @@ execFileSync(
   { stdio: "pipe", env: localEnv },
 );
 const t = JSON.parse(
-  await readFile("cdk.out/PrismOracleReview.template.json", "utf8"),
+  await readFile("cdk.out/PrismOracleAssessmentReview.template.json", "utf8"),
 ) as {
   Outputs: Record<string, { Value: unknown }>;
   Parameters?: Record<string, unknown>;
@@ -44,8 +44,13 @@ const t = JSON.parse(
 const entries = Object.entries(t.Resources),
   of = (type: string) => entries.filter(([, r]) => r.Type === type);
 const lambdas = of("AWS::Lambda::Function");
-assert.equal(lambdas.length, 1);
-const lambda = lambdas[0]![1].Properties!;
+assert.equal(lambdas.length, 2);
+const lambda = lambdas.find(
+  ([, r]) => r.Properties?.Handler === "index.handler",
+)![1].Properties!;
+const notifier = lambdas.find(
+  ([, r]) => r.Properties?.Handler === "index.alertHandler",
+)![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
 assert.equal(lambda.ReservedConcurrentExecutions, 5);
 for (const name of ["RuntimeFunctionName", "HttpApiId", "HttpApiStageName"])
@@ -63,16 +68,33 @@ const packageReport = JSON.parse(
     contractSha256: string;
   };
 };
-assert.deepEqual(lambda.Code, {
-  S3Bucket: "prism-p3-local-synth-assets",
-  S3Key: `prism-p3/oracle/lambda/${packageReport.zipSha256}.zip`,
-});
-assert(
-  !Object.keys(t.Parameters ?? {}).some((p) => /BootstrapVersion/.test(p)),
+assert((lambda.Code as { S3Bucket: unknown }).S3Bucket);
+assert((lambda.Code as { S3Key: unknown }).S3Key);
+assert(Object.hasOwn(t.Parameters ?? {}, "BootstrapVersion"));
+assert.equal(
+  lambda.TracingConfig && (lambda.TracingConfig as { Mode: string }).Mode,
+  "Active",
 );
+assert.equal(notifier.MemorySize, 128);
+assert.equal(notifier.Timeout, 10);
+assert.equal(notifier.ReservedConcurrentExecutions, 1);
+assert.equal((notifier.TracingConfig as { Mode: string }).Mode, "Active");
+for (const [, group] of of("AWS::Logs::LogGroup"))
+  assert.equal(group.Properties!.RetentionInDays, 90);
+for (const [, resource] of entries) {
+  const tags = resource.Properties?.Tags;
+  if (Array.isArray(tags))
+    assert(
+      tags.some(
+        (x: { Key: string; Value: string }) =>
+          x.Key === "project_name" && x.Value === "prism-assessment",
+      ),
+    );
+}
+assert.equal(of("AWS::CloudWatch::Dashboard").length, 1);
 assert(!entries.some(([, r]) => r.Type.startsWith("AWS::ECR::")));
 for (const [k, v] of Object.entries({
-  Region: "us-east-1",
+  Region: "us-east-2",
   Stage: "local",
   SourceHead: packageReport.identity.head,
   SourceTree: packageReport.identity.tree,
@@ -132,7 +154,7 @@ for (const behavior of [
   });
 
 assert.equal(of("AWS::DynamoDB::Table").length, 1);
-assert.equal(of("AWS::SecretsManager::Secret").length, 1);
+assert.equal(of("AWS::SecretsManager::Secret").length, 2);
 assert(of("AWS::CloudWatch::Alarm").length >= 4);
 for (const [, bucket] of of("AWS::S3::Bucket")) {
   const p = bucket.Properties!;
@@ -162,7 +184,7 @@ assert(actions.includes("s3:GetObject"));
 const env = (lambda.Environment as { Variables: Record<string, string> })
   .Variables;
 assert.equal(env.PRISM_DATA_MODE, "real");
-assert.equal(env.PRISM_DEPLOY_REGION, "us-east-1");
+assert.equal(env.PRISM_DEPLOY_REGION, "us-east-2");
 assert.equal(
   env.PRISM_SNAPSHOT_MANIFEST_SHA256,
   APPROVED_PUBLIC_MANIFEST_SHA256,
@@ -201,7 +223,7 @@ execFileSync(
 );
 const optional = JSON.parse(
   await readFile(
-    "data/cdk-protected-map-check/PrismOracleReview.template.json",
+    "data/cdk-protected-map-check/PrismOracleAssessmentReview.template.json",
     "utf8",
   ),
 ) as typeof t;
@@ -226,7 +248,9 @@ assert(
   ),
 );
 const protectedLambda = optionalResources.find(
-  (r) => r.Type === "AWS::Lambda::Function",
+  (r) =>
+    r.Type === "AWS::Lambda::Function" &&
+    r.Properties?.Handler === "index.handler",
 )!;
 assert.equal(
   (
@@ -244,7 +268,7 @@ assert.throws(() =>
       stdio: "pipe",
       env: {
         ...localEnv,
-        CDK_CONTEXT_JSON: JSON.stringify({ deploymentRegion: "us-east-2" }),
+        CDK_CONTEXT_JSON: JSON.stringify({ deploymentRegion: "us-east-1" }),
       },
     },
   ),
@@ -259,7 +283,7 @@ await writeFile(
     version: 1,
     observedAt: new Date().toISOString(),
     accountId: "234567890123",
-    region: "us-east-1",
+    region: "us-east-2",
     concurrentExecutions: 10,
     unreservedConcurrentExecutions: 10,
     totalFunctionCount: 0,
@@ -292,15 +316,21 @@ try {
   );
   const shared = JSON.parse(
     await readFile(
-      "data/cdk-shared-account-check/PrismOracleReview.template.json",
+      "data/cdk-shared-account-check/PrismOracleAssessmentReview.template.json",
       "utf8",
     ),
   ) as typeof t;
   const sharedFunction = Object.values(shared.Resources).find(
-    (r) => r.Type === "AWS::Lambda::Function",
+    (r) =>
+      r.Type === "AWS::Lambda::Function" &&
+      r.Properties?.Handler === "index.handler",
   )!.Properties!;
   assert(!Object.hasOwn(sharedFunction, "ReservedConcurrentExecutions"));
   assert.equal(sharedFunction.MemorySize, 3008);
+  for (const r of Object.values(shared.Resources).filter(
+    (r) => r.Type === "AWS::Lambda::Function",
+  ))
+    assert(!Object.hasOwn(r.Properties!, "ReservedConcurrentExecutions"));
   const sharedStage = Object.values(shared.Resources).find(
     (r) => r.Type === "AWS::ApiGatewayV2::Stage",
   )!.Properties!;
@@ -332,8 +362,12 @@ const report = {
     errorAndLatencyAlarms: true,
     noSourceOrModelPrivileges: true,
     noCloudAuthBypass: true,
-    noBootstrapAssetsOrEcr: true,
-    explicitMeasuredS3Archive: true,
+    defaultSynthesizerBootstrapAsset: true,
+    exactMeasuredLocalArchive: true,
+    powertoolsEnvironmentNoEventCapture: true,
+    activeTracingAnd90DayLogs: true,
+    exactProjectNameTags: true,
+    dashboardAndAlarmNotifier: true,
     singleRegionAndSourceBinding: true,
     protectedExactCompanionSeparateBucket: true,
     optionalMapExactOriginActionExpiryNoKeyOutput: true,
@@ -350,7 +384,7 @@ const report = {
   allowActions: actions,
   limitations: [
     "Synthesis and policy assertions are local; no account permission or deployed service proof.",
-    "Local synthesis uses a task-named placeholder asset bucket and no account pin; guarded staging deployment requires the exact private account/bucket and clean measured staging archive.",
+    "Local synthesis uses the standard task-qualified bootstrap asset references without lookups. Guarded review deployment requires the exact private account/bootstrap bucket and clean measured review archive.",
   ],
 };
 if (process.env.PRISM_CDK_EVIDENCE)

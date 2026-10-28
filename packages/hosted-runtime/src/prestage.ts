@@ -27,8 +27,8 @@ export function validatePrestageBindings(
   if (
     !existing ||
     !existing.outputs ||
-    existing.outputs.Region !== "us-east-1" ||
-    existing.outputs.Stage !== "p3-review" ||
+    existing.outputs.Region !== "us-east-2" ||
+    existing.outputs.Stage !== "review" ||
     !Array.isArray(existing.resources) ||
     existing.resources.length > 100
   )

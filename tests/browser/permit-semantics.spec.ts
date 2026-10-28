@@ -120,7 +120,7 @@ test("synthetic responses exercise real-view issued, contractor and reported-sal
   );
   expect(requests.at(-1)?.permitStatus).toBe("unknown");
   await expect(page.locator("tbody")).toContainText("Status unknown");
-  await expect(page.locator("footer")).toContainText("P5");
+  await expect(page.locator("footer")).toContainText("Assessment");
   await page.getByLabel("Latest reported sale older than (years)").fill("10");
   await page.getByRole("button", { name: "Run query", exact: true }).click();
   await expect(page.locator(".query-panel")).toHaveAttribute(

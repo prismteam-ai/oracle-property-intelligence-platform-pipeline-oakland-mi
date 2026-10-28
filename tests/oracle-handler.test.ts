@@ -39,7 +39,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
   const health = await api(request);
   expect(health.statusCode).toBe(200);
   expect(JSON.parse(health.body)).toMatchObject({
-    region: "us-east-1",
+    region: "us-east-2",
     stage: "local",
     contractVersion: CONTRACT_VERSION,
     dataMode: "synthetic",

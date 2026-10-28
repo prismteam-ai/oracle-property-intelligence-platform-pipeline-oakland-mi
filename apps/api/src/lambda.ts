@@ -16,6 +16,11 @@ import { secretAccessProvider } from "../../../packages/hosted-runtime/src/secre
 import { DynamoQuotaStore } from "../../../packages/hosted-runtime/src/quota.ts";
 import { prepareSnapshotCache } from "../../../packages/hosted-runtime/src/snapshot-cache.ts";
 import { createApi, type ApiRequest } from "./handler.ts";
+import {
+  telemetry,
+  operationForPath,
+} from "../../../packages/hosted-runtime/src/observability.ts";
+export { alertHandler } from "../../../packages/hosted-runtime/src/alerts.ts";
 interface V2Event {
   version: string;
   rawPath: string;
@@ -53,6 +58,7 @@ async function runtime() {
     await preparePrivateCache(base.snapshotId);
   }
   const snapshot = await createActiveSnapshot();
+  telemetry.snapshot(snapshot.count, snapshot.addressCount);
   if (process.env.PRISM_RUNTIME_EMULATION === "1")
     return createApi({
       snapshot,
@@ -93,6 +99,11 @@ async function runtime() {
   });
 }
 export async function handler(event: V2Event) {
+  return telemetry.observe(operationForPath(event.rawPath ?? ""), () =>
+    handle(event),
+  );
+}
+async function handle(event: V2Event) {
   if (event.version !== "2.0")
     return {
       statusCode: 400,

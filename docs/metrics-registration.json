@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "status": "EXTERNAL_ORGANIZATION_DEPENDENCY_BLOCKED",
+  "externalRegistrationApplied": false,
+  "externalRepository": null,
+  "namespace": "PrismAssessment",
+  "region": "us-east-2",
+  "environment": "review",
+  "services": ["prism-oracle-review", "prism-oracle-alerts"],
+  "dimensions": ["service"],
+  "metrics": [
+    "RequestCount",
+    "RequestLatency",
+    "RequestError",
+    "AuthFailure",
+    "RateLimitFailure",
+    "QueryLatency",
+    "QueryResultCount",
+    "SnapshotValidated",
+    "SnapshotUnavailable",
+    "SourceCoverageProperties",
+    "SourceCoverageAddresses"
+  ],
+  "dashboard": "prism-oracle-assessment-review",
+  "alarmCount": 5,
+  "owner": "candidate-controlled-assessment",
+  "registrationInstructions": "Map these exact names to the organization registry after its repository/schema/access is supplied. This source file is a prepared registration specification, not a claim of internal deployment.",
+  "privacy": "No dynamic property/session/person identifiers or source/model text in dimensions or payloads.",
+  "sourceFreshnessLimitation": "Coverage counts describe the validated loaded snapshot. Source observation timestamps stay in coverage/run receipts; no universal current-source freshness metric is fabricated."
+}

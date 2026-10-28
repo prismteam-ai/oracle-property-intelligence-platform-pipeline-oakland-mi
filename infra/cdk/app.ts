@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
   STAGING_REGION,
+  BOOTSTRAP_QUALIFIER,
   validatedRegion,
   APPROVED_PUBLIC_MANIFEST_SHA256,
   APPROVED_PRIVATE_MANIFEST_SHA256,
@@ -20,9 +21,16 @@ import {
   RemovalPolicy,
   Duration,
   Size,
-  BootstraplessSynthesizer,
+  DefaultStackSynthesizer,
 } from "aws-cdk-lib";
-import { Runtime, Function, Code, Architecture } from "aws-cdk-lib/aws-lambda";
+import {
+  Runtime,
+  Function,
+  Code,
+  Architecture,
+  Tracing,
+} from "aws-cdk-lib/aws-lambda";
+import { assessmentObservability } from "./observability.ts";
 import { HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import {
@@ -78,7 +86,7 @@ const memoryMiB = 3008;
 const stage = String(
   app.node.tryGetContext("stage") ?? process.env.PRISM_RELEASE_STAGE ?? "local",
 );
-if (!["local", "p3-review"].includes(stage))
+if (!["local", "review"].includes(stage))
   throw new Error("Unrecognized deployment stage");
 const account =
   app.node.tryGetContext("deploymentAccount") ??
@@ -101,7 +109,7 @@ const archive = readFileSync("oracle-lambda.zip"),
 if (report.zipSha256 !== archiveDigest)
   throw new Error("Measured Lambda ZIP changed before synthesis");
 if (
-  stage === "p3-review" &&
+  stage === "review" &&
   (report.identity?.stage !== stage ||
     report.identity?.region !== region ||
     report.identity?.sourceDirty ||
@@ -110,29 +118,21 @@ if (
   throw new Error(
     "Staging synthesis requires a clean measured staging build and private account pin",
   );
-const assetBucketName = String(
-    app.node.tryGetContext("deploymentAssetBucket") ??
-      process.env.PRISM_DEPLOY_ASSET_BUCKET ??
-      "prism-p3-local-synth-assets",
-  ),
-  assetPrefix = String(
-    app.node.tryGetContext("deploymentAssetPrefix") ?? "prism-p3/oracle/",
-  );
-if (
-  assetPrefix !== "prism-p3/oracle/" ||
-  !/^prism-p3-[a-z0-9][a-z0-9.-]{1,52}[a-z0-9]$/.test(assetBucketName)
-)
-  throw new Error("Exact task asset namespace required");
-const stack = new Stack(app, "PrismOracleReview", {
+const stack = new Stack(app, "PrismOracleAssessmentReview", {
   env: { region, ...(account ? { account: String(account) } : {}) },
-  synthesizer: new BootstraplessSynthesizer(),
+  synthesizer: new DefaultStackSynthesizer({ qualifier: BOOTSTRAP_QUALIFIER }),
   description:
     "Bounded evaluator read plane; deployment status is verified through hosted evidence",
 });
-Tags.of(stack).add("Project", "prism-assessment");
-Tags.of(stack).add("Phase", "P3");
-Tags.of(stack).add("Stage", stage);
-Tags.of(stack).add("Retention", "human-reviewed-14-day-window");
+for (const [key, value] of Object.entries({
+  project_name: "prism-assessment",
+  repository: "oracle",
+  service: "oracle",
+  environment: stage,
+  purpose: "candidate-assessment",
+  retention: "human-reviewed",
+}))
+  Tags.of(stack).add(key, value);
 const prefix = String(
     app.node.tryGetContext("snapshotPrefix") ??
       "accepted/oakland-real-ad414e5e71b11e3359ab/",
@@ -148,11 +148,6 @@ if (
   throw new Error(
     "The review requires the exact verified working public snapshot",
   );
-const assetBucket = Bucket.fromBucketName(
-  stack,
-  "ExplicitDeploymentAssets",
-  assetBucketName,
-);
 const site = new Bucket(stack, "StaticSite", {
   blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
   encryption: BucketEncryption.S3_MANAGED,
@@ -218,7 +213,7 @@ const access = new Secret(stack, "ReviewAccess", {
 });
 access.applyRemovalPolicy(RemovalPolicy.RETAIN);
 const logs = new LogGroup(stack, "ApiLogs", {
-  retention: RetentionDays.TWO_WEEKS,
+  retention: RetentionDays.THREE_MONTHS,
   removalPolicy: RemovalPolicy.RETAIN,
 });
 const runtimeRole = new Role(stack, "ReadApiRole", {
@@ -229,10 +224,7 @@ const handler = new Function(stack, "ReadApi", {
   runtime: Runtime.NODEJS_24_X,
   architecture: Architecture.X86_64,
   handler: "index.handler",
-  code: Code.fromBucket(
-    assetBucket,
-    `${assetPrefix}lambda/${archiveDigest}.zip`,
-  ),
+  code: Code.fromAsset("oracle-lambda.zip"),
   role: runtimeRole,
   memorySize: memoryMiB,
   ephemeralStorageSize: Size.gibibytes(4),
@@ -241,6 +233,7 @@ const handler = new Function(stack, "ReadApi", {
     ? {}
     : { reservedConcurrentExecutions: capacity.reservedConcurrentExecutions }),
   logGroup: logs,
+  tracing: Tracing.ACTIVE,
   environment: {
     PRISM_DATA_MODE: "real",
     PRISM_SNAPSHOT_BUCKET: snapshots.bucketName,
@@ -258,6 +251,11 @@ const handler = new Function(stack, "ReadApi", {
       app.node.tryGetContext("mcpAllowedOrigins") ?? "",
     ),
     MODEL_INFERENCE: "disabled",
+    POWERTOOLS_SERVICE_NAME: "prism-oracle-review",
+    POWERTOOLS_METRICS_NAMESPACE: "PrismAssessment",
+    POWERTOOLS_LOGGER_LOG_EVENT: "false",
+    POWERTOOLS_TRACER_CAPTURE_RESPONSE: "false",
+    POWERTOOLS_TRACER_CAPTURE_ERROR: "false",
     ...(privateSnapshots
       ? {
           PRISM_ENABLE_PROTECTED_VIEW: "1",
@@ -369,8 +367,9 @@ if (enableMap) {
       "Map key requires the exact CRM CloudFront origin and finite <=14-day expiry",
     );
   const key = new CfnAPIKey(stack, "ReviewLocationBrowserKey", {
-    keyName: "prism-p3-review-map",
-    description: "Restricted P3 Standard map browser key; value stays private",
+    keyName: "prism-review-map",
+    description:
+      "Restricted assessment Standard map browser key; value stays private",
     expireTime: expires,
     restrictions: {
       allowActions: ["geo-maps:GetTile"],
@@ -382,9 +381,9 @@ if (enableMap) {
   });
   key.applyRemovalPolicy(RemovalPolicy.RETAIN);
   new CfnOutput(stack, "LocationMapKeyArn", { value: key.attrKeyArn });
-  new CfnOutput(stack, "LocationMapKeyName", { value: "prism-p3-review-map" });
+  new CfnOutput(stack, "LocationMapKeyName", { value: "prism-review-map" });
 }
-handler
+const errors = handler
   .metricErrors({ period: Duration.minutes(5) })
   .createAlarm(stack, "ApiErrors", {
     threshold: 5,
@@ -392,21 +391,21 @@ handler
     comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: TreatMissingData.NOT_BREACHING,
   });
-handler
+const throttles = handler
   .metricThrottles({ period: Duration.minutes(5) })
   .createAlarm(stack, "ApiThrottles", {
     threshold: 5,
     evaluationPeriods: 1,
     treatMissingData: TreatMissingData.NOT_BREACHING,
   });
-api
+const serverErrors = api
   .metricServerError({ period: Duration.minutes(5) })
   .createAlarm(stack, "HttpServerErrors", {
     threshold: 5,
     evaluationPeriods: 1,
     treatMissingData: TreatMissingData.NOT_BREACHING,
   });
-api
+const latency = api
   .metricIntegrationLatency({ period: Duration.minutes(5), statistic: "p95" })
   .createAlarm(stack, "HttpLatency", {
     threshold: 25000,
@@ -415,7 +414,7 @@ api
   });
 new StringParameter(stack, "ReviewRetention", {
   stringValue:
-    "Review resources retained for a 14-day evaluator window; extend while active; destroy requires explicit operator approval. Session1h, quota1day grace, logs14days.",
+    "Review resources retained through active evaluation; destroy requires explicit operator approval. Session1h, quota1day grace, logs90days.",
   description:
     "Human retention policy; no automatic deletion of active evaluator data",
 });
@@ -467,5 +466,14 @@ new CfnOutput(stack, "ReviewTableArn", { value: table.tableArn });
 new CfnOutput(stack, "RuntimeFunctionName", { value: handler.functionName });
 new CfnOutput(stack, "HttpApiId", { value: api.httpApiId });
 new CfnOutput(stack, "HttpApiStageName", { value: "$default" });
+assessmentObservability({
+  stack,
+  api: handler,
+  code: Code.fromAsset("oracle-lambda.zip"),
+  alarms: [errors, throttles, serverErrors, latency],
+  pagerDutyEnabled: app.node.tryGetContext("enablePagerDuty") === "true",
+  reservedMode: capacity.mode === "reserved",
+});
+new CfnOutput(stack, "BootstrapQualifier", { value: BOOTSTRAP_QUALIFIER });
 
 app.synth();

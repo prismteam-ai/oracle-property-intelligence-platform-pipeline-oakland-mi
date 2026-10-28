@@ -101,7 +101,7 @@ export async function authenticatedSmoke(
     const initialized = await rpc(1, "initialize", {
       protocolVersion: "2025-11-25",
       capabilities: {},
-      clientInfo: { name: "prism-p3-bounded-smoke", version: "1" },
+      clientInfo: { name: "prism-review-bounded-smoke", version: "1" },
     });
     if (!initialized.protocolVersion)
       throw new Error("MCP initialization missing");

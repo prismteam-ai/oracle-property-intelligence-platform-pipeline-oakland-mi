@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, copyFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, test } from "vitest";
@@ -223,4 +223,66 @@ test("frozen murmurhash README license section is copied exactly with provenance
     sha256: createHash("sha256").update(section).digest("hex"),
     sourcePackage: "murmurhash-js@1.0.0",
   });
+});
+test("exact Powertools omission uses hash-pinned upstream MIT-0 and rejects changed license bytes", async () => {
+  const root = await fixture();
+  const module = await pkg(root, "@aws-lambda-powertools/logger", "MIT-0", {});
+  await writeFile(
+    path.join(path.dirname(module), "package.json"),
+    JSON.stringify({
+      name: "@aws-lambda-powertools/logger",
+      version: "2.36.0",
+      license: "MIT-0",
+    }),
+  );
+  await mkdir(path.join(root, "third-party/licenses"), { recursive: true });
+  const destination = path.join(
+    root,
+    "third-party/licenses/powertools-2.36.0-LICENSE.txt",
+  );
+  await copyFile(
+    new URL(
+      "../third-party/licenses/powertools-2.36.0-LICENSE.txt",
+      import.meta.url,
+    ),
+    destination,
+  );
+  const result = await collectThirdPartyNotices({ root, modules: [module] });
+  expect(result.manifest).toContain(
+    "aws-powertools/powertools-lambda-typescript@0595159ed90c72cc9a004a98923b9778b876726a",
+  );
+  await writeFile(destination, "substituted license");
+  await expect(
+    collectThirdPartyNotices({ root, modules: [module] }),
+  ).rejects.toThrow("upstream MIT-0 text differs");
+});
+test("emitter omission is explicitly a standard SPDX template, never a fabricated recovered copyright", async () => {
+  const root = await fixture();
+  const module = await pkg(root, "emitter-listener", "BSD-2-Clause", {});
+  await writeFile(
+    path.join(path.dirname(module), "package.json"),
+    JSON.stringify({
+      name: "emitter-listener",
+      version: "1.1.2",
+      license: "BSD-2-Clause",
+      author: "Synthetic fixture author",
+    }),
+  );
+  await mkdir(path.join(root, "third-party/licenses"), { recursive: true });
+  await copyFile(
+    new URL(
+      "../third-party/licenses/emitter-listener-1.1.2-SPDX-BSD-2-Clause.txt",
+      import.meta.url,
+    ),
+    path.join(
+      root,
+      "third-party/licenses/emitter-listener-1.1.2-SPDX-BSD-2-Clause.txt",
+    ),
+  );
+  const result = await collectThirdPartyNotices({ root, modules: [module] });
+  expect(result.notices).toContain("<year> <owner>");
+  expect(result.notices).toContain("not a recovered upstream copyright notice");
+  expect(
+    JSON.parse(result.manifest).packages[0].licenseTextDisclosure,
+  ).toContain("placeholders unchanged");
 });

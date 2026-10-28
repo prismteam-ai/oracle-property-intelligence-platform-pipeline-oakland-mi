@@ -17,3 +17,4 @@ private/
 *.log
 dist-lambda/
 oracle-lambda.zip
+ci-results/

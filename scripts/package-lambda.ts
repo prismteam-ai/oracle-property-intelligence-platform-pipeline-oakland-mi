@@ -31,7 +31,7 @@ const root = process.cwd(),
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 const stage = process.env.PRISM_RELEASE_STAGE ?? "local";
-if (stage !== "local" && stage !== "p3-review")
+if (stage !== "local" && stage !== "review")
   throw new Error("Unknown release stage");
 const identity = runtimeIdentity(
   "oracle",
