@@ -1,6 +1,7 @@
 import type { RuntimeIdentity } from "../packages/hosted-runtime/src/release.ts";
 import { sourceIdentity } from "../packages/hosted-runtime/src/source-identity.ts";
 import { validatePrivateManifest } from "../packages/hosted-runtime/src/private-cache.ts";
+import { privateEmulationEnvironment } from "../packages/hosted-runtime/src/private-emulation-env.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile, mkdtemp, rm, mkdir } from "node:fs/promises";
@@ -120,17 +121,9 @@ if (privateDirectory) {
       createHash("sha256").update(bytes).digest("hex") !== f.sha256
     )
       throw new Error("Private emulation integrity failure");
-    const variable =
-      f.role === "owner"
-        ? "PRISM_OWNER_DERIVATIVES"
-        : "PRISM_PRIVATE_ENRICHMENT";
-    args.push(
-      "-e",
-      `${variable}=/protected/${f.name}`,
-      "-e",
-      `${variable}_SHA256=${f.sha256}`,
-    );
   }
+  for (const [name, value] of Object.entries(privateEmulationEnvironment(raw)))
+    args.push("-e", `${name}=${value}`);
 }
 args.push(image, "index.handler");
 let id: string;
