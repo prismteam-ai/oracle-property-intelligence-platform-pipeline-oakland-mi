@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 export const STAGING_REGION = "us-east-1" as const;
 export const STAGING_STAGE = "p3-review" as const;
 export const APPROVED_PUBLIC_MANIFEST_SHA256 =
-  "777885ed0bbbf317b457ab4394155da875313fab01516f86b25c3b51008c50b4";
+  "0ea109aae29cb7739ec166cddbb36782c170ef18ce97ef3b525ca9d7e50e7422";
 export const APPROVED_PRIVATE_MANIFEST_SHA256 =
-  "6b2f332e18b73637e279f0c6661ea970565f332346b0f24f9911d7b38de1cdc9";
+  "8e66f2393472e83af2c99aeef15f1cd58e4929d387fc989a2e0fa8ae4ba6babc";
 export interface SourceIdentity {
   head: string;
   tree: string;
@@ -70,7 +70,7 @@ export function validateReleasePins(p: ReleasePins): ReleasePins {
       p.privateManifestSha256 !== APPROVED_PRIVATE_MANIFEST_SHA256)
   )
     throw new Error(
-      "Only the exact accepted P2 public/protected manifests are authorized",
+      "Only the exact reviewed P4 public/protected manifests are authorized",
     );
   if (
     !/^prism-p3-[a-z0-9][a-z0-9.-]{1,52}[a-z0-9]$/.test(p.assetBucket) ||

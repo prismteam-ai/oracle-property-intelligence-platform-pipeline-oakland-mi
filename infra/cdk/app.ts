@@ -133,17 +133,19 @@ Tags.of(stack).add("Stage", stage);
 Tags.of(stack).add("Retention", "human-reviewed-14-day-window");
 const prefix = String(
     app.node.tryGetContext("snapshotPrefix") ??
-      "accepted/oakland-real-71c0ba7aafadd0e4301b/",
+      "accepted/oakland-real-e08111dc398302e141d3/",
   ),
   manifestDigest = String(
     app.node.tryGetContext("snapshotManifestSha256") ??
       APPROVED_PUBLIC_MANIFEST_SHA256,
   );
 if (
-  prefix !== "accepted/oakland-real-71c0ba7aafadd0e4301b/" ||
+  prefix !== "accepted/oakland-real-e08111dc398302e141d3/" ||
   manifestDigest !== APPROVED_PUBLIC_MANIFEST_SHA256
 )
-  throw new Error("P3 preserves the exact accepted public baseline");
+  throw new Error(
+    "P4 requires the exact independently verified refreshed public baseline",
+  );
 const assetBucket = Bucket.fromBucketName(
   stack,
   "ExplicitDeploymentAssets",
@@ -158,12 +160,12 @@ const site = new Bucket(stack, "StaticSite", {
 const enablePrivate = app.node.tryGetContext("enableProtectedView") === "true",
   privatePrefix = String(
     app.node.tryGetContext("privateSnapshotPrefix") ??
-      "operational/oakland-real-71c0ba7aafadd0e4301b/",
+      "operational/oakland-real-e08111dc398302e141d3/",
   ),
   privateDigest = String(app.node.tryGetContext("privateManifestSha256") ?? "");
 if (
   enablePrivate &&
-  (privatePrefix !== "operational/oakland-real-71c0ba7aafadd0e4301b/" ||
+  (privatePrefix !== "operational/oakland-real-e08111dc398302e141d3/" ||
     !/^[a-f0-9]{64}$/.test(privateDigest) ||
     privateDigest !== APPROVED_PRIVATE_MANIFEST_SHA256)
 )
@@ -432,3 +434,7 @@ new CfnOutput(stack, "AccessSecretArn", { value: access.secretArn });
 new CfnOutput(stack, "ReviewTable", { value: table.tableName });
 new CfnOutput(stack, "ReviewTableArn", { value: table.tableArn });
 app.synth();
+
+new CfnOutput(stack, "RuntimeFunctionName", { value: handler.functionName });
+new CfnOutput(stack, "HttpApiId", { value: api.httpApiId });
+new CfnOutput(stack, "HttpApiStageName", { value: "$default" });

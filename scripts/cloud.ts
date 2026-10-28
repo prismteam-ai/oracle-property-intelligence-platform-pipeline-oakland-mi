@@ -323,6 +323,52 @@ const assertDeployed = (o: Record<string, string>) => {
       o.ConcurrencyProofSha256 !== capacityProof.sha256)
   )
     throw new Error("Deployed stack does not match the exact approved release");
+  if (
+    !/^PrismOracleReview-ReadApiB934CF2C-[A-Za-z0-9]+$/.test(
+      o.RuntimeFunctionName ?? "",
+    ) ||
+    !/^[a-z0-9]{1,20}$/.test(o.HttpApiId ?? "") ||
+    o.HttpApiStageName !== "$default"
+  )
+    throw new Error("Exact task runtime/API output binding missing");
+  const actualFunction = JSON.parse(
+    aws([
+      "lambda",
+      "get-function-configuration",
+      "--function-name",
+      o.RuntimeFunctionName!,
+    ]),
+  );
+  const actualReservation = JSON.parse(
+    aws([
+      "lambda",
+      "get-function-concurrency",
+      "--function-name",
+      o.RuntimeFunctionName!,
+    ]),
+  );
+  const actualStage = JSON.parse(
+    aws([
+      "apigatewayv2",
+      "get-stage",
+      "--api-id",
+      o.HttpApiId!,
+      "--stage-name",
+      "$default",
+    ]),
+  );
+  if (
+    actualFunction.FunctionArn !==
+      `arn:aws:lambda:${pins.region}:${pins.expectedAccountId}:function:${o.RuntimeFunctionName}` ||
+    actualFunction.MemorySize !== 3008 ||
+    (actualReservation.ReservedConcurrentExecutions ?? null) !==
+      capacity.reservedConcurrentExecutions ||
+    actualStage.StageName !== "$default" ||
+    actualStage.DefaultRouteSettings?.ThrottlingRateLimit !==
+      capacity.apiRatePerSecond ||
+    actualStage.DefaultRouteSettings?.ThrottlingBurstLimit !== capacity.apiBurst
+  )
+    throw new Error("Actual runtime capacity differs from reviewed release");
 };
 const step = async (name: string, operation: () => Promise<void> | void) => {
   if (receipt.steps.includes(name)) return;
@@ -445,6 +491,7 @@ try {
       deploymentAssetBucket: pins.assetBucket,
       deploymentAssetPrefix: pins.assetPrefix,
       snapshotManifestSha256: pins.publicManifestSha256,
+      snapshotPrefix: `accepted/${verified.manifest.snapshotId}/`,
       ...(privateInput
         ? {
             enableProtectedView: "true",
