@@ -45,3 +45,28 @@ There are 3,746 labeled Owner observations across 1,884 properties, with a maxim
 of 103 per property. All raw-to-typed owner comparisons matched; seven earlier
 v5 data files remain byte-identical. These are source-preparation measurements;
 only final release-bound hosted receipts establish deployment status.
+
+The private v7 extension retains all eight v6 data files byte for byte and adds
+one official Troy Real Property Assessing Report case observed through the normal
+public UI. All 39 displayed fields remain in its protected source table, with
+manual-transcription provenance; there is no captured server body or bulk-source
+claim. Explicit Owner Name 1/2 and Owner mailing fields are private observations,
+with no known ownership-effective date or related permit event. These fields
+remain excluded from model input and public publication.
+
+This assessment association uses one exact normalized printed parcel number and
+exact CITY OF TROY jurisdiction. Source and county street text differ: no number-
+word/suffix equivalence or fuzzy address match is asserted. The source association
+is medium confidence and does not verify a building, unit, roof, residence or
+current legal ownership. Owner and roof views retain that limitation. The
+separate owner-mailing-to-site comparison stays unknown. A reported Owner State
+of MI supplies one spatially usable regional/in-state mailing observation with
+source provenance, not a county-local or residence conclusion.
+
+The source commercial-building summary year 2022 adds one low-confidence
+building-year proxy. The raw slash-formatted sale string in 2012 has no observed format label:
+the normalized sale date remains null, and the raw source value is retained. It
+cannot prove uninterrupted tenure; the source also describes a later parcel split.
+The local v7 proof reconciles 3,747 owner observations (3,746 prior Rochester
+observations unchanged) and 39,282 normalized permit observations unchanged.
+One current source case is not municipal coverage or evidence of source exhaustion.

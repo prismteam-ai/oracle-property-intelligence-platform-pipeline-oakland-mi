@@ -20,7 +20,9 @@ it("requires all seven v5 roles and pins municipal proof metadata and bounded in
       ["source-intake", "private-source-intake.parquet"],
     ].map(([role, name]) => ({ role, name, bytes: 1, sha256: "b".repeat(64) })),
     ...Object.entries(FULL_SOURCE_DEFINITIONS)
-      .filter(([role]) => role !== "rochester-source")
+      .filter(
+        ([role]) => !["rochester-source", "assessment-source"].includes(role),
+      )
       .map(([role, d]) => ({
         role,
         name: d.name,

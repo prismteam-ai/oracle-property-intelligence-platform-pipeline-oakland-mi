@@ -1,12 +1,16 @@
 {
   "version": "0.4.0",
-  "sha256": "64177d6d301d67f77602ad1a378b945447992cbd52b8d092a875cbb569e8970e",
+  "sha256": "4d8d8016dd7af34c799375711bd7d6770c010fcc3ac74e540b0afdfebebed28e",
   "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts/src/index.ts",
   "generatedConsumer": "roofing-crm/packages/contracts/src/index.ts",
-  "frozen_utc": "2026-10-28T07:54:51.285098+00:00",
+  "frozen_utc": "2026-10-28T08:27:51.649620+00:00",
   "prior_version": "0.3.0",
   "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
-  "revision_reason": "Finalize the unreleased P5 0.4.0 contract before its first deployment: optional source-labeled owner observations carry unknown effective date, unverified role and separate issued/applied event. Public run4 wire fields and immutable bytes stay unchanged.",
+  "revision_reason": "Finalize unreleased P5 0.4.0 before first deployment with source-exact Owner/Owner Name1/2 observations, nullable related permit event, optional reported mailing fields and postal-state provenance. The added single official UI transcription remains explicitly partial and does not prove tenure. Public immutable wire bytes stay unchanged.",
   "queryPredicateSha256": "0cd980a0c52997ae70d8ed79d03ba8475254bfb9312ad550c29373e037324401",
-  "superseded_unreleased_p5_draft_sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c"
+  "superseded_unreleased_p5_draft_sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
+  "superseded_unreleased_p5_drafts": [
+    "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
+    "64177d6d301d67f77602ad1a378b945447992cbd52b8d092a875cbb569e8970e"
+  ]
 }

@@ -39,6 +39,7 @@ import {
   type FullSourceConfig,
   type FullSourceAudit,
 } from "../../county/src/private-full-source.ts";
+import { projectAssessmentRow } from "../../county/src/private-assessment.ts";
 import { normalizeTroyAddress } from "../../county/src/troy.ts";
 import { projectRochesterReportRow } from "../../county/src/private-rochester.ts";
 const CORE_FILES = [
@@ -256,16 +257,18 @@ export class RealSnapshot {
       ...fullSourceAudits.map((audit) => ({
         source: FULL_SOURCE_DEFINITIONS[audit.role].title,
         scope:
-          audit.role === "rochester-source"
-            ? "All records in the twelve acquired April–September 2026 issued/applied building reports; source has no point geometry"
-            : FULL_SOURCE_DEFINITIONS[audit.role].geometryIncluded
-              ? "Complete observed source attributes and point geometry retained in protected working views"
-              : "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
+          audit.role === "assessment-source"
+            ? "All39 observed fields from one normal official Troy real-property UI case, retained as a private manual transcription; no bulk or server-body capture"
+            : audit.role === "rochester-source"
+              ? "All records in the twelve acquired April–September 2026 issued/applied building reports; source has no point geometry"
+              : FULL_SOURCE_DEFINITIONS[audit.role].geometryIncluded
+                ? "Complete observed source attributes and point geometry retained in protected working views"
+                : "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
         state: "source_retained_private",
         count: audit.records,
         limitations: [
           "Full raw source records are excluded from Property responses, agent/model input and public publication. Explicitly typed owner/report observations may appear in authenticated Property responses; owner names remain excluded from model input.",
-          "Source name/party fields do not establish verified ownership, contractor role or tenure.",
+          "Source name/party fields do not establish verified ownership, contractor role or tenure. Explicit Owner State supports only a reported mailing-state derivative, not residence or county-local identity.",
           "All JSON keys/types/digests were validated offline against the pinned source schema and file hash; runtime checks metadata, native IDs and non-null canonical bindings setwise.",
         ],
       })),
@@ -626,8 +629,15 @@ export class RealSnapshot {
       await db.run(
         "CREATE TABLE private_reported_owner_observations(property_id VARCHAR,source_id VARCHAR,native_id VARCHAR,canonical_json VARCHAR)",
       );
+      await db.run(
+        "CREATE TABLE private_owner_location_provenance(property_id VARCHAR,canonical_json VARCHAR)",
+      );
+      await db.run(
+        "CREATE TABLE private_assessment_match(property_id VARCHAR,caveat VARCHAR)",
+      );
       for (const config of fullSources) {
         const definition = FULL_SOURCE_DEFINITIONS[config.role];
+        let addressDisagreements = 0;
         await checkPrivate(config.file, config.sha256);
         const file = await realpath(config.file);
         await db.run(
@@ -774,6 +784,127 @@ export class RealSnapshot {
           if (Number(overflow[0]!.n))
             throw Error("Protected reported-owner property bound rejected");
         }
+        if (config.role === "assessment-source") {
+          const inputs = await (
+            await db.run(`SELECT * FROM ${definition.table} ORDER BY native_id`)
+          ).getRowObjectsJson();
+          const projections = inputs.map((candidate) =>
+            projectAssessmentRow(
+              candidate,
+              verified.manifest.snapshotId,
+              config.sourceSchemaSha256,
+            ),
+          );
+          for (const x of projections) {
+            const matches = await (
+              await db.run(
+                "SELECT p.id,p.address,a.address AS site_address FROM properties p LEFT JOIN parcel_address_links l ON l.property_id=p.id LEFT JOIN site_addresses a ON a.id=l.address_id WHERE p.pin=$pin AND p.jurisdiction_name='CITY OF TROY'",
+                { pin: x.source.normalizedCountyPin },
+              )
+            ).getRowObjectsJson();
+            const propertyIds = [...new Set(matches.map((m) => String(m.id)))];
+            const expected = propertyIds.length === 1 ? propertyIds[0] : null;
+            const sourceAddress = [
+              x.source.fields["Property Address"],
+              x.source.fields["Property Address Apt"],
+            ]
+              .filter((v) => v?.trim())
+              .join(" ");
+            if (x.row.property_id !== expected)
+              throw Error(
+                "Protected assessment exact-PIN/jurisdiction assignment rejected",
+              );
+            if (x.row.property_id === null) continue;
+            const addressAgrees = Boolean(
+              normalizeTroyAddress(sourceAddress) &&
+              matches.some((m) =>
+                [m.address, m.site_address].some(
+                  (a) =>
+                    normalizeTroyAddress(text(a)) ===
+                    normalizeTroyAddress(sourceAddress),
+                ),
+              ),
+            );
+            if (!addressAgrees) addressDisagreements++;
+            const matchCaveat = addressAgrees
+              ? "Associated by the exact unique printed parcel number and jurisdiction; normalized street address text also agrees."
+              : "Associated by the exact unique printed parcel number and jurisdiction. Source and county street address text differs; no street-number word or suffix equivalence is asserted. This is a medium-confidence source association, not verified ownership.";
+            await db.run(
+              "INSERT INTO private_assessment_match VALUES($id,$caveat)",
+              {
+                id: x.row.property_id,
+                caveat:
+                  matchCaveat +
+                  " Building summary fields relate to the parcel report; no specific building, unit or roof identity is verified.",
+              },
+            );
+            for (const owner of x.owners)
+              await db.run(
+                "INSERT INTO private_reported_owner_observations VALUES($property,$source,$native,$json)",
+                {
+                  property: x.row.property_id,
+                  source: x.row.source_id,
+                  native: x.row.native_id + ":" + owner.sourceLabel,
+                  json: JSON.stringify({
+                    ...owner,
+                    limitations: [...owner.limitations, matchCaveat],
+                  }),
+                },
+              );
+            // A missing/unrecognized new postal state must not erase an older valid observation.
+            if (x.location.ownerRegion !== "unknown") {
+              await db.run(
+                "UPDATE owner_derivatives SET owner_region=$region,location_class=$location,site_address_match=NULL,observed_at=$at,evidence_class=$class WHERE property_id=$id",
+                {
+                  region: x.location.ownerRegion,
+                  location: x.location.locationClass,
+                  at: x.location.observedAt,
+                  class: x.location.evidenceClass,
+                  id: x.row.property_id,
+                },
+              );
+              await db.run(
+                "INSERT INTO owner_derivatives(property_id,owner_region,location_class,site_address_match,observed_at,evidence_class) SELECT $id,$region,$location,NULL,$at,$class WHERE NOT EXISTS(SELECT 1 FROM owner_derivatives WHERE property_id=$id)",
+                {
+                  region: x.location.ownerRegion,
+                  location: x.location.locationClass,
+                  at: x.location.observedAt,
+                  class: x.location.evidenceClass,
+                  id: x.row.property_id,
+                },
+              );
+              await db.run(
+                "INSERT INTO private_owner_location_provenance VALUES($id,$json)",
+                {
+                  id: x.row.property_id,
+                  json: JSON.stringify(x.provenance[0]),
+                },
+              );
+            }
+            if (x.builtYear !== null || x.reportedSaleDate !== null)
+              await db.run(
+                "INSERT INTO protected_enrichment(property_id,source_id,native_id,built_year,sale_date,receipt_digest,observed_at,page,line,record_digest,public_snapshot_id) VALUES($property,$source,$native,$year,$sale,$capture,$at,NULL,NULL,$digest,$snapshot)",
+                {
+                  property: x.row.property_id,
+                  source: x.row.source_id,
+                  native: x.row.native_id,
+                  year: x.builtYear,
+                  sale: x.reportedSaleDate,
+                  capture: x.source.captureSha256,
+                  at: x.row.observed_at,
+                  digest: x.row.record_digest,
+                  snapshot: verified.manifest.snapshotId,
+                },
+              );
+          }
+          const overflow = await (
+            await db.run(
+              "SELECT count(*) AS n FROM (SELECT property_id FROM private_reported_owner_observations GROUP BY property_id HAVING count(*)>256)",
+            )
+          ).getRowObjectsJson();
+          if (Number(overflow[0]!.n))
+            throw Error("Protected reported-owner property bound rejected");
+        }
         fullSourceAudits.push({
           role: config.role,
           sourceId: definition.sourceId,
@@ -786,6 +917,13 @@ export class RealSnapshot {
           sourceValidationSha256: config.sourceValidationSha256,
           sourceValidatedOffline: true,
           rawRowsReturned: false,
+          ...(config.role === "assessment-source"
+            ? {
+                addressDisagreements,
+                matchMethod:
+                  "exact_normalized_parcel_and_jurisdiction" as const,
+              }
+            : {}),
         });
         allowedSourcePaths.push(file);
         overlayDigests.push(config.role + ":" + config.sha256);
@@ -794,7 +932,11 @@ export class RealSnapshot {
         sourceIntakeCount +
           fullSourceAudits
             .filter((audit) =>
-              ["municipal-source", "rochester-source"].includes(audit.role),
+              [
+                "municipal-source",
+                "rochester-source",
+                "assessment-source",
+              ].includes(audit.role),
             )
             .reduce((sum, audit) => sum + audit.records, 0) >
         PRIVATE_SOURCE_INTAKE_LIMIT
@@ -837,7 +979,12 @@ export class RealSnapshot {
         JSON.parse(
           await readFile(path.join(root, "runs.json"), "utf8"),
         ) as unknown[],
-        Boolean(options.protectedDerivativeFile),
+        Boolean(
+          options.protectedDerivativeFile ||
+          fullSources.some(
+            (c) => c.role === "assessment-source" && c.sourceRecordCount > 0,
+          ),
+        ),
         overlayDigests,
         permitCount,
         permitSourceCounts,
@@ -932,6 +1079,12 @@ export class RealSnapshot {
         { id },
       )
     ).getRowObjectsJson();
+    const locationProvenance = await (
+      await this.connection.run(
+        "SELECT canonical_json FROM private_owner_location_provenance WHERE property_id=$id",
+        { id },
+      )
+    ).getRowObjectsJson();
     const enrichment = await (
       await this.connection.run(
         "SELECT * FROM protected_enrichment WHERE property_id=$id ORDER BY source_id,native_id LIMIT 50",
@@ -950,15 +1103,23 @@ export class RealSnapshot {
     const privateProvenance = (e: Row) => ({
       sourceId: String(e.source_id),
       recordId:
-        String(e.native_id) +
-        ":page:" +
-        String(e.page) +
-        ":line:" +
-        String(e.line),
+        e.page != null && e.line != null
+          ? String(e.native_id) +
+            ":page:" +
+            String(e.page) +
+            ":line:" +
+            String(e.line)
+          : String(e.native_id),
       observedAt: String(e.observed_at),
       digest: String(e.record_digest),
       kind: "real-minimized" as const,
     });
+    const assessmentCaveats = await (
+      await this.connection.run(
+        "SELECT caveat FROM private_assessment_match WHERE property_id=$id",
+        { id },
+      )
+    ).getRowObjectsJson();
     const permits = await (
       await this.connection.run(
         "SELECT * FROM permits WHERE property_id=$id ORDER BY id LIMIT $bound",
@@ -999,8 +1160,8 @@ export class RealSnapshot {
         basis: builtYear === null ? "unknown" : "built_year",
         confidence: builtYear === null ? "unknown" : "low",
         asOf,
-        caveats:
-          builtYear === null
+        caveats: [
+          ...(builtYear === null
             ? [
                 builtYears.length > 1
                   ? "Conflicting source-reported built years; age remains unknown."
@@ -1009,7 +1170,9 @@ export class RealSnapshot {
             : [
                 `Source-reported building year: ${builtYear}. This is a building year proxy, not a verified roof installation year.`,
                 "Protected official assessor report year-built proxy; unobserved roof replacements may exist. Municipal redistribution rights remain unverified.",
-              ],
+              ]),
+          ...assessmentCaveats.map((c) => String(c.caveat)),
+        ],
         provenance: enrichment
           .filter((e) => e.built_year !== null)
           .map(privateProvenance),
@@ -1047,6 +1210,13 @@ export class RealSnapshot {
           ? {
               reportedOwnerObservations: reportedOwners.map(
                 (o) => JSON.parse(String(o.canonical_json)) as unknown,
+              ),
+            }
+          : {}),
+        ...(locationProvenance.length
+          ? {
+              locationProvenance: locationProvenance.map(
+                (p) => JSON.parse(String(p.canonical_json)) as unknown,
               ),
             }
           : {}),

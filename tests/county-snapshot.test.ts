@@ -42,7 +42,10 @@ import {
   syntheticProperties,
   SNAPSHOT_ID,
 } from "../packages/test-support/src/fixtures.ts";
-async function sourceFixture(jurisdiction = "Synthetic jurisdiction") {
+async function sourceFixture(
+  jurisdiction = "Synthetic jurisdiction",
+  assessmentPin?: string,
+) {
   const root = await mkdtemp(path.join(os.tmpdir(), "prism-county-"));
   const privateRoot = path.join(root, "private");
   await mkdir(privateRoot, { mode: 0o700 });
@@ -52,7 +55,12 @@ async function sourceFixture(jurisdiction = "Synthetic jurisdiction") {
       OBJECTID_12: i,
       OBJECTID: i,
       KEYPIN: i === 2 ? "0012345678" : "200" + i,
-      PIN: i === 2 ? "0012345678" : i === 1 ? "0012345678" : "2003",
+      PIN:
+        i === 2
+          ? "0012345678"
+          : i === 1
+            ? "0012345678"
+            : (assessmentPin ?? "2003"),
       REVISIONDATE: 1791806753000,
       CVTTAXCODE: "test",
       CVTTAXDESCRIPTION: jurisdiction,
@@ -72,7 +80,7 @@ async function sourceFixture(jurisdiction = "Synthetic jurisdiction") {
   const addressFeatures = [
     { id: 1, pin: "0012345678", x: -83.29, y: 42.66 },
     { id: 2, pin: "0012345678", x: -84, y: 43 },
-    { id: 3, pin: "2003", x: -83.29, y: 42.66 },
+    { id: 3, pin: assessmentPin ?? "2003", x: -83.29, y: 42.66 },
     { id: 4, pin: "unmatched", x: -83.28, y: 42.67 },
     { id: 5, pin: "0012345678", x: 999, y: 999 },
   ].map((p) => ({
@@ -1184,7 +1192,7 @@ test("protected Rochester source projects only labeled owners and issued permits
       expect(detail.ownership.reportedOwnerObservations).toHaveLength(2);
       expect(
         detail.ownership.reportedOwnerObservations!.map(
-          (x) => x.relatedPermitEvent.kind,
+          (x) => x.relatedPermitEvent?.kind,
         ),
       ).toEqual(["issued", "applied"]);
       expect(detail.ownership.lastTransferDate).toBeNull();
@@ -1242,6 +1250,155 @@ test("protected Rochester source projects only labeled owners and issued permits
         ],
       }),
     ).rejects.toThrow("reported-owner property bound");
+  } finally {
+    db.closeSync();
+    instance.closeSync();
+  }
+});
+
+test("a pinned single UI assessment preserves39rawfields and yields an actual-coordinate regional query without tenure or guessed sale date", async () => {
+  const { assessmentRow, assessmentSchema } =
+    await import("./private-assessment.fixture.ts");
+  const f = await sourceFixture("CITY OF TROY", "2000000001"),
+    out = path.join(f.root, "public"),
+    m = await buildCountySnapshot({
+      sourceManifest: f.manifest,
+      outputDir: out,
+      privateOutputDir: path.join(f.privateRoot, "owners"),
+    });
+  const instance = await DuckDBInstance.create(":memory:"),
+    db = await instance.connect();
+  const create = async (
+    row: ReturnType<typeof assessmentRow>,
+    name: string,
+  ): Promise<FullSourceConfig> => {
+    await db.run(
+      "CREATE OR REPLACE TABLE assessment(" +
+        FULL_SOURCE_COLUMNS.map((k) => k + " VARCHAR").join(",") +
+        ")",
+    );
+    await db.run(
+      "INSERT INTO assessment VALUES(" +
+        FULL_SOURCE_COLUMNS.map((_, i) => "$" + (i + 1)).join(",") +
+        ")",
+      FULL_SOURCE_COLUMNS.map((k) => row[k]),
+    );
+    const file = path.join(f.privateRoot, name);
+    await db.run(
+      `COPY assessment TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    return {
+      role: "assessment-source",
+      file,
+      sha256: sha256(await readFile(file)),
+      sourceSchemaSha256: assessmentSchema,
+      sourceRecordCount: 1,
+      sourceValidationSha256: sha256("synthetic39field-transcription-proof"),
+      sourceValidatedOffline: true,
+    };
+  };
+  try {
+    const config = await create(
+        assessmentRow(m.snapshotId),
+        "assessment.parquet",
+      ),
+      reader = await RealSnapshot.open(out, { protectedFullSources: [config] }),
+      publicReader = await RealSnapshot.open(out);
+    try {
+      const result = await reader.search({
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 1000,
+        ownerRegion: "regional",
+      });
+      expect(result.total).toBe(1);
+      expect(result.rows[0]!.id).toBe("oakland-parcel-3");
+      const detail = await reader.detail("oakland-parcel-3", reader.snapshotId);
+      expect(detail.roof).toMatchObject({
+        ageYears: 4,
+        basis: "built_year",
+        confidence: "low",
+      });
+      expect(detail.ownership.locationProvenance).toHaveLength(1);
+      expect(detail.roof.caveats.join(" ")).toContain(
+        "no specific building, unit or roof identity is verified",
+      );
+      expect(detail.ownership.reportedOwnerObservations).toHaveLength(2);
+      expect(detail.ownership.lastTransferDate).toBeNull();
+      expect(detail.ownership.events).toEqual([]);
+      expect(detail.ownership.uninterruptedTenure!.state).toBe(
+        "insufficient_history",
+      );
+      expect(detail.permits).toEqual([]);
+      expect(JSON.stringify(detail)).not.toContain("SYN_TAXPAYER_NOT_OWNER");
+      expect(JSON.stringify(detail)).not.toContain("source_record_json");
+      expect(
+        JSON.stringify(
+          await publicReader.detail(
+            "oakland-parcel-3",
+            publicReader.snapshotId,
+          ),
+        ),
+      ).not.toContain("SYN_ASSESSMENT_OWNER");
+      const conn = (reader as unknown as { connection: typeof db }).connection;
+      const raw = await (
+        await conn.run(
+          "SELECT json_extract_string(source_record_json,'$.fields.\"Taxpayer Street Addr\"') AS taxpayer FROM private_troy_assessing_ui_sources",
+        )
+      ).getRowObjectsJson();
+      expect(raw[0]!.taxpayer).toBe("SYN_TAXPAYER_NOT_OWNER");
+      await expect(
+        reader.search({
+          snapshotId: reader.snapshotId,
+          lat: 42.66,
+          lng: -83.29,
+          radiusMeters: 1000,
+          minOwnershipYears: 10,
+        }),
+      ).rejects.toThrow("Ownership tenure is unknown");
+    } finally {
+      reader.close();
+      publicReader.close();
+    }
+    const row = assessmentRow(m.snapshotId),
+      raw = JSON.parse(row.source_record_json);
+    raw.fields["Property Address"] = "Synthetic site 1";
+    row.source_record_json = JSON.stringify(raw);
+    row.record_digest = sha256(row.source_record_json);
+    const differentAddress = await RealSnapshot.open(out, {
+      protectedFullSources: [
+        await create(row, "different-assessment-address.parquet"),
+      ],
+    });
+    try {
+      const detail = await differentAddress.detail(
+        "oakland-parcel-3",
+        differentAddress.snapshotId,
+      );
+      expect(
+        detail.ownership.reportedOwnerObservations![0]!.limitations.join(" "),
+      ).toContain("street address text differs");
+      expect(differentAddress.fullSourceAudits[0]!.addressDisagreements).toBe(
+        1,
+      );
+    } finally {
+      differentAddress.close();
+    }
+    const wrong = assessmentRow(m.snapshotId),
+      wrongSource = JSON.parse(wrong.source_record_json);
+    wrongSource.normalizedCountyPin = "2000000002";
+    wrongSource.fields["Parcel Number"] = "88-20-00-000-002";
+    wrong.native_id = wrongSource.fields["Parcel Number"];
+    wrong.source_record_json = JSON.stringify(wrongSource);
+    wrong.record_digest = sha256(wrong.source_record_json);
+    await expect(
+      RealSnapshot.open(out, {
+        protectedFullSources: [
+          await create(wrong, "foreign-assessment-pin.parquet"),
+        ],
+      }),
+    ).rejects.toThrow("exact-PIN/jurisdiction");
   } finally {
     db.closeSync();
     instance.closeSync();

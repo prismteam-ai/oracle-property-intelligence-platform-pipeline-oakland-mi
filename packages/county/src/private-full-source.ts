@@ -52,6 +52,17 @@ export const FULL_SOURCE_DEFINITIONS = {
     geometryIncluded: false,
     nativeIdPattern: "[a-f0-9]{64}:row:[1-9][0-9]{0,5}",
   },
+  "assessment-source": {
+    name: "troy-assessing-ui-source.parquet",
+    sourceId: "official-troy-real-property-assessing-ui",
+    version: "official-assessing-ui-transcription-full-v1",
+    table: "private_troy_assessing_ui_sources",
+    maximum: 16,
+    title:
+      "Single observed official Troy assessment UI record, manually transcribed",
+    geometryIncluded: false,
+    nativeIdPattern: "[0-9-]{10,20}",
+  },
 } as const;
 export type FullSourceRole = keyof typeof FULL_SOURCE_DEFINITIONS;
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
@@ -62,6 +73,7 @@ const Config = z
       "county-addresses",
       "municipal-source",
       "rochester-source",
+      "assessment-source",
     ]),
     file: z
       .string()
@@ -87,10 +99,12 @@ export interface FullSourceAudit {
   sourceValidationSha256: string;
   sourceValidatedOffline: true;
   rawRowsReturned: false;
+  addressDisagreements?: number;
+  matchMethod?: "exact_normalized_parcel_and_jurisdiction";
 }
 export function parseFullSourceConfigs(value: unknown): FullSourceConfig[] {
   try {
-    const configs = z.array(Config).max(4).parse(value),
+    const configs = z.array(Config).max(5).parse(value),
       roles = new Set<string>();
     for (const c of configs) {
       if (

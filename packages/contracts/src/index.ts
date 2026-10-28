@@ -153,13 +153,23 @@ export const PropertySchema = z.object({
         z
           .object({
             reportedName: z.string().min(1).max(2000),
-            sourceLabel: z.literal("Owner"),
+            sourceLabel: z.enum(["Owner", "Owner Name 1", "Owner Name 2"]),
             relatedPermitEvent: z
               .object({
                 kind: z.enum(["issued", "applied"]),
                 date: z.iso.date(),
               })
-              .strict(),
+              .strict()
+              .nullable(),
+            mailingAddress: z
+              .object({
+                street: z.string().max(2000).nullable(),
+                city: z.string().max(2000).nullable(),
+                state: z.string().max(2000).nullable(),
+                postalCode: z.string().max(2000).nullable(),
+              })
+              .strict()
+              .optional(),
             ownershipEffectiveDate: z.null(),
             roleVerification: z.literal("source_reported_unverified"),
             provenance: z.array(ProvenanceSchema).min(1).max(10),
@@ -169,6 +179,7 @@ export const PropertySchema = z.object({
       )
       .max(256)
       .optional(),
+    locationProvenance: z.array(ProvenanceSchema).min(1).max(10).optional(),
     lastTransferDate: z.iso.date().nullable(),
     events: z
       .array(

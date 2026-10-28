@@ -104,16 +104,18 @@ it("requires eight version6 roles and prevents silently substituting Rochester i
       ["permits", "protected-permits.parquet"],
       ["source-intake", "private-source-intake.parquet"],
     ].map(([role, name]) => ({ role, name, bytes: 1, sha256: "b".repeat(64) })),
-    ...Object.entries(FULL_SOURCE_DEFINITIONS).map(([role, d]) => ({
-      role,
-      name: d.name,
-      bytes: 1,
-      sha256: "b".repeat(64),
-      sourceRecordCount: 2,
-      sourceSchemaSha256: rhSchema,
-      sourceValidationSha256: "c".repeat(64),
-      sourceValidatedOffline: true,
-    })),
+    ...Object.entries(FULL_SOURCE_DEFINITIONS)
+      .filter(([role]) => role !== "assessment-source")
+      .map(([role, d]) => ({
+        role,
+        name: d.name,
+        bytes: 1,
+        sha256: "b".repeat(64),
+        sourceRecordCount: 2,
+        sourceSchemaSha256: rhSchema,
+        sourceValidationSha256: "c".repeat(64),
+        sourceValidatedOffline: true,
+      })),
   ];
   const make = (version: string, f: typeof files) => ({
     version,
