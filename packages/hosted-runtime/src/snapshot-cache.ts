@@ -151,10 +151,11 @@ export async function verifiedSnapshotCache(opts: {
     throw new Error("Manifest integrity mismatch");
   const m = checked(raw);
   const stage = path.join(opts.cacheRoot, `.partial-${randomUUID()}`);
-  await mkdir(stage);
+  await mkdir(stage, { mode: 0o700 });
   try {
     await writeFile(path.join(stage, manifestName), raw, {
       flag: "wx",
+      mode: 0o600,
     });
     let next = 0,
       failed = false;
@@ -169,7 +170,10 @@ export async function verifiedSnapshotCache(opts: {
           );
           if (bytes.length !== f.bytes || hash(bytes) !== f.sha256)
             throw new Error("Snapshot file integrity mismatch");
-          await writeFile(path.join(stage, f.name), bytes, { flag: "wx" });
+          await writeFile(path.join(stage, f.name), bytes, {
+            flag: "wx",
+            mode: 0o600,
+          });
         } catch (error) {
           failed = true;
           throw error;

@@ -1,5 +1,12 @@
 import { it, expect } from "vitest";
-import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
+import {
+  mkdtemp,
+  rm,
+  readFile,
+  writeFile,
+  readdir,
+  stat,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -30,6 +37,10 @@ it("verifies cold and warm cache, repairs corruption, rejects bad hash and trave
   try {
     const dir = await verifiedSnapshotCache(opts);
     expect(await readFile(path.join(dir, "parcels.parquet"))).toEqual(data);
+    expect((await stat(dir)).mode & 0o777).toBe(0o700);
+    expect((await stat(path.join(dir, "parcels.parquet"))).mode & 0o777).toBe(
+      0o600,
+    );
     await verifiedSnapshotCache(opts);
     expect(calls).toBe(2);
     await writeFile(path.join(dir, "parcels.parquet"), "corrupt");
