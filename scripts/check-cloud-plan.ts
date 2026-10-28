@@ -125,7 +125,7 @@ execFileSync(
       CDK_CONTEXT_JSON: JSON.stringify({
         enableProtectedView: "true",
         privateManifestSha256:
-          "bd65a64af04d31cf6a2a6f4797ff98d5b3bdaf68df37a9b59ee55b8c3b096df8",
+          "a2836c423fd90e665432e79138f7f2631c585f60dbbc1b3bc441f8d287353b98",
         enableLocationMap: "true",
         crmMapOrigin: "https://dfixture.cloudfront.net",
         mapKeyExpiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -168,7 +168,7 @@ assert.equal(
       Variables: Record<string, string>;
     }
   ).Variables.PRISM_PRIVATE_SNAPSHOT_MANIFEST_SHA256,
-  "bd65a64af04d31cf6a2a6f4797ff98d5b3bdaf68df37a9b59ee55b8c3b096df8",
+  "a2836c423fd90e665432e79138f7f2631c585f60dbbc1b3bc441f8d287353b98",
 );
 assert.throws(() =>
   execFileSync(
