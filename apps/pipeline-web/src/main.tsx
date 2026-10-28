@@ -801,7 +801,7 @@ function App() {
                   type="number"
                   min="-90"
                   max="90"
-                  step="0.00001"
+                  step="any"
                   value={lat}
                   onChange={(e) => {
                     invalidate();
@@ -816,7 +816,7 @@ function App() {
                   type="number"
                   min="-180"
                   max="180"
-                  step="0.00001"
+                  step="any"
                   value={lng}
                   onChange={(e) => {
                     invalidate();
