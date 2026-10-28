@@ -1,3 +1,4 @@
+import { assessmentResourceNames } from "./resource-names.ts";
 import { loadConcurrencyProof } from "../../packages/hosted-runtime/src/concurrency-file.ts";
 import path from "node:path";
 import { buildConcurrencyPolicy } from "../../packages/hosted-runtime/src/concurrency.ts";
@@ -148,7 +149,9 @@ if (
   throw new Error(
     "The review requires the exact verified working public snapshot",
   );
+const names = assessmentResourceNames(stack.stackName, stack.account, region);
 const site = new Bucket(stack, "StaticSite", {
+  bucketName: names.siteBucket,
   blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
   encryption: BucketEncryption.S3_MANAGED,
   enforceSSL: true,
@@ -172,6 +175,7 @@ if (
   );
 const privateSnapshots = enablePrivate
   ? new Bucket(stack, "ProtectedOperationalSnapshots", {
+      bucketName: names.protectedBucket,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       encryption: BucketEncryption.S3_MANAGED,
       enforceSSL: true,
@@ -180,6 +184,7 @@ const privateSnapshots = enablePrivate
     })
   : undefined;
 const snapshots = new Bucket(stack, "AcceptedSnapshots", {
+  bucketName: names.acceptedBucket,
   blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
   encryption: BucketEncryption.S3_MANAGED,
   enforceSSL: true,
@@ -198,6 +203,7 @@ const table = new Table(stack, "ReviewState", {
   removalPolicy: RemovalPolicy.RETAIN,
 });
 const access = new Secret(stack, "ReviewAccess", {
+  secretName: names.accessSecret,
   description:
     "Populate with signingKey,reviewCodeDigest,keyVersion,sessionTtlSeconds after deployment via approved secure operator flow",
   generateSecretString: {
@@ -217,6 +223,7 @@ const logs = new LogGroup(stack, "ApiLogs", {
   removalPolicy: RemovalPolicy.RETAIN,
 });
 const runtimeRole = new Role(stack, "ReadApiRole", {
+  roleName: names.readApiRole,
   assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
 });
 logs.grantWrite(runtimeRole);
@@ -413,6 +420,7 @@ const latency = api
     treatMissingData: TreatMissingData.NOT_BREACHING,
   });
 new StringParameter(stack, "ReviewRetention", {
+  parameterName: names.retentionParameter,
   stringValue:
     "Review resources retained through active evaluation; destroy requires explicit operator approval. Session1h, quota1day grace, logs90days.",
   description:

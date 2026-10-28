@@ -155,9 +155,69 @@ for (const behavior of [
 
 assert.equal(of("AWS::DynamoDB::Table").length, 1);
 assert.equal(of("AWS::SecretsManager::Secret").length, 2);
+assert.deepEqual(
+  of("AWS::SecretsManager::Secret")
+    .map(([, resource]) => resource.Properties!.Name)
+    .sort(),
+  [
+    "PrismOracleAssessmentReview-PagerDutyRouting",
+    "PrismOracleAssessmentReview-ReviewAccess",
+  ],
+);
+assert.deepEqual(
+  of("AWS::SSM::Parameter").map(([, resource]) => resource.Properties!.Name),
+  ["PrismOracleAssessmentReview-ReviewRetention"],
+);
 assert(of("AWS::CloudWatch::Alarm").length >= 4);
+function physicalName(value: unknown): string {
+  if (typeof value === "string") return value;
+  assert(value !== null && typeof value === "object");
+  const join = (value as { "Fn::Join"?: unknown })["Fn::Join"];
+  assert(
+    Array.isArray(join) &&
+      join.length === 2 &&
+      join[0] === "" &&
+      Array.isArray(join[1]),
+  );
+  return (join[1] as unknown[])
+    .map((part) => {
+      if (typeof part === "string") return part;
+      assert.deepEqual(part, { Ref: "AWS::AccountId" });
+      return "234567890123";
+    })
+    .join("");
+}
+const expectedBucketNames = [
+  "prismoracleassessmentreview-site-234567890123-us-east-2",
+  "prismoracleassessmentreview-accepted-234567890123-us-east-2",
+];
+assert.deepEqual(
+  of("AWS::S3::Bucket")
+    .map(([, resource]) => physicalName(resource.Properties!.BucketName))
+    .sort(),
+  expectedBucketNames.sort(),
+);
+assert.deepEqual(
+  of("AWS::IAM::Role")
+    .map(([, resource]) => resource.Properties!.RoleName)
+    .sort(),
+  [
+    "PrismOracleAssessmentReview-AlertNotifierRole",
+    "PrismOracleAssessmentReview-ReadApiRole",
+  ],
+);
+for (const [, role] of of("AWS::IAM::Role")) {
+  assert(String(role.Properties!.RoleName).length <= 64);
+  assert(
+    String(role.Properties!.RoleName).startsWith(
+      "PrismOracleAssessmentReview-",
+    ),
+  );
+}
 for (const [, bucket] of of("AWS::S3::Bucket")) {
   const p = bucket.Properties!;
+  assert(physicalName(p.BucketName).length <= 63);
+  assert(physicalName(p.BucketName).startsWith("prismoracleassessmentreview-"));
   assert(
     Object.values(p.PublicAccessBlockConfiguration as object).every(
       (x) => x === true,
@@ -241,6 +301,16 @@ assert.deepEqual(
 assert.equal(
   optionalResources.filter((r) => r.Type === "AWS::S3::Bucket").length,
   3,
+);
+assert.deepEqual(
+  optionalResources
+    .filter((resource) => resource.Type === "AWS::S3::Bucket")
+    .map((resource) => physicalName(resource.Properties!.BucketName))
+    .sort(),
+  [
+    ...expectedBucketNames,
+    "prismoracleassessmentreview-protected-234567890123-us-east-2",
+  ].sort(),
 );
 assert(
   !Object.keys(optional.Outputs).some((k) =>
@@ -369,6 +439,7 @@ const report = {
     exactProjectNameTags: true,
     dashboardAndAlarmNotifier: true,
     singleRegionAndSourceBinding: true,
+    explicitScopedResourceNamesWithinServiceLimits: true,
     protectedExactCompanionSeparateBucket: true,
     optionalMapExactOriginActionExpiryNoKeyOutput: true,
     wrongRegionRejected: true,

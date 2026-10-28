@@ -1,3 +1,5 @@
+import { assessmentResourceNames } from "./resource-names.ts";
+import { Role, ServicePrincipal } from "aws-cdk-lib/aws-iam";
 import {
   CfnOutput,
   Duration,
@@ -27,7 +29,13 @@ export function assessmentObservability(input: {
   reservedMode: boolean;
 }) {
   const { stack } = input;
+  const names = assessmentResourceNames(
+    stack.stackName,
+    stack.account,
+    stack.region,
+  );
   const routing = new Secret(stack, "PagerDutyRouting", {
+    secretName: names.pagerDutySecret,
     description:
       "Populate routingKey privately only after a candidate-controlled free integration is available",
     secretStringValue: SecretValue.unsafePlainText('{"status":"unconfigured"}'),
@@ -37,7 +45,13 @@ export function assessmentObservability(input: {
     retention: RetentionDays.THREE_MONTHS,
     removalPolicy: RemovalPolicy.RETAIN,
   });
+  const notifierRole = new Role(stack, "AlertNotifierRole", {
+    roleName: names.alertRole,
+    assumedBy: new ServicePrincipal("lambda.amazonaws.com"),
+  });
+  logs.grantWrite(notifierRole);
   const notifier = new Function(stack, "AlertNotifier", {
+    role: notifierRole,
     runtime: Runtime.NODEJS_24_X,
     handler: "index.alertHandler",
     code: input.code,
