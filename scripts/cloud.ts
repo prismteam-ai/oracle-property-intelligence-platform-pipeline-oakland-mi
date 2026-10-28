@@ -1,3 +1,7 @@
+import {
+  reviewedDeploymentFeatures,
+  deploymentFeatureContext,
+} from "../packages/hosted-runtime/src/deployment-features.ts";
 import { assertOperatorIdentity } from "../packages/hosted-runtime/src/operator-identity.ts";
 import { deployWithCdk } from "../packages/hosted-runtime/src/cdk-deploy.ts";
 import { reviewedDeployment } from "../packages/hosted-runtime/src/deploy-sequence.ts";
@@ -223,7 +227,9 @@ if (action === "deploy") {
     throw new Error("Built frontend missing");
   frontendDigest = hash(JSON.stringify(files));
 }
+const features = reviewedDeploymentFeatures(process.env);
 const deploymentConfig = {
+  ...features,
   pins,
   capacity,
   capacityProof,
@@ -563,9 +569,7 @@ try {
           : String(capacity.existingAccountConcurrency),
       snapshotManifestSha256: pins.publicManifestSha256,
       snapshotPrefix: `accepted/${verified.manifest.snapshotId}/`,
-      ...(process.env.PRISM_PAGERDUTY_ENABLED === "1"
-        ? { enablePagerDuty: "true" }
-        : {}),
+      ...deploymentFeatureContext(features),
       ...(privateInput
         ? {
             enableProtectedView: "true",

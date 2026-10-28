@@ -43,6 +43,7 @@ export class RealSnapshot {
   readonly manifest: ArtifactManifest;
   readonly publicSnapshotId: string;
   readonly protectedSignals: boolean;
+  readonly sourceFreshness: import("../../hosted-runtime/src/source-freshness.ts").SourceFreshnessSummary;
   private constructor(
     manifest: ArtifactManifest,
     private connection: DuckDBConnection,
@@ -219,6 +220,37 @@ export class RealSnapshot {
           "Advertised global index start is not proven current-PIN historical lineage coverage. This is not legal ownership continuity or title verification.",
         ],
       });
+    this.sourceFreshness = {
+      knownDataThroughDates: [],
+      unknownCohorts:
+        1 +
+        Number(
+          overlayDigests.some(
+            (digest) =>
+              !/^(provider-observations|transfer-observations|source-runs):/.test(
+                digest,
+              ),
+          ),
+        ),
+    };
+    for (const [count, date] of [
+      [
+        sourceObservationAudit.providerObservations,
+        sourceObservationAudit.providerDataThroughOldest,
+      ],
+      [
+        sourceObservationAudit.deedObservations,
+        sourceObservationAudit.deedObservedThrough,
+      ],
+    ] as const) {
+      if (count === 0) continue;
+      if (date === null) this.sourceFreshness.unknownCohorts++;
+      else
+        this.sourceFreshness.knownDataThroughDates = [
+          ...this.sourceFreshness.knownDataThroughDates,
+          date,
+        ];
+    }
     this.runs = [...runs, ...sourceObservationAudit.runs];
   }
   static async open(

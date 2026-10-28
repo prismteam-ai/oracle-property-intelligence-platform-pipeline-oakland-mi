@@ -19,6 +19,7 @@ export interface ActiveSnapshot {
   digest: string;
   count: number;
   addressCount?: number;
+  sourceFreshness?: import("../../hosted-runtime/src/source-freshness.ts").SourceFreshnessSummary;
   search(input: unknown): Promise<SearchResponse>;
   detail(id: string, snapshotId: string): Promise<Property>;
   coverage: unknown[];

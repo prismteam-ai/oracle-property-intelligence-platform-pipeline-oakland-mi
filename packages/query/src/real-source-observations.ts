@@ -44,6 +44,7 @@ export interface SourceObservationAudit {
   providerObservations: number;
   existingPermitAssociations: number;
   providerCategoryDisagreements: number;
+  providerDataThroughOldest: string | null;
   newSourceCandidates: number;
   currentlyReportedActive: number;
   deedObservations: number;
@@ -63,6 +64,7 @@ export async function loadSourceObservations(args: {
     providerObservations: 0,
     existingPermitAssociations: 0,
     providerCategoryDisagreements: 0,
+    providerDataThroughOldest: null,
     newSourceCandidates: 0,
     currentlyReportedActive: 0,
     deedObservations: 0,
@@ -102,6 +104,7 @@ export async function loadSourceObservations(args: {
     return (await db.run(`SELECT * FROM ${table}`)).getRowObjectsJson();
   }
   const ids = new Set<string>();
+  let providerDataThroughComplete = true;
   if (options.protectedProviderObservationsFile) {
     const input = await rows(
       options.protectedProviderObservationsFile,
@@ -252,10 +255,21 @@ export async function loadSourceObservations(args: {
           json: row.observation_json,
         },
       );
+      if (observation.sourceDataThrough === null)
+        providerDataThroughComplete = false;
+      else
+        audit.providerDataThroughOldest =
+          audit.providerDataThroughOldest === null
+            ? observation.sourceDataThrough
+            : [
+                audit.providerDataThroughOldest,
+                observation.sourceDataThrough,
+              ].sort()[0]!;
       audit.providerObservations++;
       if (observation.activityClaim !== "not_established")
         audit.currentlyReportedActive++;
     }
+    if (!providerDataThroughComplete) audit.providerDataThroughOldest = null;
     await db.run("DROP TABLE provider_observation_rows");
     overlayDigests.push(
       "provider-observations:" + options.protectedProviderObservationsSha256,

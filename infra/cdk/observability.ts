@@ -124,6 +124,20 @@ export function assessmentObservability(input: {
       ],
     }),
   );
+  dashboard.addWidgets(
+    new GraphWidget({
+      title: "Reported source data-through freshness",
+      left: [
+        metric("SourceDataThroughAgeUpperBoundSeconds").with({
+          statistic: "Maximum",
+        }),
+      ],
+      right: [
+        metric("SourceFreshnessKnownCohorts").with({ statistic: "Maximum" }),
+        metric("SourceFreshnessUnknownCohorts").with({ statistic: "Maximum" }),
+      ],
+    }),
+  );
   new CfnOutput(stack, "PagerDutySecretArn", { value: routing.secretArn });
   new CfnOutput(stack, "PagerDutyEnabled", {
     value: input.pagerDutyEnabled ? "true" : "false",

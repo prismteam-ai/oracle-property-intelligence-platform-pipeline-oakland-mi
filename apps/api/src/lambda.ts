@@ -58,7 +58,11 @@ async function runtime() {
     await preparePrivateCache(base.snapshotId);
   }
   const snapshot = await createActiveSnapshot();
-  telemetry.snapshot(snapshot.count, snapshot.addressCount);
+  telemetry.snapshot(
+    snapshot.count,
+    snapshot.addressCount,
+    snapshot.sourceFreshness,
+  );
   if (process.env.PRISM_RUNTIME_EMULATION === "1")
     return createApi({
       snapshot,

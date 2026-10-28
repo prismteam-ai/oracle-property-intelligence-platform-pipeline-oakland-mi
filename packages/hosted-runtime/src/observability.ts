@@ -1,3 +1,7 @@
+import {
+  sourceFreshnessMetrics,
+  type SourceFreshnessSummary,
+} from "./source-freshness.ts";
 import { Logger } from "@aws-lambda-powertools/logger";
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { Tracer } from "@aws-lambda-powertools/tracer";
@@ -39,7 +43,28 @@ export class RuntimeTelemetry {
     this.tracer = new Tracer({ serviceName, captureHTTPsRequests: false });
   }
 
-  snapshot(properties: number, addresses: number | undefined): void {
+  snapshot(
+    properties: number,
+    addresses: number | undefined,
+    freshness?: SourceFreshnessSummary,
+  ): void {
+    const sourceAge = sourceFreshnessMetrics(freshness);
+    this.metrics.addMetric(
+      "SourceFreshnessKnownCohorts",
+      MetricUnit.Count,
+      sourceAge.knownCohorts,
+    );
+    this.metrics.addMetric(
+      "SourceFreshnessUnknownCohorts",
+      MetricUnit.Count,
+      sourceAge.unknownCohorts,
+    );
+    if (sourceAge.maxDataThroughAgeUpperBoundSeconds !== null)
+      this.metrics.addMetric(
+        "SourceDataThroughAgeUpperBoundSeconds",
+        MetricUnit.Seconds,
+        sourceAge.maxDataThroughAgeUpperBoundSeconds,
+      );
     this.metrics.addMetric("SnapshotValidated", MetricUnit.Count, 1);
     this.metrics.addMetric(
       "SourceCoverageProperties",

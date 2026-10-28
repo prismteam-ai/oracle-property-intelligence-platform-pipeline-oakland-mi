@@ -119,3 +119,36 @@ it("trace collector receives only fixed annotations on success and private-error
   expect(metadata).not.toHaveBeenCalled();
   expect(close).toHaveBeenCalledTimes(2);
 });
+it("publishes truthful known/unknown data-through freshness without source strings or fake zero ages", () => {
+  vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-10-28T12:00:00Z"));
+  const t = new RuntimeTelemetry("oracle-freshness-fixture");
+  const add = vi.spyOn(t.metrics, "addMetric");
+  t.snapshot(10, 20, {
+    knownDataThroughDates: ["2026-10-19"],
+    unknownCohorts: 2,
+  });
+  expect(add.mock.calls).toContainEqual([
+    "SourceFreshnessKnownCohorts",
+    "Count",
+    1,
+  ]);
+  expect(add.mock.calls).toContainEqual([
+    "SourceFreshnessUnknownCohorts",
+    "Count",
+    2,
+  ]);
+  expect(add.mock.calls).toContainEqual([
+    "SourceDataThroughAgeUpperBoundSeconds",
+    "Seconds",
+    9.5 * 86400,
+  ]);
+  add.mockClear();
+  const marker = "SYNTHETIC_PRIVATE_SOURCE_CANARY";
+  t.snapshot(10, 20, { knownDataThroughDates: [marker], unknownCohorts: 1 });
+  expect(
+    add.mock.calls.some(
+      ([name]) => name === "SourceDataThroughAgeUpperBoundSeconds",
+    ),
+  ).toBe(false);
+  expect(JSON.stringify(t.metrics.serializeMetrics())).not.toContain(marker);
+});
