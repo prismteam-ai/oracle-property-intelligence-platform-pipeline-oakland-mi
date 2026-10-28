@@ -2,6 +2,27 @@ import { lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { validateConcurrencyProof } from "./concurrency.ts";
+/** Resolve existing ancestors while preserving absent protected path suffixes. */
+async function canonicalProtectedRoot(root: string): Promise<string> {
+  let current = path.resolve(root);
+  const suffix: string[] = [];
+  for (;;) {
+    try {
+      return path.join(await realpath(current), ...suffix);
+    } catch (error) {
+      if (!(
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ))
+        throw error;
+      const parent = path.dirname(current);
+      if (parent === current) throw error;
+      suffix.unshift(path.basename(current));
+      current = parent;
+    }
+  }
+}
 /** Private parent-collected metadata only; no SDK or credential access. */
 export async function loadConcurrencyProof(
   file: string,
@@ -31,7 +52,7 @@ export async function loadConcurrencyProof(
   }
   const canonical = await realpath(absolute);
   for (const root of protectedRoots) {
-    const protectedPath = await realpath(root);
+    const protectedPath = await canonicalProtectedRoot(root);
     if (
       canonical === protectedPath ||
       canonical.startsWith(protectedPath + path.sep)

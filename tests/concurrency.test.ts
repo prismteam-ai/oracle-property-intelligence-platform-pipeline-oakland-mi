@@ -181,3 +181,26 @@ it("rejects malformed or excessive capacity settings and accepts bounded overrid
     apiBurst: 12,
   });
 });
+
+it("supports a fresh checkout with absent protected Return paths while preserving canonical exclusions", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "prism-fresh-proof-"));
+  const file = path.join(root, "proof.json");
+  await writeFile(file, JSON.stringify(proof), { mode: 0o600 });
+  expect(
+    await loadConcurrencyProof(
+      file,
+      account,
+      [path.join(root, "not-created", "return")],
+      now,
+    ),
+  ).toMatchObject({ totalFunctionCount: 0 });
+  const excluded = path.join(root, "excluded");
+  await mkdir(excluded);
+  const inside = path.join(excluded, "proof.json");
+  await writeFile(inside, JSON.stringify(proof), { mode: 0o600 });
+  const alias = path.join(root, "excluded-alias");
+  await symlink(excluded, alias);
+  await expect(
+    loadConcurrencyProof(inside, account, [alias], now),
+  ).rejects.toThrow("outside repositories and Return");
+});

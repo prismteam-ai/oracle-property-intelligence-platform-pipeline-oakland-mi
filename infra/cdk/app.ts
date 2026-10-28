@@ -436,8 +436,9 @@ if (privateSnapshots)
 new CfnOutput(stack, "AccessSecretArn", { value: access.secretArn });
 new CfnOutput(stack, "ReviewTable", { value: table.tableName });
 new CfnOutput(stack, "ReviewTableArn", { value: table.tableArn });
-app.synth();
 
 new CfnOutput(stack, "RuntimeFunctionName", { value: handler.functionName });
 new CfnOutput(stack, "HttpApiId", { value: api.httpApiId });
 new CfnOutput(stack, "HttpApiStageName", { value: "$default" });
+
+app.synth();

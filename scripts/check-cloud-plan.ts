@@ -29,6 +29,8 @@ assert.equal(lambdas.length, 1);
 const lambda = lambdas[0]![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
 assert.equal(lambda.ReservedConcurrentExecutions, 5);
+for (const name of ["RuntimeFunctionName", "HttpApiId", "HttpApiStageName"])
+  assert(t.Outputs?.[name], `Missing runtime output ${name}`);
 assert.equal(lambda.MemorySize, 3008);
 assert(!("ZipFile" in (lambda.Code as object)));
 const packageReport = JSON.parse(
