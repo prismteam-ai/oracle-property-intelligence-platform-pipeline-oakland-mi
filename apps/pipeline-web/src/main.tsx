@@ -1239,7 +1239,12 @@ function App() {
                     : ""}
                 </p>
                 <p>
-                  Reported contractor:{" "}
+                  {p.provenance.some(
+                    (source) =>
+                      source.sourceId === "official-troy-issued-permits",
+                  )
+                    ? "Business applicant (contractor role unverified): "
+                    : "Reported contractor: "}
                   {p.contractor.reportedName ?? "Unavailable"}
                 </p>
                 <p>

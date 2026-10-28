@@ -107,6 +107,133 @@ export function troyIssuedDate(value: string): string {
     throw new Error("Troy issued date rejected");
   return date.toISOString().slice(0, 10);
 }
+export const TROY_CLASSIFICATION_VERSION = "troy-permit-scope-v2";
+export const TROY_SCOPE_CLASSIFICATIONS = {
+  explicit_roof_type_replacement: {
+    kind: "roof_replacement",
+    proposedWorkScope:
+      "Explicit roofing permit type and proposed roof replacement described; completion not established.",
+  },
+  explicit_roof_type_repair: {
+    kind: "roof_repair",
+    proposedWorkScope:
+      "Explicit roofing permit type and proposed roof repair described; completion not established.",
+  },
+  explicit_roof_type_unspecified: {
+    kind: "roof_unspecified",
+    proposedWorkScope:
+      "Explicit roofing permit type; proposed repair/replacement scope unspecified and completion not established.",
+  },
+  description_explicit_roof_replacement: {
+    kind: "roof_replacement",
+    proposedWorkScope:
+      "Source permit type is not roofing-specific; explicit proposed re-roof or roof replacement action described. Completion not established.",
+  },
+  description_explicit_roof_repair: {
+    kind: "roof_repair",
+    proposedWorkScope:
+      "Source permit type is not roofing-specific; explicit proposed roof repair action described. Completion not established.",
+  },
+  description_explicit_roof_work: {
+    kind: "roof_unspecified",
+    proposedWorkScope:
+      "Source permit type is not roofing-specific; explicit proposed roofing work described without a clear repair/replacement scope. Completion not established.",
+  },
+  roof_mention_unclassified: {
+    kind: "other",
+    proposedWorkScope:
+      "Available permit retained with its original type; a roof mention alone does not establish roofing work. Roofing scope remains unclassified.",
+  },
+  roof_scope_negated_or_conflicting: {
+    kind: "other",
+    proposedWorkScope:
+      "Available permit retained with its original type; described roofing scope is negated, excluded, or conflicting. No roofing action is established.",
+  },
+} as const;
+export function classifyTroyPermit(
+  reportedPermitType: string,
+  description: string,
+) {
+  const explicitRoofType = /^(?:Res\.|Commercial|Com\.),?\s*Roof$/i.test(
+    reportedPermitType,
+  );
+  const clauses = description
+    .toLowerCase()
+    .replace(/(\d),(?=\d)/g, "$1")
+    .replace(/&/g, " and ")
+    .split(/[.;,\n]+|\b(?:but|however|except)\b/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const roofToken = /\broof(?:ing)?\b|\bre[- ]?roof(?:ing)?\b/;
+  const negated = (clause: string) =>
+    /\b(?:no|not|without|excluding|excluded|exclude)\b[^.;,]{0,60}\b(?:roof(?:ing)?|re[- ]?roof(?:ing)?)\b|\broof(?:ing)?\b[^.;,]{0,40}\b(?:not included|excluded|to remain|by others|not in scope)\b/.test(
+      clause,
+    );
+  const positive = clauses.filter((x) => !negated(x));
+  const adjectives =
+    "(?:(?:the|a|an|all|existing|old|entire|damaged|new|flat|metal|asphalt|rubber|epdm|tpo|commercial|residential|roof|shingle|shingles|membrane|[0-9]+|square|sq|feet|foot|of)\\s+){0,8}";
+  const target =
+    "roof(?:ing)?\\b(?![ -]*(?:top|mounted|truss|rafter|framing|support))";
+  const action = (verbs: string) =>
+    new RegExp("\\b(?:" + verbs + ")\\s+" + adjectives + target);
+  const replacement = positive.some(
+    (x) =>
+      /\bre[- ]?roof(?:ing)?\b/.test(x) ||
+      action(
+        "replace|replacing|replacement of|tear off|tear-off|remove and replace",
+      ).test(x) ||
+      /\broof(?:ing)?(?: system| covering| membrane)? replacement\b/.test(x) ||
+      (explicitRoofType &&
+        /\bre[- ]?shingl(?:e|ing)\b|\b(?:replace|replacement|replacing|tear[ -]?off)\b[^.;,]{0,60}\b(?:shingles?|membrane|roofing)\b/.test(
+          x,
+        )),
+  );
+  const repair = positive.some(
+    (x) =>
+      action("repair|repairing|patch|patching|fix|fixing").test(x) ||
+      /\broof(?:ing)?(?: system| covering| membrane)? repairs?\b/.test(x) ||
+      (explicitRoofType &&
+        /\b(?:repair|repairing|patch|patching)\b[^.;,]{0,60}\b(?:shingles?|membrane|roofing)\b/.test(
+          x,
+        )),
+  );
+  const work = positive.some(
+    (x) =>
+      action(
+        "install|installing|installation of|construct|constructing|build|building|raise|raising|alter|altering|modify|modifying",
+      ).test(x) ||
+      /\broof(?:ing)? (?:installation|work)\b|\bnew roof\b(?![ -]*(?:top|mounted|truss|rafter|framing|support))/.test(
+        x,
+      ),
+  );
+  const negativeRoofScope = clauses.some(
+    (x) => roofToken.test(x) && negated(x),
+  );
+  const basis = replacement
+    ? explicitRoofType
+      ? "explicit_roof_type_replacement"
+      : "description_explicit_roof_replacement"
+    : repair
+      ? explicitRoofType
+        ? "explicit_roof_type_repair"
+        : "description_explicit_roof_repair"
+      : work
+        ? explicitRoofType
+          ? "explicit_roof_type_unspecified"
+          : "description_explicit_roof_work"
+        : negativeRoofScope
+          ? "roof_scope_negated_or_conflicting"
+          : explicitRoofType
+            ? "explicit_roof_type_unspecified"
+            : "roof_mention_unclassified";
+  return {
+    ...TROY_SCOPE_CLASSIFICATIONS[basis],
+    classificationBasis: basis,
+    classificationVersion: TROY_CLASSIFICATION_VERSION,
+    explicitRoofType,
+    negativeRoofScope,
+  };
+}
 export function normalizeTroyIssued(
   input: unknown,
   provenance: { observedAt: string; receiptDigest: string },
@@ -116,28 +243,14 @@ export function normalizeTroyIssued(
   z.string()
     .regex(/^[a-f0-9]{64}$/)
     .parse(provenance.receiptDigest);
-  if (!/^(?:Res\.|Commercial|Com\.),?\s*Roof$/i.test(row.reportedPermitType))
-    throw new Error(
-      "Permit type is not explicitly roofing; a description mention alone is insufficient",
-    );
   const issuedAt = troyIssuedDate(row.issuedDate);
   if (issuedAt > provenance.observedAt.slice(0, 10))
     throw new Error("Future-issued record rejected");
-  const replace =
-    /\breplace(?:ment)?\b|\bre-?roof\b|\breroof\b|\btear[ -]?off\b|\bre-?shingl/i.test(
-      row.description,
-    );
-  const repair = /\brepair\b|\bpatch\b/i.test(row.description);
-  const kind = replace
-    ? "roof_replacement"
-    : repair
-      ? "roof_repair"
-      : "roof_unspecified";
-  const proposedWorkScope = replace
-    ? "Proposed roof replacement described; completion not established."
-    : repair
-      ? "Proposed roof repair described; completion not established."
-      : "Roof work reported; proposed repair/replacement scope unspecified.";
+  const classification = classifyTroyPermit(
+    row.reportedPermitType,
+    row.description,
+  );
+  const { kind, proposedWorkScope } = classification;
   const reportedName = troyBusinessName(row.applicant);
   const numeric = row.value.replace(/[$,\s]/g, "");
   const sourceDeclaredValue = /^\d+(?:\.\d{1,2})?$/.test(numeric)
@@ -148,10 +261,13 @@ export function normalizeTroyIssued(
     permitNumber: row.permitNumber,
     issuedAt,
     reportedPermitType: row.reportedPermitType,
+    classificationBasis: classification.classificationBasis,
+    classificationVersion: classification.classificationVersion,
     proposedWorkScope,
     workDescriptionDigest,
     sourceDeclaredValue,
     reportedName,
+    reportedNameRoleBasis: "source_applicant_business_not_verified_contractor",
     normalizedParcel: normalizeTroyPin(row.parcel),
     siteAddress: row.siteAddress,
   };
@@ -200,7 +316,10 @@ export function normalizeTroyIssued(
     applicantClassification: reportedName
       ? "reported-business-indicator"
       : "withheld-unclassified-applicant",
+    reportedNameRoleBasis:
+      "source_applicant_business_not_verified_contractor" as const,
     rawDescriptionRetained: false as const,
+    ...classification,
   };
 }
 export type TroyIssuedObservation = ReturnType<typeof normalizeTroyIssued>;

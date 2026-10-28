@@ -6,6 +6,7 @@ import {
   troyBusinessName,
   troyIssuedDate,
   matchTroyIssued,
+  classifyTroyPermit,
 } from "../packages/county/src/troy.ts";
 const raw = {
   permitNumber: "SYN-PERMIT-1",
@@ -37,19 +38,77 @@ describe("Troy issued-roof source boundary", () => {
     expect(JSON.stringify(x)).not.toContain("example@example.test");
     expect(x.sourceDeclaredValue).toBe(12500);
   });
-  it("rejects roof mention on a nonroof permit and unexpected contact columns", () => {
-    expect(() =>
-      normalizeTroyIssued(
-        { ...raw, reportedPermitType: "Res., Add/Alter" },
-        provenance,
-      ),
-    ).toThrow();
+  it("retains significant commercial re-roof work under its original broad type", () => {
+    const p = normalizeTroyIssued(
+      {
+        ...raw,
+        reportedPermitType: "Commercial, Add/Alter",
+        description:
+          "Re-roof 25,000 square feet of existing commercial roof; replace EPDM roofing membrane.",
+      },
+      provenance,
+    );
+    expect(p.permit).toMatchObject({
+      reportedPermitType: "Commercial, Add/Alter",
+      kind: "roof_replacement",
+      status: "unknown",
+      statusBasis: "issued_only",
+    });
+    expect(p.classificationBasis).toBe("description_explicit_roof_replacement");
+  });
+  it("retains incidental non-roof permit facts as other and rejects unexpected contact columns", () => {
+    const p = normalizeTroyIssued(
+      {
+        ...raw,
+        reportedPermitType: "Satellite/Antennas",
+        description: "Install satellite antenna on existing roof.",
+      },
+      provenance,
+    );
+    expect(p.permit).toMatchObject({
+      reportedPermitType: "Satellite/Antennas",
+      kind: "other",
+      statusBasis: "issued_only",
+    });
+    expect(p.classificationBasis).toBe("roof_mention_unclassified");
     expect(() =>
       normalizeTroyIssued(
         { ...raw, applicantPhone: "555-555-5555" },
         provenance,
       ),
     ).toThrow();
+  });
+  it("does not turn negated roofs, mounted equipment, or unrelated replacement into roofing predicates", () => {
+    for (const description of [
+      "Replace windows; no roof work included.",
+      "Roof replacement not included.",
+      "Install roof-mounted antenna.",
+      "Replace rooftop air conditioning unit.",
+      "Repair windows; existing roof to remain.",
+      "This is not a roofing permit.",
+    ]) {
+      expect(
+        classifyTroyPermit("Commercial, Add/Alter", description).kind,
+      ).toBe("other");
+    }
+    expect(classifyTroyPermit("Res., Roof", "Replace windows").kind).toBe(
+      "roof_unspecified",
+    );
+    expect(
+      classifyTroyPermit(
+        "Commercial, Add/Alter",
+        "Replace windows, repair the existing roof.",
+      ).kind,
+    ).toBe("roof_repair");
+    expect(
+      classifyTroyPermit(
+        "Commercial, Add/Alter",
+        "Construct a new roof on addition.",
+      ).kind,
+    ).toBe("roof_unspecified");
+    expect(
+      classifyTroyPermit("Res., Roof", "No roof work included.").kind,
+    ).toBe("other");
   });
   it("withholds unclassified people and contact strings while retaining clear reported business", () => {
     for (const name of [

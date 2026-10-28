@@ -5,7 +5,11 @@ import {
   type Permit,
 } from "../../contracts/src/index.ts";
 import { sha256 } from "./model.ts";
-import { TROY_SOURCE, troyBusinessName } from "./troy.ts";
+import {
+  TROY_SOURCE,
+  troyBusinessName,
+  TROY_SCOPE_CLASSIFICATIONS,
+} from "./troy.ts";
 export const PRIVATE_PERMIT_LIMIT = 750;
 export const PRIVATE_PERMIT_JSON_BYTES = 16_384;
 const StrictLicense = PermitSchema.shape.contractor.shape.licenseEvidence
@@ -95,14 +99,45 @@ export function validateProtectedPermitRow(
     const raw = JSON.parse(row.permit_json) as unknown;
     boundedJson(raw);
     const permit = StrictPermit.parse(raw);
+    const legacyScopes = [
+      {
+        kind: "roof_replacement",
+        proposedWorkScope:
+          "Proposed roof replacement described; completion not established.",
+      },
+      {
+        kind: "roof_repair",
+        proposedWorkScope:
+          "Proposed roof repair described; completion not established.",
+      },
+      {
+        kind: "roof_unspecified",
+        proposedWorkScope:
+          "Roof work reported; proposed repair/replacement scope unspecified.",
+      },
+    ];
+    const classification =
+      Object.values(TROY_SCOPE_CLASSIFICATIONS).some(
+        (x) =>
+          x.kind === permit.kind &&
+          x.proposedWorkScope === permit.proposedWorkScope,
+      ) ||
+      (/^(?:Res\.|Commercial|Com\.),?\s*Roof$/i.test(
+        permit.reportedPermitType ?? "",
+      ) &&
+        legacyScopes.some(
+          (x) =>
+            x.kind === permit.kind &&
+            x.proposedWorkScope === permit.proposedWorkScope,
+        ));
     if (
       permit.id !== "troy-issued-" + sha256(row.native_id).slice(0, 24) ||
       permit.permitNumber !== row.native_id ||
       !permit.issuedAt ||
       permit.issuedAt > row.observed_at.slice(0, 10) ||
       permit.jurisdiction !== "City of Troy, Oakland County, Michigan" ||
-      permit.reportedPermitType !== "Res., Roof" ||
-      permit.kind === "other" ||
+      !permit.reportedPermitType ||
+      !classification ||
       !permit.proposedWorkScope ||
       !permit.matchEvidence ||
       permit.matchEvidence.candidateCount !== 1 ||

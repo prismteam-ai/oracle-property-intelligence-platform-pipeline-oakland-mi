@@ -90,6 +90,48 @@ describe("protected permit staging boundary", () => {
     expect(x.permit.status).toBe("unknown");
     expect(x.openDays).toBeNull();
   });
+  it("retains non-roof original permit types with conservative typed scope", () => {
+    for (const [type, description, kind] of [
+      [
+        "Commercial, Add/Alter",
+        "Re-roof commercial building",
+        "roof_replacement",
+      ],
+      ["Satellite/Antennas", "Install antenna on existing roof", "other"],
+    ] as const) {
+      const o = normalizeTroyIssued(
+        {
+          permitNumber: "SYN-PERMIT",
+          issuedDate: "Jan 1, 2011",
+          siteAddress: "100 EXAMPLE RD",
+          applicant: "Synthetic Roofing LLC",
+          parcel: "88-20-01-001-001",
+          reportedPermitType: type,
+          description,
+          value: "1000",
+        },
+        { observedAt: stamp, receiptDigest: "a".repeat(64) },
+      );
+      const m = matchTroyIssued(o, [
+        {
+          propertyId: "SYN-P1",
+          parcelPin: "2001001001",
+          siteAddress: "100 EXAMPLE RD",
+          city: "Troy",
+        },
+      ]);
+      expect(
+        validateProtectedPermitRow(
+          {
+            ...base,
+            permit_json: JSON.stringify(m.permit),
+            record_digest: o.recordDigest,
+          },
+          snapshot,
+        ).permit,
+      ).toMatchObject({ reportedPermitType: type, kind });
+    }
+  });
   it("rejects wrongsnapshot, extraouter/privatekeys, unknown nested keys and absent exact source evidence", () => {
     for (const x of [
       { ...base, public_snapshot_id: "wrong" },
