@@ -173,7 +173,7 @@ export function classifyTroyPermit(
   const adjectives =
     "(?:(?:the|a|an|all|existing|old|entire|damaged|new|flat|metal|asphalt|rubber|epdm|tpo|commercial|residential|roof|shingle|shingles|membrane|[0-9]+|square|sq|feet|foot|of)\\s+){0,8}";
   const target =
-    "roof(?:ing)?\\b(?![ -]*(?:top|mounted|truss|rafter|framing|support))";
+    "roof(?:ing)?\\b(?![ -]*(?:top|mounted|truss|rafter|framing|support|deck|drain|flashing|gutter|hatch|ladder|access|antenna|unit|hvac))";
   const action = (verbs: string) =>
     new RegExp("\\b(?:" + verbs + ")\\s+" + adjectives + target);
   const replacement = positive.some(

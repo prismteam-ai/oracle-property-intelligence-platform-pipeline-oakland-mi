@@ -100,6 +100,8 @@ describe("Troy issued-roof source boundary", () => {
       "Roof replacement not included.",
       "Install roof-mounted antenna.",
       "Replace rooftop air conditioning unit.",
+      "Replace roof drains.",
+      "Replace roof flashing.",
       "Repair windows; existing roof to remain.",
       "This is not a roofing permit.",
     ]) {
