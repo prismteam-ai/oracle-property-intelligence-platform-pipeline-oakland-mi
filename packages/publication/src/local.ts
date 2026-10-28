@@ -594,7 +594,8 @@ export async function rehearsePublication(
   const publication = {
     version: "1",
     mode: "local-unpublished",
-    publicationProfile: profile,
+    // The original data-only wire format predates an explicit profile marker.
+    ...(profile === "legacy-data-v1" ? {} : { publicationProfile: profile }),
     snapshotId: manifest.snapshotId,
     datasetDigest: manifest.digest,
     rootCid: rootNode.cid.toString(),

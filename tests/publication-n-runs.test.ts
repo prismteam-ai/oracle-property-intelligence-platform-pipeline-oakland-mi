@@ -152,7 +152,8 @@ async function baseline(root: string) {
     outputDir: out,
     privateOutputDir: privateOut,
   });
-  await rehearsePublication(out);
+  const publication = await rehearsePublication(out);
+  expect(publication).not.toHaveProperty("publicationProfile");
   return out;
 }
 async function buildRun(root: string, n: number, previous: string) {
