@@ -8,7 +8,7 @@ Use [QUICKSTART](../QUICKSTART.md) for the current Node 24 commands and [P3 stag
 
 Default runtime mode is real and requires a verified accepted public-safe artifact directory. Local access must be explicitly selected with `PRISM_ACCESS_MODE=local` and cannot read either protected companion. Synthetic mode must be explicitly selected with `PRISM_DATA_MODE=synthetic`; its 48 fixtures are labeled and separate from official county evidence.
 
-The HTTP API and Lambda share the actual request handler. CDK references a measured ZIP in an explicit private task asset bucket; it has no inline placeholder handler and does not require default CDK bootstrap or ECR. Local packaging, synthesis, tests and the network-disabled AWS Runtime Interface Emulator do not establish deployed cloud behavior.
+The HTTP API and Lambda share the actual request handler. CDK references a measured ZIP in an explicit private task asset bucket; it has no inline placeholder handler and deploys through the standard task-qualified CDK bootstrap. Bootstrap creates an ECR repository, but this ZIP-based application does not publish or run an application image. Local packaging, synthesis, tests and the network-disabled AWS Runtime Interface Emulator do not establish deployed cloud behavior.
 
 Hosted `/api/mcp` is authenticated, snapshot-bound and read-only. Its three official SDK tools perform bounded search, property evidence and snapshot status. It has no arbitrary SQL, mutation, filesystem, acquisition, model or publication capability.
 

@@ -12,6 +12,8 @@ export async function deployWithCdk(
     "cdk",
     "deploy",
     pins.stackName,
+    "--toolkit-stack-name",
+    "PrismAssessmentReviewToolkit",
     "--app",
     "cdk.out",
     "--require-approval",

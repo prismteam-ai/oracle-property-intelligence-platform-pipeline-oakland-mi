@@ -1,3 +1,4 @@
+import { assertOperatorIdentity } from "../packages/hosted-runtime/src/operator-identity.ts";
 import { deployWithCdk } from "../packages/hosted-runtime/src/cdk-deploy.ts";
 import { reviewedDeployment } from "../packages/hosted-runtime/src/deploy-sequence.ts";
 import {
@@ -50,6 +51,7 @@ if (
 const capacity = buildConcurrencyPolicy(process.env);
 const required = [
   "PRISM_EXPECTED_ACCOUNT_ID",
+  "PRISM_EXPECTED_OPERATOR_ROLE_ARN",
   "PRISM_EXPECTED_HEAD",
   "PRISM_EXPECTED_TREE",
   "PRISM_EXPECTED_ARCHIVE_SHA256",
@@ -311,8 +313,13 @@ function aws(args: string[], input?: string) {
 }
 const account = JSON.parse(
   aws(["sts", "get-caller-identity", "--output", "json"]),
-) as { Account?: string };
+) as { Account?: string; Arn?: string };
 assertCallerAccount(pins, account.Account ?? "");
+assertOperatorIdentity(
+  pins.expectedAccountId,
+  get("PRISM_EXPECTED_OPERATOR_ROLE_ARN"),
+  account,
+);
 const outputs = () => {
   const description = JSON.parse(
     aws([
