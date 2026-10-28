@@ -26,10 +26,10 @@ const proof = {
   totalFunctionCount: 0,
   functions: [] as { functionName: string; functionArn: string }[],
 };
-it("retains strict reserved2 by default and requires explicit exact shared opt-in", () => {
+it("starts reserved5 by default and requires explicit exact shared opt-in", () => {
   expect(buildConcurrencyPolicy({})).toMatchObject({
     mode: "reserved",
-    reservedConcurrentExecutions: 2,
+    reservedConcurrentExecutions: 5,
   });
   for (const env of [
     { PRISM_CONCURRENCY_MODE: "other" },
@@ -159,4 +159,25 @@ it("loads owner0600 private metadata, rejects links/Return/Git/public permission
   await expect(
     loadConcurrencyProof(g, account, [returned], now),
   ).rejects.toThrow();
+});
+
+it("rejects malformed or excessive capacity settings and accepts bounded overrides", () => {
+  for (const [key, values] of Object.entries({
+    PRISM_RESERVED_CONCURRENCY: ["1", "13", "05", "5.0", " 5", "-1", ""],
+    PRISM_API_RATE_PER_SECOND: ["1", "11", "5.5"],
+    PRISM_API_BURST: ["5", "21", "1e1"],
+  }))
+    for (const value of values)
+      expect(() => buildConcurrencyPolicy({ [key]: value })).toThrow();
+  expect(
+    buildConcurrencyPolicy({
+      PRISM_RESERVED_CONCURRENCY: "6",
+      PRISM_API_RATE_PER_SECOND: "7",
+      PRISM_API_BURST: "12",
+    }),
+  ).toMatchObject({
+    reservedConcurrentExecutions: 6,
+    apiRatePerSecond: 7,
+    apiBurst: 12,
+  });
 });

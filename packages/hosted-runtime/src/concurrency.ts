@@ -1,7 +1,7 @@
 /** Deployment metadata validation only. No SDK, account, profile or credential access. */
 export interface ConcurrencyPolicy {
   mode: "reserved" | "existing-account-shared";
-  reservedConcurrentExecutions: 2 | null;
+  reservedConcurrentExecutions: number | null;
   existingAccountConcurrency: 10 | null;
   apiRatePerSecond: number;
   apiBurst: number;
@@ -19,14 +19,38 @@ export interface AccountConcurrencyProof {
 export function buildConcurrencyPolicy(
   env: Readonly<Record<string, string | undefined>>,
 ): ConcurrencyPolicy {
+  const bounded = (key: string, fallback: number, min: number, max: number) => {
+    const value = env[key];
+    if (value === undefined) return fallback;
+    if (
+      !/^(0|[1-9]\d*)$/.test(value) ||
+      Number(value) < min ||
+      Number(value) > max
+    )
+      throw new Error(`Invalid bounded capacity setting: ${key}`);
+    return Number(value);
+  };
   const mode = env.PRISM_CONCURRENCY_MODE ?? "reserved";
+  const reserved = bounded("PRISM_RESERVED_CONCURRENCY", 5, 2, 12);
+  const apiRatePerSecond = bounded(
+    "PRISM_API_RATE_PER_SECOND",
+    mode === "reserved" ? 5 : 2,
+    2,
+    10,
+  );
+  const apiBurst = bounded(
+    "PRISM_API_BURST",
+    mode === "reserved" ? 10 : 6,
+    6,
+    20,
+  );
   if (mode === "reserved")
     return {
       mode,
-      reservedConcurrentExecutions: 2,
+      reservedConcurrentExecutions: reserved,
       existingAccountConcurrency: null,
-      apiRatePerSecond: 5,
-      apiBurst: 10,
+      apiRatePerSecond,
+      apiBurst,
     };
   if (
     mode !== "existing-account-shared" ||
@@ -40,10 +64,11 @@ export function buildConcurrencyPolicy(
     mode,
     reservedConcurrentExecutions: null,
     existingAccountConcurrency: 10,
-    apiRatePerSecond: 2,
-    apiBurst: 6,
+    apiRatePerSecond,
+    apiBurst,
   };
 }
+
 const functionPatterns = [
   /^PrismOracleReview-ReadApiB934CF2C-[A-Za-z0-9]+$/,
   /^PrismCrmP3Review-CrmHandler98FEA697-[A-Za-z0-9]+$/,

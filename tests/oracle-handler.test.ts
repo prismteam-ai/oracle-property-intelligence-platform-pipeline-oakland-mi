@@ -40,7 +40,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
   expect(JSON.parse(health.body)).toMatchObject({
     region: "us-east-1",
     stage: "local",
-    contractVersion: "0.2.1",
+    contractVersion: "0.3.0",
     dataMode: "synthetic",
   });
   expect(
@@ -89,7 +89,7 @@ it("gates data, binds immutable snapshot, revokes logout, bounds malformed reque
   expect(context.headers["Cache-Control"]).toBe("no-store");
   expect(JSON.parse(context.body)).toMatchObject({
     version: "1",
-    contractVersion: "0.2.1",
+    contractVersion: "0.3.0",
     snapshotId: "fixture",
     source: {
       declaredReportPeriod: null,
