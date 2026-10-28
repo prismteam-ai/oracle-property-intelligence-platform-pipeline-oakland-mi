@@ -689,7 +689,7 @@ test("full projection preserves native IDs, all address associations, unmatched 
   expect(second.digest).toBe(m.digest);
   expect(second.files).toEqual(m.files);
   const real = await RealSnapshot.open(out);
-  let spillDirectory = "";
+  let spillDirectory: string;
   try {
     const connection = (real as unknown as { connection: DuckDBConnection })
       .connection;
