@@ -4,6 +4,7 @@ import {
   sha256,
   verifyCapture,
   buildRealGroups,
+  publicAddressComponents,
   type PublicFeature,
 } from "../packages/elephant-compat/src/index.ts";
 
@@ -19,6 +20,9 @@ describe("receipt-backed local Elephant conversion", () => {
       PIN: "00-012-003",
       OBJECTID: 34,
       SITESTREETADDRESS: "1 EXAMPLE ST",
+      SITECITY: "Synthetic Town",
+      SITESTATE: "MI",
+      SITEZIPCODE: "00005",
       NAME1: "PRIVATE CANARY MUST NOT PROJECT",
     },
     geometry: { x: -83.1, y: 42.6 },
@@ -60,6 +64,11 @@ describe("receipt-backed local Elephant conversion", () => {
       /PRIVATE CANARY|property_type|built_year|owner|Dallas/,
     );
     expect(files["address.json"]).not.toHaveProperty("county_name");
+    expect(files["address.json"]).toMatchObject({
+      city_name: "SYNTHETIC TOWN",
+      state_code: "MI",
+      postal_code: "00005",
+    });
     expect(files["county-data-group.json"]).toMatchObject({ label: "County" });
     expect(files["seed-data-group.json"]).toMatchObject({
       relationships: {
@@ -70,6 +79,48 @@ describe("receipt-backed local Elephant conversion", () => {
       from: { "/": "./address.json" },
       to: { "/": "./geometry.json" },
     });
+  });
+  it("maps every representable component without inventing a value", () => {
+    const source = {
+      SITECITY: "Synthetic Town",
+      SITESTATE: "MI",
+      SITEZIPCODE: "00005",
+    };
+    const mapped = publicAddressComponents(source);
+    expect(mapped.properties).toEqual({
+      city_name: "SYNTHETIC TOWN",
+      state_code: "MI",
+      postal_code: "00005",
+    });
+    expect(mapped.decisions.map((d) => d.operation)).toEqual([
+      "ascii-case-only-uppercase",
+      "identity",
+      "identity",
+    ]);
+    expect(source.SITECITY).toBe("Synthetic Town");
+    expect(
+      publicAddressComponents({
+        SITECITY: null,
+        SITESTATE: null,
+        SITEZIPCODE: null,
+      }).properties,
+    ).toEqual({ city_name: null, state_code: null, postal_code: null });
+    const invalid = publicAddressComponents({
+      SITECITY: "St. Synthetic",
+      SITESTATE: "Michigan",
+      SITEZIPCODE: 48331,
+    });
+    expect(invalid.properties).toEqual({});
+    expect(invalid.decisions.map((d) => d.operation)).toEqual([
+      "unsupported-format",
+      "unsupported-format",
+      "unsupported-source-type",
+    ]);
+    expect(
+      publicAddressComponents({}).decisions.every(
+        (d) => d.status === "unmapped",
+      ),
+    ).toBe(true);
   });
   it("rejects ambiguous substitutions, missing addresses and invented geometry", () => {
     expect(() =>

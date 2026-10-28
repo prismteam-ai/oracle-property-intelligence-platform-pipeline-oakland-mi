@@ -6,6 +6,7 @@ import {
   sha256,
   verifyCapture,
   buildRealGroups,
+  publicAddressComponents,
   type PublicFeature,
   type SourceRequest,
 } from "../packages/elephant-compat/src/index.ts";
@@ -170,6 +171,7 @@ await mkdir(out, { recursive: false, mode: 0o700 });
 const input = path.join(out, "input");
 await mkdir(input, { mode: 0o700 });
 const records = [];
+const componentDecisions: Record<string, number> = {};
 for (const [pin, parcel] of selected) {
   const address = candidates.get(pin)!;
   const name = "parcel-native-" + parcel.feature.attributes.OBJECTID_12;
@@ -181,6 +183,12 @@ for (const [pin, parcel] of selected) {
     address.feature,
     address.request,
   );
+  for (const decision of publicAddressComponents(address.feature.attributes)
+    .decisions) {
+    const key =
+      decision.sourceField + ":" + decision.status + ":" + decision.operation;
+    componentDecisions[key] = (componentDecisions[key] ?? 0) + 1;
+  }
   for (const [file, value] of Object.entries(files))
     await writeFile(path.join(directory, file), JSON.stringify(value) + "\n", {
       mode: 0o600,
@@ -217,6 +225,10 @@ const receipt = {
   sourceFactsFabricated: false,
   privateSourceFieldsProjected: false,
   optionalCountyNameOmittedBecauseCurrentEnumExcludesOakland: true,
+  optionalAddressComponentDecisions: componentDecisions,
+  cityCasePolicy:
+    "ASCII case-only uppercase required by current city_name schema. No trimming, spelling changes, abbreviation expansion, geocoding or guessed jurisdiction. Original source values remain in captured responses.",
+  unsupportedOptionalValuesRetainedInRawCaptures: true,
   workingSourceDataRetained: true,
   selection:
     "First native-ID address candidates, exact unique raw parcel PIN join, one address per selected parcel; bounded pilot, not county completeness",

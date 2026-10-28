@@ -15,6 +15,57 @@ export type PublicFeature = {
   attributes: Record<string, unknown>;
   geometry?: { x?: unknown; y?: unknown };
 };
+export type AddressComponentDecision = {
+  sourceField: string;
+  schemaField: string;
+  status: "mapped" | "unmapped";
+  operation:
+    | "identity"
+    | "ascii-case-only-uppercase"
+    | "missing-source-field"
+    | "unsupported-source-type"
+    | "unsupported-format";
+};
+/** Preserve components; only city ASCII case follows the schema's explicit rule. */
+export function publicAddressComponents(attributes: Record<string, unknown>): {
+  properties: Record<string, string | null>;
+  decisions: AddressComponentDecision[];
+} {
+  const properties: Record<string, string | null> = {};
+  const decisions: AddressComponentDecision[] = [];
+  for (const [sourceField, schemaField, pattern] of [
+    ["SITECITY", "city_name", /^[A-Za-z\s\-']+$/],
+    ["SITESTATE", "state_code", /^[A-Z]{2}$/],
+    ["SITEZIPCODE", "postal_code", /^[0-9]{5}$/],
+  ] as const) {
+    const decision: AddressComponentDecision = {
+      sourceField,
+      schemaField,
+      status: "unmapped",
+      operation: "missing-source-field",
+    };
+    const value = attributes[sourceField];
+    if (Object.hasOwn(attributes, sourceField)) {
+      if (value === null) {
+        properties[schemaField] = null;
+        decision.status = "mapped";
+        decision.operation = "identity";
+      } else if (typeof value !== "string") {
+        decision.operation = "unsupported-source-type";
+      } else if (!value.trim() || !pattern.test(value)) {
+        decision.operation = "unsupported-format";
+      } else {
+        const mapped = sourceField === "SITECITY" ? value.toUpperCase() : value;
+        properties[schemaField] = mapped;
+        decision.status = "mapped";
+        decision.operation =
+          mapped === value ? "identity" : "ascii-case-only-uppercase";
+      }
+    }
+    decisions.push(decision);
+  }
+  return { properties, decisions };
+}
 export function verifyCapture(
   bytes: Uint8Array,
   expectedSha256: string,
@@ -124,6 +175,7 @@ export function buildRealGroups(
       // county_name is optional and its enum omits Oakland. County/FIPS remain
       // in the separately generated Atlas page and exact capture provenance.
       unnormalized_address: street,
+      ...publicAddressComponents(address.attributes).properties,
       request_identifier: String(addressId),
       source_http_request: addressRequest,
     },

@@ -13,6 +13,16 @@ coordinates, and the exact captured batch-request parameters. The record-level
 `request_identifier` is the official native object ID within that captured batch;
 this is not evidence that an unobserved individual-detail request was made.
 
+Every representable captured site-address city, state and five-digit ZIP is also
+included. The current `city_name` schema requires uppercase: ASCII case is the
+only city transformation, with no trimming, spelling repair, abbreviation
+expansion or geographic inference. State and ZIP are copied exactly, preserving
+leading zeros. Explicit nulls remain null where the schema permits them.
+Unsupported types/formats remain in raw captures and receive counted mapping
+reasons, rather than replacement values. Conversion receipts record these
+decisions. A parcel's alternate site address is retained separately in raw data;
+it is not silently mixed into the selected site-address record.
+
 Each selected property directory contains a current Seed root using
 `address_has_parcel` and a County root using `address_has_geometry`. The adapter
 does not invent a dwelling classification, legal description, construction year,
@@ -28,6 +38,9 @@ page. It does not substitute a different county. The deprecated
 `unnormalized_address` class requires an enum that likewise excludes Oakland and
 is not used. Optional source facts that this narrow compatibility projection does
 not map remain available in the working capture and assessment snapshot.
+The current `parcel` class has no secondary-ID field. `KEYPIN` and the secondary
+`OBJECTID` remain in raw data; neither is asserted to be a `prior_parcel_id`,
+whose current legacy schema explicitly means a previous historical identifier.
 
 ## Reproduce the source conversion
 
