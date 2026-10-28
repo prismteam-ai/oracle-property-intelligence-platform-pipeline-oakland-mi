@@ -4,7 +4,7 @@ export const STAGING_STAGE = "p3-review" as const;
 export const APPROVED_PUBLIC_MANIFEST_SHA256 =
   "0ea109aae29cb7739ec166cddbb36782c170ef18ce97ef3b525ca9d7e50e7422";
 export const APPROVED_PRIVATE_MANIFEST_SHA256 =
-  "8e66f2393472e83af2c99aeef15f1cd58e4929d387fc989a2e0fa8ae4ba6babc";
+  "746b1de9c7b7f0cc0f22952ac1260f55a2f192d879cdf589c99103b01ebfff1c";
 export interface SourceIdentity {
   head: string;
   tree: string;
