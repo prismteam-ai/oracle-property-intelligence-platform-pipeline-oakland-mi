@@ -151,6 +151,21 @@ describe("protected permit staging boundary", () => {
     expect(
       protectedPermitOpenDays({ ...open, status: "unknown" }, "2026-10-28"),
     ).toBeNull();
+    expect(() =>
+      validateProtectedPermitRow(
+        {
+          ...base,
+          permit_json: JSON.stringify({
+            ...open,
+            provenance: [
+              ...matched.permit.provenance,
+              { ...open.provenance[1], recordId: "DIFFERENT-PERMIT:status" },
+            ],
+          }),
+        },
+        snapshot,
+      ),
+    ).toThrow();
   });
   it("rejects inferred license/rating, credentials in evidenceURL and unclassified names", () => {
     for (const contractor of [
@@ -179,6 +194,38 @@ describe("protected permit staging boundary", () => {
           snapshot,
         ),
       ).toThrow();
+  });
+  it("does not relabel a numeric score as a BBB letter grade", () => {
+    expect(() =>
+      applyProtectedPermitObservations(
+        [base],
+        {
+          version: "1",
+          observations: [
+            {
+              permitNumber: "SYN-PERMIT",
+              rating: {
+                value: "100",
+                scale: "BBB",
+                sourceUrl: "https://www.bbb.org/",
+                observedAt: stamp,
+                matchConfidence: "medium",
+                recordId: "synthetic-business",
+                digest: "b".repeat(64),
+              },
+            },
+          ],
+        },
+        snapshot,
+      ),
+    ).toThrow();
+    expect(() =>
+      applyProtectedPermitObservations(
+        [base, base],
+        { version: "1", observations: [] },
+        snapshot,
+      ),
+    ).toThrow("Duplicate");
   });
   it("rejects oversized and deeply nested JSON before it can become returned evidence", () => {
     expect(() =>

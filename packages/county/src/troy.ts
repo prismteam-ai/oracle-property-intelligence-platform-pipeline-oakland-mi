@@ -252,10 +252,10 @@ export function matchTroyIssued(
     exactParcel.length === 1 && knownAddresses.length > 0
       ? knownAddresses.some(
           (p) =>
-            (p.propertyId === exactParcel[0]!.propertyId &&
-              normalizeTroyAddress(p.siteAddress) ===
-                observation.normalizedAddress) ||
-            suffixOmitted(p.siteAddress),
+            p.propertyId === exactParcel[0]!.propertyId &&
+            (normalizeTroyAddress(p.siteAddress) ===
+              observation.normalizedAddress ||
+              suffixOmitted(p.siteAddress)),
         )
         ? "agrees"
         : "differs"

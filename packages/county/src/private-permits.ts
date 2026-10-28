@@ -162,6 +162,8 @@ export function validateProtectedPermitRow(
               "official-troy-bsa-permit-status",
               "official-troy-permit-status",
             ].includes(p.sourceId) &&
+            (p.recordId === row.native_id ||
+              p.recordId.startsWith(row.native_id + ":")) &&
             time(p.observedAt) === time(permit.statusObservedAt!),
         ) ||
         permit.status !==
@@ -221,6 +223,9 @@ export function validateProtectedPermitRow(
     if (permit.contractor.ratingEvidence) {
       evidenceUrl(permit.contractor.ratingEvidence.sourceUrl, "rating");
       if (
+        !/^(?:A[+-]?|B[+-]?|C[+-]?|D[+-]?|F|NR|Not Rated)$/i.test(
+          permit.contractor.ratingEvidence.value,
+        ) ||
         time(permit.contractor.ratingEvidence.observedAt) >
           time(row.observed_at) ||
         !permit.provenance.some(
@@ -302,6 +307,8 @@ export function applyProtectedPermitObservations(
   const rows = inputRows.map(
     (x) => validateProtectedPermitRow(x, publicSnapshotId).row,
   );
+  if (new Set(rows.map((r) => r.native_id)).size !== rows.length)
+    throw new Error("Duplicate staged permit identity");
   const overlay = PermitObservationOverlay.parse(input),
     seen = new Set<string>();
   const additions = new Map(
