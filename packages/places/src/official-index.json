@@ -1,0 +1,2543 @@
+{
+  "version": "1",
+  "sourceUrl": "https://gisservices.oakgov.com/arcgis/rest/services/Enterprise/EnterpriseAdminDataMapService/MapServer/2",
+  "observedAt": "2026-10-28T05:41:15.398082+00:00",
+  "places": [
+    {
+      "placeId": "us-26-125-27380-city",
+      "name": "Farmington",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "27380",
+      "geometrySha256": "d538f20a21e63e67ef5bb9eefaa638f3dcab7410d0229e103b9353bc98fda00d",
+      "centroid": {
+        "lat": 42.4613956513,
+        "lng": -83.3784633949
+      },
+      "center": {
+        "lat": 42.4556229964,
+        "lng": -83.3683914535
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Farmington",
+        "City of Farmington, MI",
+        "City of Farmington, Michigan",
+        "City of Farmington, Oakland County, Michigan",
+        "Farmington",
+        "Farmington City",
+        "Farmington City, MI",
+        "Farmington City, Michigan",
+        "Farmington City, Oakland County, Michigan",
+        "Farmington, MI",
+        "Farmington, Michigan",
+        "Farmington, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "1",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-05-03T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-27440-city",
+      "name": "Farmington Hills",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "27440",
+      "geometrySha256": "332e0b8591bae8dfca0fe73125e43663150303ca54df981e606ea7048364dbc2",
+      "centroid": {
+        "lat": 42.4860048895,
+        "lng": -83.3771248726
+      },
+      "center": {
+        "lat": 42.4840740275,
+        "lng": -83.3772617356
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Farmington Hills",
+        "City of Farmington Hills, MI",
+        "City of Farmington Hills, Michigan",
+        "City of Farmington Hills, Oakland County, Michigan",
+        "Farmington Hills",
+        "Farmington Hills City",
+        "Farmington Hills City, MI",
+        "Farmington Hills City, Michigan",
+        "Farmington Hills City, Oakland County, Michigan",
+        "Farmington Hills, MI",
+        "Farmington Hills, Michigan",
+        "Farmington Hills, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "2",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-05-03T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-27880-city",
+      "name": "Ferndale",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "27880",
+      "geometrySha256": "694f81a38f4d6c42fe5f0527bc3ada955f50a2c10a33ff660ab1c402bdd5375d",
+      "centroid": {
+        "lat": 42.4591716803,
+        "lng": -83.1313670212
+      },
+      "center": {
+        "lat": 42.4609040408,
+        "lng": -83.1325176731
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Ferndale",
+        "City of Ferndale, MI",
+        "City of Ferndale, Michigan",
+        "City of Ferndale, Oakland County, Michigan",
+        "Ferndale",
+        "Ferndale City",
+        "Ferndale City, MI",
+        "Ferndale City, Michigan",
+        "Ferndale City, Oakland County, Michigan",
+        "Ferndale, MI",
+        "Ferndale, Michigan",
+        "Ferndale, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "3",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-37420-city",
+      "name": "Hazel Park",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "37420",
+      "geometrySha256": "46c1e996a15c9d20c41e0ad56eeefb6c0301eef434d2cb9bbf747d83aea3a738",
+      "centroid": {
+        "lat": 42.4619758099,
+        "lng": -83.0977332248
+      },
+      "center": {
+        "lat": 42.4616605725,
+        "lng": -83.0975307432
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Hazel Park",
+        "City of Hazel Park, MI",
+        "City of Hazel Park, Michigan",
+        "City of Hazel Park, Oakland County, Michigan",
+        "Hazel Park",
+        "Hazel Park City",
+        "Hazel Park City, MI",
+        "Hazel Park City, Michigan",
+        "Hazel Park City, Oakland County, Michigan",
+        "Hazel Park, MI",
+        "Hazel Park, Michigan",
+        "Hazel Park, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "4",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-40000-city",
+      "name": "Huntington Woods",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "40000",
+      "geometrySha256": "45734bc9dc6e11acd2188eaa463dacb06adf8ffd601c33f35af594fc1fb9c834",
+      "centroid": {
+        "lat": 42.4817148018,
+        "lng": -83.1686764387
+      },
+      "center": {
+        "lat": 42.4819075692,
+        "lng": -83.1681771141
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Huntington Woods",
+        "City of Huntington Woods, MI",
+        "City of Huntington Woods, Michigan",
+        "City of Huntington Woods, Oakland County, Michigan",
+        "Huntington Woods",
+        "Huntington Woods City",
+        "Huntington Woods City, MI",
+        "Huntington Woods City, Michigan",
+        "Huntington Woods City, Oakland County, Michigan",
+        "Huntington Woods, MI",
+        "Huntington Woods, Michigan",
+        "Huntington Woods, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "5",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-09T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-42460-city",
+      "name": "Keego Harbor",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "42460",
+      "geometrySha256": "c7fd6eada0327de1be2d6a5b7ce49f44da34b3a719c289dc1782a63ee8b1645f",
+      "centroid": {
+        "lat": 42.6086420622,
+        "lng": -83.344345632
+      },
+      "center": {
+        "lat": 42.6073168245,
+        "lng": -83.3442150067
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Keego Harbor",
+        "City of Keego Harbor, MI",
+        "City of Keego Harbor, Michigan",
+        "City of Keego Harbor, Oakland County, Michigan",
+        "Keego Harbor",
+        "Keego Harbor City",
+        "Keego Harbor City, MI",
+        "Keego Harbor City, Michigan",
+        "Keego Harbor City, Oakland County, Michigan",
+        "Keego Harbor, MI",
+        "Keego Harbor, Michigan",
+        "Keego Harbor, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "6",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-46320-city",
+      "name": "Lathrup Village",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "46320",
+      "geometrySha256": "d71ca73ef8ecb9320956170e08274c631f4162110a438ea8bab62964db633d0a",
+      "centroid": {
+        "lat": 42.4920873938,
+        "lng": -83.2273885125
+      },
+      "center": {
+        "lat": 42.4914839924,
+        "lng": -83.2292904837
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Lathrup Village",
+        "City of Lathrup Village, MI",
+        "City of Lathrup Village, Michigan",
+        "City of Lathrup Village, Oakland County, Michigan",
+        "Lathrup Village",
+        "Lathrup Village City",
+        "Lathrup Village City, MI",
+        "Lathrup Village City, Michigan",
+        "Lathrup Village City, Oakland County, Michigan",
+        "Lathrup Village, MI",
+        "Lathrup Village, Michigan",
+        "Lathrup Village, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "7",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-58980-city",
+      "name": "Northville",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "58980",
+      "geometrySha256": "bb3706942bb7a6dc93dcaba6ef41c9b357e63bfbd0ef392f1656f0cbec48b8a5",
+      "centroid": {
+        "lat": 42.4407305112,
+        "lng": -83.4931678243
+      },
+      "center": {
+        "lat": 42.4407010851,
+        "lng": -83.4931215544
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Northville",
+        "City of Northville, MI",
+        "City of Northville, Michigan",
+        "City of Northville, Oakland County, Michigan",
+        "Northville",
+        "Northville City",
+        "Northville City, MI",
+        "Northville City, Michigan",
+        "Northville City, Oakland County, Michigan",
+        "Northville, MI",
+        "Northville, Michigan",
+        "Northville, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "8",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-59440-city",
+      "name": "Novi",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "59440",
+      "geometrySha256": "29c4f22205c3e0af05a0ca683a3263797eda06a5490e4fc6c517d424d277855b",
+      "centroid": {
+        "lat": 42.4786005399,
+        "lng": -83.489294554
+      },
+      "center": {
+        "lat": 42.4810994939,
+        "lng": -83.4950218553
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Novi",
+        "City of Novi, MI",
+        "City of Novi, Michigan",
+        "City of Novi, Oakland County, Michigan",
+        "Novi",
+        "Novi City",
+        "Novi City, MI",
+        "Novi City, Michigan",
+        "Novi City, Oakland County, Michigan",
+        "Novi, MI",
+        "Novi, Michigan",
+        "Novi, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "9",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-61020-city",
+      "name": "Orchard Lake Village",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "61020",
+      "geometrySha256": "d0cd84e8aeeffb861a7f8ede77d47f69eaced130b55e32061f59768950e1097d",
+      "centroid": {
+        "lat": 42.5857594877,
+        "lng": -83.3756790014
+      },
+      "center": {
+        "lat": 42.5886293763,
+        "lng": -83.3734700716
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Orchard Lake",
+        "City of Orchard Lake Village",
+        "City of Orchard Lake Village, MI",
+        "City of Orchard Lake Village, Michigan",
+        "City of Orchard Lake Village, Oakland County, Michigan",
+        "City of Orchard Lake, MI",
+        "City of Orchard Lake, Michigan",
+        "City of Orchard Lake, Oakland County, Michigan",
+        "Orchard Lake",
+        "Orchard Lake City",
+        "Orchard Lake City, MI",
+        "Orchard Lake City, Michigan",
+        "Orchard Lake City, Oakland County, Michigan",
+        "Orchard Lake Village",
+        "Orchard Lake Village City",
+        "Orchard Lake Village City, MI",
+        "Orchard Lake Village City, Michigan",
+        "Orchard Lake Village City, Oakland County, Michigan",
+        "Orchard Lake Village, MI",
+        "Orchard Lake Village, Michigan",
+        "Orchard Lake Village, Oakland County, Michigan",
+        "Orchard Lake, MI",
+        "Orchard Lake, Michigan",
+        "Orchard Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "10",
+      "resolutionEligible": true,
+      "limitations": [],
+      "aliasEvidence": [
+        {
+          "sourceUrl": "https://www.oaklandcountymi.gov/community/local-communities",
+          "responseSha256": "86668aa31063977a70eb4e5ea3013aba16403184df0148ccb8b95f1089079c83",
+          "reportedName": "Orchard Lake",
+          "reportedType": "City",
+          "officialWebsite": "https://www.cityoforchardlake.com/",
+          "aliases": [
+            "City of Orchard Lake",
+            "City of Orchard Lake, MI",
+            "City of Orchard Lake, Michigan",
+            "City of Orchard Lake, Oakland County, Michigan",
+            "Orchard Lake",
+            "Orchard Lake City",
+            "Orchard Lake City, MI",
+            "Orchard Lake City, Michigan",
+            "Orchard Lake City, Oakland County, Michigan",
+            "Orchard Lake, MI",
+            "Orchard Lake, Michigan",
+            "Orchard Lake, Oakland County, Michigan"
+          ],
+          "basis": "Exact official county roster name/type row; does not claim GIS NAME equals this supplemental alias."
+        }
+      ]
+    },
+    {
+      "placeId": "us-26-125-64900-city",
+      "name": "Pleasant Ridge",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "64900",
+      "geometrySha256": "90eb4e4c57cdeacc9e94b499aba040cf68175655e446796b3a7eda04a00f30c9",
+      "centroid": {
+        "lat": 42.4715173938,
+        "lng": -83.1445556295
+      },
+      "center": {
+        "lat": 42.4714836027,
+        "lng": -83.1445143363
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Pleasant Ridge",
+        "City of Pleasant Ridge, MI",
+        "City of Pleasant Ridge, Michigan",
+        "City of Pleasant Ridge, Oakland County, Michigan",
+        "Pleasant Ridge",
+        "Pleasant Ridge City",
+        "Pleasant Ridge City, MI",
+        "Pleasant Ridge City, Michigan",
+        "Pleasant Ridge City, Oakland County, Michigan",
+        "Pleasant Ridge, MI",
+        "Pleasant Ridge, Michigan",
+        "Pleasant Ridge, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "11",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-69035-city",
+      "name": "Rochester Hills",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "69035",
+      "geometrySha256": "8e34672b2b104ba25740a88bf0dcc72bff90576f2821d0ed55259877d9b1c0ce",
+      "centroid": {
+        "lat": 42.664534679,
+        "lng": -83.1563132423
+      },
+      "center": {
+        "lat": 42.6667468602,
+        "lng": -83.1524224405
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Rochester Hills",
+        "City of Rochester Hills, MI",
+        "City of Rochester Hills, Michigan",
+        "City of Rochester Hills, Oakland County, Michigan",
+        "Rochester Hills",
+        "Rochester Hills City",
+        "Rochester Hills City, MI",
+        "Rochester Hills City, Michigan",
+        "Rochester Hills City, Oakland County, Michigan",
+        "Rochester Hills, MI",
+        "Rochester Hills, Michigan",
+        "Rochester Hills, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "12",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-74900-city",
+      "name": "Southfield",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "74900",
+      "geometrySha256": "991d33c14f4b0eafc10017a37c671eb64121347ea7c8d48226f8cfc6ad1b920a",
+      "centroid": {
+        "lat": 42.4765154433,
+        "lng": -83.2605505418
+      },
+      "center": {
+        "lat": 42.4796772169,
+        "lng": -83.2603326144
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Southfield",
+        "City of Southfield, MI",
+        "City of Southfield, Michigan",
+        "City of Southfield, Oakland County, Michigan",
+        "Southfield",
+        "Southfield City",
+        "Southfield City, MI",
+        "Southfield City, Michigan",
+        "Southfield City, Oakland County, Michigan",
+        "Southfield, MI",
+        "Southfield, Michigan",
+        "Southfield, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "13",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-77860-city",
+      "name": "Sylvan Lake",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "77860",
+      "geometrySha256": "446f2fbe5c6c0aedc4a57754743c457b5d00b64185a63406153bf7a64fc277b4",
+      "centroid": {
+        "lat": 42.6170234296,
+        "lng": -83.3331050917
+      },
+      "center": {
+        "lat": 42.6139618003,
+        "lng": -83.3325083298
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Sylvan Lake",
+        "City of Sylvan Lake, MI",
+        "City of Sylvan Lake, Michigan",
+        "City of Sylvan Lake, Oakland County, Michigan",
+        "Sylvan Lake",
+        "Sylvan Lake City",
+        "Sylvan Lake City, MI",
+        "Sylvan Lake City, Michigan",
+        "Sylvan Lake City, Oakland County, Michigan",
+        "Sylvan Lake, MI",
+        "Sylvan Lake, Michigan",
+        "Sylvan Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "14",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-80700-city",
+      "name": "Troy",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "80700",
+      "geometrySha256": "93b4cabf37160cebcea0cfd628e1c3c11e7e7474a53288fbe8bdcc1812d42303",
+      "centroid": {
+        "lat": 42.5817609198,
+        "lng": -83.1457391798
+      },
+      "center": {
+        "lat": 42.5790196146,
+        "lng": -83.1483459216
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Troy",
+        "City of Troy, MI",
+        "City of Troy, Michigan",
+        "City of Troy, Oakland County, Michigan",
+        "Troy",
+        "Troy City",
+        "Troy City, MI",
+        "Troy City, Michigan",
+        "Troy City, Oakland County, Michigan",
+        "Troy, MI",
+        "Troy, Michigan",
+        "Troy, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "15",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2005-12-19T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-83060-city",
+      "name": "Walled Lake",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "83060",
+      "geometrySha256": "f691456e548204da61d45dd1cbf217278ac78b8fb368c30d2a318a80a40f4d6b",
+      "centroid": {
+        "lat": 42.5378867232,
+        "lng": -83.4786021659
+      },
+      "center": {
+        "lat": 42.5423534231,
+        "lng": -83.4767212501
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Walled Lake",
+        "City of Walled Lake, MI",
+        "City of Walled Lake, Michigan",
+        "City of Walled Lake, Oakland County, Michigan",
+        "Walled Lake",
+        "Walled Lake City",
+        "Walled Lake City, MI",
+        "Walled Lake City, Michigan",
+        "Walled Lake City, Oakland County, Michigan",
+        "Walled Lake, MI",
+        "Walled Lake, Michigan",
+        "Walled Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "16",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-88140-city",
+      "name": "Wixom",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "88140",
+      "geometrySha256": "bafc562b4e0126e2b70f3f4b773b0158b4fbc79873244bcb696ee15358d03878",
+      "centroid": {
+        "lat": 42.5242796704,
+        "lng": -83.5347033984
+      },
+      "center": {
+        "lat": 42.5258943041,
+        "lng": -83.5367673788
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Wixom",
+        "City of Wixom, MI",
+        "City of Wixom, Michigan",
+        "City of Wixom, Oakland County, Michigan",
+        "Wixom",
+        "Wixom City",
+        "Wixom City, MI",
+        "Wixom City, Michigan",
+        "Wixom City, Oakland County, Michigan",
+        "Wixom, MI",
+        "Wixom, Michigan",
+        "Wixom, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "17",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-06T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-46940-village",
+      "name": "Leonard",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "46940",
+      "geometrySha256": "b45ea4eb8cd55db5e4137d93517ee12190fc00516154e7b6b279acb2d1c6ab79",
+      "centroid": {
+        "lat": 42.8651506634,
+        "lng": -83.1424799695
+      },
+      "center": {
+        "lat": 42.8654883357,
+        "lng": -83.1420853035
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Leonard",
+        "Leonard Village",
+        "Leonard Village, MI",
+        "Leonard Village, Michigan",
+        "Leonard Village, Oakland County, Michigan",
+        "Leonard, MI",
+        "Leonard, Michigan",
+        "Leonard, Oakland County, Michigan",
+        "Village of Leonard",
+        "Village of Leonard, MI",
+        "Village of Leonard, Michigan",
+        "Village of Leonard, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "18",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-61220-village",
+      "name": "Ortonville",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "61220",
+      "geometrySha256": "e79aabe9419e35edc38b4f09357a8273fb1f24402aa0a80ef292c0a1fe564ce6",
+      "centroid": {
+        "lat": 42.8510312255,
+        "lng": -83.4426853811
+      },
+      "center": {
+        "lat": 42.8509154986,
+        "lng": -83.4433313682
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Ortonville",
+        "Ortonville Village",
+        "Ortonville Village, MI",
+        "Ortonville Village, Michigan",
+        "Ortonville Village, Oakland County, Michigan",
+        "Ortonville, MI",
+        "Ortonville, Michigan",
+        "Ortonville, Oakland County, Michigan",
+        "Village of Ortonville",
+        "Village of Ortonville, MI",
+        "Village of Ortonville, Michigan",
+        "Village of Ortonville, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "19",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-17640-charter-township",
+      "name": "Commerce",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "17640",
+      "geometrySha256": "c97ef171adc9c946e0fe43d41cf84bd16720b264afc13afc6b8c6323fe0b7e41",
+      "centroid": {
+        "lat": 42.577594304,
+        "lng": -83.4962588223
+      },
+      "center": {
+        "lat": 42.5693633967,
+        "lng": -83.4996922073
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Commerce",
+        "Charter Township of Commerce, MI",
+        "Charter Township of Commerce, Michigan",
+        "Charter Township of Commerce, Oakland County, Michigan",
+        "Commerce",
+        "Commerce Charter Township",
+        "Commerce Charter Township, MI",
+        "Commerce Charter Township, Michigan",
+        "Commerce Charter Township, Oakland County, Michigan",
+        "Commerce Township",
+        "Commerce Township, MI",
+        "Commerce Township, Michigan",
+        "Commerce Township, Oakland County, Michigan",
+        "Commerce Twp",
+        "Commerce Twp, MI",
+        "Commerce Twp, Michigan",
+        "Commerce Twp, Oakland County, Michigan",
+        "Commerce, MI",
+        "Commerce, Michigan",
+        "Commerce, Oakland County, Michigan",
+        "Township of Commerce",
+        "Township of Commerce, MI",
+        "Township of Commerce, Michigan",
+        "Township of Commerce, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "20",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2026-02-03T14:43:40Z"
+    },
+    {
+      "placeId": "us-26-125-88260-village",
+      "name": "Wolverine Lake",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "88260",
+      "geometrySha256": "1f255dfcd49c234c112c3138d6b740ad25c968a88e869e0908bee5f10f0e4d9a",
+      "centroid": {
+        "lat": 42.5550143956,
+        "lng": -83.4882651052
+      },
+      "center": {
+        "lat": 42.556821537,
+        "lng": -83.4887431516
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Village of Wolverine Lake",
+        "Village of Wolverine Lake, MI",
+        "Village of Wolverine Lake, Michigan",
+        "Village of Wolverine Lake, Oakland County, Michigan",
+        "Wolverine Lake",
+        "Wolverine Lake Village",
+        "Wolverine Lake Village, MI",
+        "Wolverine Lake Village, Michigan",
+        "Wolverine Lake Village, Oakland County, Michigan",
+        "Wolverine Lake, MI",
+        "Wolverine Lake, Michigan",
+        "Wolverine Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "21",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-35640-township",
+      "name": "Groveland",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "35640",
+      "geometrySha256": "b90ff63c9293268c614adf6b89d93ada914a9f2afc2adc79437576b8981d84cf",
+      "centroid": {
+        "lat": 42.8313765168,
+        "lng": -83.5106740643
+      },
+      "center": {
+        "lat": 42.8310366601,
+        "lng": -83.5106196581
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Groveland",
+        "Groveland Township",
+        "Groveland Township, MI",
+        "Groveland Township, Michigan",
+        "Groveland Township, Oakland County, Michigan",
+        "Groveland Twp",
+        "Groveland Twp, MI",
+        "Groveland Twp, Michigan",
+        "Groveland Twp, Oakland County, Michigan",
+        "Groveland, MI",
+        "Groveland, Michigan",
+        "Groveland, Oakland County, Michigan",
+        "Township of Groveland",
+        "Township of Groveland, MI",
+        "Township of Groveland, Michigan",
+        "Township of Groveland, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "22",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-38080-charter-township",
+      "name": "Highland",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "38080",
+      "geometrySha256": "b6524e31e612bdeb0920c9518146f269630811306aba9c897a16b309bea16c0d",
+      "centroid": {
+        "lat": 42.6530963798,
+        "lng": -83.6221859614
+      },
+      "center": {
+        "lat": 42.6526981113,
+        "lng": -83.6221526642
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Highland",
+        "Charter Township of Highland, MI",
+        "Charter Township of Highland, Michigan",
+        "Charter Township of Highland, Oakland County, Michigan",
+        "Highland",
+        "Highland Charter Township",
+        "Highland Charter Township, MI",
+        "Highland Charter Township, Michigan",
+        "Highland Charter Township, Oakland County, Michigan",
+        "Highland Township",
+        "Highland Township, MI",
+        "Highland Township, Michigan",
+        "Highland Township, Oakland County, Michigan",
+        "Highland Twp",
+        "Highland Twp, MI",
+        "Highland Twp, Michigan",
+        "Highland Twp, Oakland County, Michigan",
+        "Highland, MI",
+        "Highland, Michigan",
+        "Highland, Oakland County, Michigan",
+        "Township of Highland",
+        "Township of Highland, MI",
+        "Township of Highland, Michigan",
+        "Township of Highland, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "23",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-38700-village",
+      "name": "Holly",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "38700",
+      "geometrySha256": "6bd7b2bba11d5ffd49728c40cc980b4b07499bc44691e8bb82e1becee162024c",
+      "centroid": {
+        "lat": 42.7987156616,
+        "lng": -83.6232884014
+      },
+      "center": {
+        "lat": 42.8001152279,
+        "lng": -83.6255543027
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Holly",
+        "Holly Village",
+        "Holly Village, MI",
+        "Holly Village, Michigan",
+        "Holly Village, Oakland County, Michigan",
+        "Holly, MI",
+        "Holly, Michigan",
+        "Holly, Oakland County, Michigan",
+        "Village of Holly",
+        "Village of Holly, MI",
+        "Village of Holly, Michigan",
+        "Village of Holly, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "24",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2007-10-19T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-40400-charter-township",
+      "name": "Independence",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "40400",
+      "geometrySha256": "d83753dabb52ec40f1bded92fd2c18938e99d13deec616d38feaba25f2f32757",
+      "centroid": {
+        "lat": 42.7492597775,
+        "lng": -83.3891102245
+      },
+      "center": {
+        "lat": 42.7490729033,
+        "lng": -83.3894213896
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Independence",
+        "Charter Township of Independence, MI",
+        "Charter Township of Independence, Michigan",
+        "Charter Township of Independence, Oakland County, Michigan",
+        "Independence",
+        "Independence Charter Township",
+        "Independence Charter Township, MI",
+        "Independence Charter Township, Michigan",
+        "Independence Charter Township, Oakland County, Michigan",
+        "Independence Township",
+        "Independence Township, MI",
+        "Independence Township, Michigan",
+        "Independence Township, Oakland County, Michigan",
+        "Independence Twp",
+        "Independence Twp, MI",
+        "Independence Twp, Michigan",
+        "Independence Twp, Oakland County, Michigan",
+        "Independence, MI",
+        "Independence, Michigan",
+        "Independence, Oakland County, Michigan",
+        "Township of Independence",
+        "Township of Independence, MI",
+        "Township of Independence, Michigan",
+        "Township of Independence, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "25",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2024-11-13T15:04:15Z"
+    },
+    {
+      "placeId": "us-26-125-10040-charter-township",
+      "name": "Brandon",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "10040",
+      "geometrySha256": "d859e2035cb43f646b9abee680f244206d20dd0c9db867a45fb3243191184cc0",
+      "centroid": {
+        "lat": 42.8373230621,
+        "lng": -83.3919472366
+      },
+      "center": {
+        "lat": 42.8376094961,
+        "lng": -83.3933157604
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Brandon",
+        "Brandon Charter Township",
+        "Brandon Charter Township, MI",
+        "Brandon Charter Township, Michigan",
+        "Brandon Charter Township, Oakland County, Michigan",
+        "Brandon Township",
+        "Brandon Township, MI",
+        "Brandon Township, Michigan",
+        "Brandon Township, Oakland County, Michigan",
+        "Brandon Twp",
+        "Brandon Twp, MI",
+        "Brandon Twp, Michigan",
+        "Brandon Twp, Oakland County, Michigan",
+        "Brandon, MI",
+        "Brandon, Michigan",
+        "Brandon, Oakland County, Michigan",
+        "Charter Township of Brandon",
+        "Charter Township of Brandon, MI",
+        "Charter Township of Brandon, Michigan",
+        "Charter Township of Brandon, Oakland County, Michigan",
+        "Township of Brandon",
+        "Township of Brandon, MI",
+        "Township of Brandon, Michigan",
+        "Township of Brandon, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "26",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-06T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-16160-city",
+      "name": "Clawson",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "16160",
+      "geometrySha256": "44b4b97f600d460584f3a91a22f3d2fa07c932b4368e9254bd33c6d4a8652a47",
+      "centroid": {
+        "lat": 42.5366762204,
+        "lng": -83.1504253392
+      },
+      "center": {
+        "lat": 42.5371284125,
+        "lng": -83.1464402732
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Clawson",
+        "City of Clawson, MI",
+        "City of Clawson, Michigan",
+        "City of Clawson, Oakland County, Michigan",
+        "Clawson",
+        "Clawson City",
+        "Clawson City, MI",
+        "Clawson City, Michigan",
+        "Clawson City, Oakland County, Michigan",
+        "Clawson, MI",
+        "Clawson, Michigan",
+        "Clawson, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "27",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2005-12-19T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-07660-city",
+      "name": "Berkley",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "07660",
+      "geometrySha256": "6819f328f6b187c59f985e3f76edd4856f595803b784789214c71b965e9914c7",
+      "centroid": {
+        "lat": 42.4986097297,
+        "lng": -83.1854338932
+      },
+      "center": {
+        "lat": 42.4990899693,
+        "lng": -83.1856285563
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Berkley",
+        "Berkley City",
+        "Berkley City, MI",
+        "Berkley City, Michigan",
+        "Berkley City, Oakland County, Michigan",
+        "Berkley, MI",
+        "Berkley, Michigan",
+        "Berkley, Oakland County, Michigan",
+        "City of Berkley",
+        "City of Berkley, MI",
+        "City of Berkley, Michigan",
+        "City of Berkley, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "28",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-09T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-00400-township",
+      "name": "Addison",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "00400",
+      "geometrySha256": "8d77a990d7d22108db60080f089a74ee8e285151c204518dd7ec9e0dfac2b7e0",
+      "centroid": {
+        "lat": 42.8426806114,
+        "lng": -83.1607322467
+      },
+      "center": {
+        "lat": 42.8433405224,
+        "lng": -83.1603428681
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Addison",
+        "Addison Township",
+        "Addison Township, MI",
+        "Addison Township, Michigan",
+        "Addison Township, Oakland County, Michigan",
+        "Addison Twp",
+        "Addison Twp, MI",
+        "Addison Twp, Michigan",
+        "Addison Twp, Oakland County, Michigan",
+        "Addison, MI",
+        "Addison, Michigan",
+        "Addison, Oakland County, Michigan",
+        "Township of Addison",
+        "Township of Addison, MI",
+        "Township of Addison, Michigan",
+        "Township of Addison, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "29",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-16T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-59460-township",
+      "name": "Novi",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "59460",
+      "geometrySha256": "5c6bb0762fe3471990dec4bfbc06c099b6a6fced9b40f33bd751848165405d90",
+      "centroid": {
+        "lat": 42.4570701443,
+        "lng": -83.482575682
+      },
+      "center": {
+        "lat": 42.4565678956,
+        "lng": -83.4821188066
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Novi",
+        "Novi Township",
+        "Novi Township, MI",
+        "Novi Township, Michigan",
+        "Novi Township, Oakland County, Michigan",
+        "Novi Twp",
+        "Novi Twp, MI",
+        "Novi Twp, Michigan",
+        "Novi Twp, Oakland County, Michigan",
+        "Novi, MI",
+        "Novi, Michigan",
+        "Novi, Oakland County, Michigan",
+        "Township of Novi",
+        "Township of Novi, MI",
+        "Township of Novi, Michigan",
+        "Township of Novi, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "30",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-59820-charter-township",
+      "name": "Oakland",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "59820",
+      "geometrySha256": "a911b4c5f4c9603ce8218e81877f3a33a8758ded519a5e89cdc958c8a0c18d81",
+      "centroid": {
+        "lat": 42.755093381,
+        "lng": -83.156642666
+      },
+      "center": {
+        "lat": 42.7552463917,
+        "lng": -83.1565871813
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Oakland",
+        "Charter Township of Oakland, MI",
+        "Charter Township of Oakland, Michigan",
+        "Charter Township of Oakland, Oakland County, Michigan",
+        "Oakland",
+        "Oakland Charter Township",
+        "Oakland Charter Township, MI",
+        "Oakland Charter Township, Michigan",
+        "Oakland Charter Township, Oakland County, Michigan",
+        "Oakland Township",
+        "Oakland Township, MI",
+        "Oakland Township, Michigan",
+        "Oakland Township, Oakland County, Michigan",
+        "Oakland Twp",
+        "Oakland Twp, MI",
+        "Oakland Twp, Michigan",
+        "Oakland Twp, Oakland County, Michigan",
+        "Oakland, MI",
+        "Oakland, Michigan",
+        "Oakland, Oakland County, Michigan",
+        "Township of Oakland",
+        "Township of Oakland, MI",
+        "Township of Oakland, Michigan",
+        "Township of Oakland, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "31",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-61100-charter-township",
+      "name": "Orion",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "61100",
+      "geometrySha256": "404b928a38dbfede02ea81c44ad63ecd51012d2f158a845adc843c69eb503f17",
+      "centroid": {
+        "lat": 42.7512357343,
+        "lng": -83.2745314834
+      },
+      "center": {
+        "lat": 42.7521726323,
+        "lng": -83.2734206867
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Orion",
+        "Charter Township of Orion, MI",
+        "Charter Township of Orion, Michigan",
+        "Charter Township of Orion, Oakland County, Michigan",
+        "Orion",
+        "Orion Charter Township",
+        "Orion Charter Township, MI",
+        "Orion Charter Township, Michigan",
+        "Orion Charter Township, Oakland County, Michigan",
+        "Orion Township",
+        "Orion Township, MI",
+        "Orion Township, Michigan",
+        "Orion Township, Oakland County, Michigan",
+        "Orion Twp",
+        "Orion Twp, MI",
+        "Orion Twp, Michigan",
+        "Orion Twp, Oakland County, Michigan",
+        "Orion, MI",
+        "Orion, Michigan",
+        "Orion, Oakland County, Michigan",
+        "Township of Orion",
+        "Township of Orion, MI",
+        "Township of Orion, Michigan",
+        "Township of Orion, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "32",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-44940-village",
+      "name": "Lake Orion",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "44940",
+      "geometrySha256": "3ba0507af110ab227a6f4591aad6c91f5eef263e4088c1a83f2ce99eeef93440",
+      "centroid": {
+        "lat": 42.7827278101,
+        "lng": -83.245236172
+      },
+      "center": {
+        "lat": 42.7828332949,
+        "lng": -83.2453407622
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Lake Orion",
+        "Lake Orion Village",
+        "Lake Orion Village, MI",
+        "Lake Orion Village, Michigan",
+        "Lake Orion Village, Oakland County, Michigan",
+        "Lake Orion, MI",
+        "Lake Orion, Michigan",
+        "Lake Orion, Oakland County, Michigan",
+        "Village of Lake Orion",
+        "Village of Lake Orion, MI",
+        "Village of Lake Orion, Michigan",
+        "Village of Lake Orion, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "33",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-62040-charter-township",
+      "name": "Oxford",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "62040",
+      "geometrySha256": "071fd0193574e83aff0cf7c45f91f642fc3d3e42a656a1a4b87bfa4de733b472",
+      "centroid": {
+        "lat": 42.8411642602,
+        "lng": -83.2780912372
+      },
+      "center": {
+        "lat": 42.8402490924,
+        "lng": -83.2771991402
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Oxford",
+        "Charter Township of Oxford, MI",
+        "Charter Township of Oxford, Michigan",
+        "Charter Township of Oxford, Oakland County, Michigan",
+        "Oxford",
+        "Oxford Charter Township",
+        "Oxford Charter Township, MI",
+        "Oxford Charter Township, Michigan",
+        "Oxford Charter Township, Oakland County, Michigan",
+        "Oxford Township",
+        "Oxford Township, MI",
+        "Oxford Township, Michigan",
+        "Oxford Township, Oakland County, Michigan",
+        "Oxford Twp",
+        "Oxford Twp, MI",
+        "Oxford Twp, Michigan",
+        "Oxford Twp, Oakland County, Michigan",
+        "Oxford, MI",
+        "Oxford, Michigan",
+        "Oxford, Oakland County, Michigan",
+        "Township of Oxford",
+        "Township of Oxford, MI",
+        "Township of Oxford, Michigan",
+        "Township of Oxford, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "34",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2005-12-20T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-69580-township",
+      "name": "Rose",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "69580",
+      "geometrySha256": "e1bf115bdbf030f641709dfc459f3b35cd2d03a0ab3222e0737ae18e9fe52f07",
+      "centroid": {
+        "lat": 42.7409854141,
+        "lng": -83.6261556387
+      },
+      "center": {
+        "lat": 42.7408777713,
+        "lng": -83.6261178747
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Rose",
+        "Rose Township",
+        "Rose Township, MI",
+        "Rose Township, Michigan",
+        "Rose Township, Oakland County, Michigan",
+        "Rose Twp",
+        "Rose Twp, MI",
+        "Rose Twp, Michigan",
+        "Rose Twp, Oakland County, Michigan",
+        "Rose, MI",
+        "Rose, Michigan",
+        "Rose, Oakland County, Michigan",
+        "Township of Rose",
+        "Township of Rose, MI",
+        "Township of Rose, Michigan",
+        "Township of Rose, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "35",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-74920-township",
+      "name": "Southfield",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "74920",
+      "geometrySha256": "b13f31cbe4acc5b8ad2b76095e591f3430f04e8a4df001d1203f3c545f9262cd",
+      "centroid": {
+        "lat": 42.5216382182,
+        "lng": -83.2285596839
+      },
+      "center": {
+        "lat": 42.5206037107,
+        "lng": -83.2208942992
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Southfield",
+        "Southfield Township",
+        "Southfield Township, MI",
+        "Southfield Township, Michigan",
+        "Southfield Township, Oakland County, Michigan",
+        "Southfield Twp",
+        "Southfield Twp, MI",
+        "Southfield Twp, Michigan",
+        "Southfield Twp, Oakland County, Michigan",
+        "Southfield, MI",
+        "Southfield, Michigan",
+        "Southfield, Oakland County, Michigan",
+        "Township of Southfield",
+        "Township of Southfield, MI",
+        "Township of Southfield, Michigan",
+        "Township of Southfield, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "36",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-03-03T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-08460-village",
+      "name": "Bingham Farms",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "08460",
+      "geometrySha256": "359b310833e85d5446feab7a8589551e657866a92a527c51ee73099716759af1",
+      "centroid": {
+        "lat": 42.5176689158,
+        "lng": -83.2779313394
+      },
+      "center": {
+        "lat": 42.5171280799,
+        "lng": -83.278607973
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Bingham Farms",
+        "Bingham Farms Village",
+        "Bingham Farms Village, MI",
+        "Bingham Farms Village, Michigan",
+        "Bingham Farms Village, Oakland County, Michigan",
+        "Bingham Farms, MI",
+        "Bingham Farms, Michigan",
+        "Bingham Farms, Oakland County, Michigan",
+        "Village of Bingham Farms",
+        "Village of Bingham Farms, MI",
+        "Village of Bingham Farms, Michigan",
+        "Village of Bingham Farms, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "37",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-30340-village",
+      "name": "Franklin",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "30340",
+      "geometrySha256": "6043b5f45718be91c5847925259f15fd3c8729e26523f7b9fc15c427fbd42ced",
+      "centroid": {
+        "lat": 42.5188015475,
+        "lng": -83.3029576076
+      },
+      "center": {
+        "lat": 42.5188123082,
+        "lng": -83.3031967879
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Franklin",
+        "Franklin Village",
+        "Franklin Village, MI",
+        "Franklin Village, Michigan",
+        "Franklin Village, Oakland County, Michigan",
+        "Franklin, MI",
+        "Franklin, Michigan",
+        "Franklin, Oakland County, Michigan",
+        "Village of Franklin",
+        "Village of Franklin, MI",
+        "Village of Franklin, Michigan",
+        "Village of Franklin, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "38",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-08160-village",
+      "name": "Beverly Hills",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "08160",
+      "geometrySha256": "8cfb13649f7c688098c2caef54b1c25cd7831924f3b33f54dc32422e7decfd5c",
+      "centroid": {
+        "lat": 42.5220489789,
+        "lng": -83.2423328629
+      },
+      "center": {
+        "lat": 42.5200681877,
+        "lng": -83.2473715974
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Beverly Hills",
+        "Beverly Hills Village",
+        "Beverly Hills Village, MI",
+        "Beverly Hills Village, Michigan",
+        "Beverly Hills Village, Oakland County, Michigan",
+        "Beverly Hills, MI",
+        "Beverly Hills, Michigan",
+        "Beverly Hills, Oakland County, Michigan",
+        "Village of Beverly Hills",
+        "Village of Beverly Hills, MI",
+        "Village of Beverly Hills, Michigan",
+        "Village of Beverly Hills, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "39",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-03-03T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-85480-charter-township",
+      "name": "West Bloomfield",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "85480",
+      "geometrySha256": "ffbb0a05d99d29f9589417d633e0798b9f7aa9299ebeb2f0c876c9c48a26d527",
+      "centroid": {
+        "lat": 42.5686875475,
+        "lng": -83.3836297481
+      },
+      "center": {
+        "lat": 42.5728829507,
+        "lng": -83.3454426386
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of West Bloomfield",
+        "Charter Township of West Bloomfield, MI",
+        "Charter Township of West Bloomfield, Michigan",
+        "Charter Township of West Bloomfield, Oakland County, Michigan",
+        "Township of West Bloomfield",
+        "Township of West Bloomfield, MI",
+        "Township of West Bloomfield, Michigan",
+        "Township of West Bloomfield, Oakland County, Michigan",
+        "West Bloomfield",
+        "West Bloomfield Charter Township",
+        "West Bloomfield Charter Township, MI",
+        "West Bloomfield Charter Township, Michigan",
+        "West Bloomfield Charter Township, Oakland County, Michigan",
+        "West Bloomfield Township",
+        "West Bloomfield Township, MI",
+        "West Bloomfield Township, Michigan",
+        "West Bloomfield Township, Oakland County, Michigan",
+        "West Bloomfield Twp",
+        "West Bloomfield Twp, MI",
+        "West Bloomfield Twp, Michigan",
+        "West Bloomfield Twp, Oakland County, Michigan",
+        "West Bloomfield, MI",
+        "West Bloomfield, Michigan",
+        "West Bloomfield, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "40",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2026-09-04T19:02:25Z"
+    },
+    {
+      "placeId": "us-26-125-09180-city",
+      "name": "Bloomfield Hills",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "09180",
+      "geometrySha256": "70551799664ea7e609d1dc131d69ed0da33fbc21c6c6e16654606b0968d38aeb",
+      "centroid": {
+        "lat": 42.5780434755,
+        "lng": -83.2456832108
+      },
+      "center": {
+        "lat": 42.5781268307,
+        "lng": -83.245642913
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Bloomfield Hills",
+        "Bloomfield Hills City",
+        "Bloomfield Hills City, MI",
+        "Bloomfield Hills City, Michigan",
+        "Bloomfield Hills City, Oakland County, Michigan",
+        "Bloomfield Hills, MI",
+        "Bloomfield Hills, Michigan",
+        "Bloomfield Hills, Oakland County, Michigan",
+        "City of Bloomfield Hills",
+        "City of Bloomfield Hills, MI",
+        "City of Bloomfield Hills, Michigan",
+        "City of Bloomfield Hills, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "41",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-09110-charter-township",
+      "name": "Bloomfield",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "09110",
+      "geometrySha256": "ad80f7301e0258033c59e29429c9664c6c9357c487a8ea244bb3efc09641e659",
+      "centroid": {
+        "lat": 42.5756702785,
+        "lng": -83.273482496
+      },
+      "center": {
+        "lat": 42.5746938999,
+        "lng": -83.2939603911
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Bloomfield",
+        "Bloomfield Charter Township",
+        "Bloomfield Charter Township, MI",
+        "Bloomfield Charter Township, Michigan",
+        "Bloomfield Charter Township, Oakland County, Michigan",
+        "Bloomfield Township",
+        "Bloomfield Township, MI",
+        "Bloomfield Township, Michigan",
+        "Bloomfield Township, Oakland County, Michigan",
+        "Bloomfield Twp",
+        "Bloomfield Twp, MI",
+        "Bloomfield Twp, Michigan",
+        "Bloomfield Twp, Oakland County, Michigan",
+        "Bloomfield, MI",
+        "Bloomfield, Michigan",
+        "Bloomfield, Oakland County, Michigan",
+        "Charter Township of Bloomfield",
+        "Charter Township of Bloomfield, MI",
+        "Charter Township of Bloomfield, Michigan",
+        "Charter Township of Bloomfield, Oakland County, Michigan",
+        "Township of Bloomfield",
+        "Township of Bloomfield, MI",
+        "Township of Bloomfield, Michigan",
+        "Township of Bloomfield, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "42",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-04-28T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-08640-city",
+      "name": "Birmingham",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "08640",
+      "geometrySha256": "1021b4506299dfd89a7303ad07aadb051870d5b537de342f7522de93438b75e0",
+      "centroid": {
+        "lat": 42.5446802439,
+        "lng": -83.2166057347
+      },
+      "center": {
+        "lat": 42.5490373223,
+        "lng": -83.212340033
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Birmingham",
+        "Birmingham City",
+        "Birmingham City, MI",
+        "Birmingham City, Michigan",
+        "Birmingham City, Oakland County, Michigan",
+        "Birmingham, MI",
+        "Birmingham, Michigan",
+        "Birmingham, Oakland County, Michigan",
+        "City of Birmingham",
+        "City of Birmingham, MI",
+        "City of Birmingham, Michigan",
+        "City of Birmingham, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "43",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-04-28T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-65440-city",
+      "name": "Pontiac",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "65440",
+      "geometrySha256": "88aea603b6cd5b80380f967719c213f91670da69f2ed2c922c6d57f25657a5ed",
+      "centroid": {
+        "lat": 42.6492820693,
+        "lng": -83.2877417929
+      },
+      "center": {
+        "lat": 42.6513129456,
+        "lng": -83.2883301875
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Pontiac",
+        "City of Pontiac, MI",
+        "City of Pontiac, Michigan",
+        "City of Pontiac, Oakland County, Michigan",
+        "Pontiac",
+        "Pontiac City",
+        "Pontiac City, MI",
+        "Pontiac City, Michigan",
+        "Pontiac City, Oakland County, Michigan",
+        "Pontiac, MI",
+        "Pontiac, Michigan",
+        "Pontiac, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "44",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2005-12-20T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-04105-city",
+      "name": "Auburn Hills",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "04105",
+      "geometrySha256": "3bc7d9b730edc71f64a315841e71e6f93173c74a8e522533b58eb6d7ebc4627c",
+      "centroid": {
+        "lat": 42.6734831392,
+        "lng": -83.2447351031
+      },
+      "center": {
+        "lat": 42.664924597,
+        "lng": -83.2310144472
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Auburn Hills",
+        "Auburn Hills City",
+        "Auburn Hills City, MI",
+        "Auburn Hills City, Michigan",
+        "Auburn Hills City, Oakland County, Michigan",
+        "Auburn Hills, MI",
+        "Auburn Hills, Michigan",
+        "Auburn Hills, Oakland County, Michigan",
+        "City of Auburn Hills",
+        "City of Auburn Hills, MI",
+        "City of Auburn Hills, Michigan",
+        "City of Auburn Hills, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "45",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-16T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-50560-city",
+      "name": "Madison Heights",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "50560",
+      "geometrySha256": "caf2f3aed3923a5e082781488ece3c59abd3e37144aa7421bc584ac09b86bc4d",
+      "centroid": {
+        "lat": 42.5073090985,
+        "lng": -83.1033560265
+      },
+      "center": {
+        "lat": 42.5058120955,
+        "lng": -83.1053813436
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Madison Heights",
+        "City of Madison Heights, MI",
+        "City of Madison Heights, Michigan",
+        "City of Madison Heights, Oakland County, Michigan",
+        "Madison Heights",
+        "Madison Heights City",
+        "Madison Heights City, MI",
+        "Madison Heights City, Michigan",
+        "Madison Heights City, Oakland County, Michigan",
+        "Madison Heights, MI",
+        "Madison Heights, Michigan",
+        "Madison Heights, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "46",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-06T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-53980-charter-township",
+      "name": "Milford",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "53980",
+      "geometrySha256": "068b1b32a95c972791a00908a953ad117fc9008f4d351fa80a365825752a10e8",
+      "centroid": {
+        "lat": 42.5636701504,
+        "lng": -83.6180082288
+      },
+      "center": {
+        "lat": 42.5653395492,
+        "lng": -83.6168486273
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Milford",
+        "Charter Township of Milford, MI",
+        "Charter Township of Milford, Michigan",
+        "Charter Township of Milford, Oakland County, Michigan",
+        "Milford",
+        "Milford Charter Township",
+        "Milford Charter Township, MI",
+        "Milford Charter Township, Michigan",
+        "Milford Charter Township, Oakland County, Michigan",
+        "Milford Township",
+        "Milford Township, MI",
+        "Milford Township, Michigan",
+        "Milford Township, Oakland County, Michigan",
+        "Milford Twp",
+        "Milford Twp, MI",
+        "Milford Twp, Michigan",
+        "Milford Twp, Oakland County, Michigan",
+        "Milford, MI",
+        "Milford, Michigan",
+        "Milford, Oakland County, Michigan",
+        "Township of Milford",
+        "Township of Milford, MI",
+        "Township of Milford, Michigan",
+        "Township of Milford, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "47",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-06T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-70040-city",
+      "name": "Royal Oak",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "70040",
+      "geometrySha256": "599dd514db57ee4de11f1d1dc1d1b71a2fd94ed93b24e17f18b4182945279dc6",
+      "centroid": {
+        "lat": 42.5083808839,
+        "lng": -83.1538864472
+      },
+      "center": {
+        "lat": 42.5078194605,
+        "lng": -83.1506247272
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Royal Oak",
+        "City of Royal Oak, MI",
+        "City of Royal Oak, Michigan",
+        "City of Royal Oak, Oakland County, Michigan",
+        "Royal Oak",
+        "Royal Oak City",
+        "Royal Oak City, MI",
+        "Royal Oak City, Michigan",
+        "Royal Oak City, Oakland County, Michigan",
+        "Royal Oak, MI",
+        "Royal Oak, Michigan",
+        "Royal Oak, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "48",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-06T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-44440-city",
+      "name": "Lake Angelus",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "44440",
+      "geometrySha256": "f999bde2e9c57f112cb7c756e4851a42de98f74a1c8c069a74332f9a6987b2d1",
+      "centroid": {
+        "lat": 42.6921336102,
+        "lng": -83.3215580129
+      },
+      "center": {
+        "lat": 42.6926748462,
+        "lng": -83.3213184886
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Lake Angelus",
+        "City of Lake Angelus, MI",
+        "City of Lake Angelus, Michigan",
+        "City of Lake Angelus, Oakland County, Michigan",
+        "Lake Angelus",
+        "Lake Angelus City",
+        "Lake Angelus City, MI",
+        "Lake Angelus City, Michigan",
+        "Lake Angelus City, Oakland County, Michigan",
+        "Lake Angelus, MI",
+        "Lake Angelus, Michigan",
+        "Lake Angelus, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "49",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-06-09T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-69020-city",
+      "name": "Rochester",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "69020",
+      "geometrySha256": "07849a40b283c0fc6f96ab63ea13f7fb1ca034fb6cb17979b25c7799c83e2ae8",
+      "centroid": {
+        "lat": 42.6867352752,
+        "lng": -83.1196613795
+      },
+      "center": {
+        "lat": 42.6891814756,
+        "lng": -83.1215914527
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Rochester",
+        "City of Rochester, MI",
+        "City of Rochester, Michigan",
+        "City of Rochester, Oakland County, Michigan",
+        "Rochester",
+        "Rochester City",
+        "Rochester City, MI",
+        "Rochester City, Michigan",
+        "Rochester City, Oakland County, Michigan",
+        "Rochester, MI",
+        "Rochester, Michigan",
+        "Rochester, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "50",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-59920-city",
+      "name": "Oak Park",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "59920",
+      "geometrySha256": "db46ad6f0c1c4fe0255d0550db5ca99cb1f173762baf09192d6b03cf41b670fc",
+      "centroid": {
+        "lat": 42.4649307119,
+        "lng": -83.1823373685
+      },
+      "center": {
+        "lat": 42.4671135742,
+        "lng": -83.177823787
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Oak Park",
+        "City of Oak Park, MI",
+        "City of Oak Park, Michigan",
+        "City of Oak Park, Oakland County, Michigan",
+        "Oak Park",
+        "Oak Park City",
+        "Oak Park City, MI",
+        "Oak Park City, Michigan",
+        "Oak Park City, Oakland County, Michigan",
+        "Oak Park, MI",
+        "Oak Park, Michigan",
+        "Oak Park, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "51",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2003-12-08T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-84240-charter-township",
+      "name": "Waterford",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "84240",
+      "geometrySha256": "306f5eb4281574b5ca7dce1b4d123ee4cdf4cc19d462ed41785d0cb6649370b5",
+      "centroid": {
+        "lat": 42.6603303244,
+        "lng": -83.3870682367
+      },
+      "center": {
+        "lat": 42.6584734592,
+        "lng": -83.3892851669
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Waterford",
+        "Charter Township of Waterford, MI",
+        "Charter Township of Waterford, Michigan",
+        "Charter Township of Waterford, Oakland County, Michigan",
+        "Township of Waterford",
+        "Township of Waterford, MI",
+        "Township of Waterford, Michigan",
+        "Township of Waterford, Oakland County, Michigan",
+        "Waterford",
+        "Waterford Charter Township",
+        "Waterford Charter Township, MI",
+        "Waterford Charter Township, Michigan",
+        "Waterford Charter Township, Oakland County, Michigan",
+        "Waterford Township",
+        "Waterford Township, MI",
+        "Waterford Township, Michigan",
+        "Waterford Township, Oakland County, Michigan",
+        "Waterford Twp",
+        "Waterford Twp, MI",
+        "Waterford Twp, Michigan",
+        "Waterford Twp, Oakland County, Michigan",
+        "Waterford, MI",
+        "Waterford, Michigan",
+        "Waterford, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "52",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-04-15T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-82450-city",
+      "name": "Village of Clarkston",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "82450",
+      "geometrySha256": "a3d3ec14b404d59a1ff9e2c7de924317ece0fddf7a6e7ad8c3c1581c295255cd",
+      "centroid": {
+        "lat": 42.7342908062,
+        "lng": -83.4206111174
+      },
+      "center": {
+        "lat": 42.7335603263,
+        "lng": -83.4190678481
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Clarkston",
+        "City of Clarkston, MI",
+        "City of Clarkston, Michigan",
+        "City of Clarkston, Oakland County, Michigan",
+        "City of Village of Clarkston",
+        "City of Village of Clarkston, MI",
+        "City of Village of Clarkston, Michigan",
+        "City of Village of Clarkston, Oakland County, Michigan",
+        "Clarkston",
+        "Clarkston City",
+        "Clarkston City, MI",
+        "Clarkston City, Michigan",
+        "Clarkston City, Oakland County, Michigan",
+        "Clarkston, MI",
+        "Clarkston, Michigan",
+        "Clarkston, Oakland County, Michigan",
+        "Village of Clarkston",
+        "Village of Clarkston City",
+        "Village of Clarkston City, MI",
+        "Village of Clarkston City, Michigan",
+        "Village of Clarkston City, Oakland County, Michigan",
+        "Village of Clarkston, MI",
+        "Village of Clarkston, Michigan",
+        "Village of Clarkston, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "53",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z",
+      "aliasEvidence": [
+        {
+          "sourceUrl": "https://www.oaklandcountymi.gov/community/local-communities",
+          "responseSha256": "86668aa31063977a70eb4e5ea3013aba16403184df0148ccb8b95f1089079c83",
+          "reportedName": "Clarkston",
+          "reportedType": "City",
+          "officialWebsite": "https://villageofclarkston.org/",
+          "aliases": [
+            "City of Clarkston",
+            "City of Clarkston, MI",
+            "City of Clarkston, Michigan",
+            "City of Clarkston, Oakland County, Michigan",
+            "Clarkston",
+            "Clarkston City",
+            "Clarkston City, MI",
+            "Clarkston City, Michigan",
+            "Clarkston City, Oakland County, Michigan",
+            "Clarkston, MI",
+            "Clarkston, Michigan",
+            "Clarkston, Oakland County, Michigan"
+          ],
+          "basis": "Exact official county roster name/type row; does not claim GIS NAME equals this supplemental alias."
+        }
+      ]
+    },
+    {
+      "placeId": "us-26-125-38720-township",
+      "name": "Holly",
+      "type": "Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "38720",
+      "geometrySha256": "fa21f532e57600544a631c37f43dcc3ccc25982f535a8bd3e6f361e7c4f6fbee",
+      "centroid": {
+        "lat": 42.8311833397,
+        "lng": -83.6293391634
+      },
+      "center": {
+        "lat": 42.8286187106,
+        "lng": -83.6286751271
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Holly",
+        "Holly Township",
+        "Holly Township, MI",
+        "Holly Township, Michigan",
+        "Holly Township, Oakland County, Michigan",
+        "Holly Twp",
+        "Holly Twp, MI",
+        "Holly Twp, Michigan",
+        "Holly Twp, Oakland County, Michigan",
+        "Holly, MI",
+        "Holly, Michigan",
+        "Holly, Oakland County, Michigan",
+        "Township of Holly",
+        "Township of Holly, MI",
+        "Township of Holly, Michigan",
+        "Township of Holly, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "54",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2007-10-19T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-27760-city",
+      "name": "Fenton",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "27760",
+      "geometrySha256": "807fa663fd7f58b32ec62c93577b669c54c1bd05b7d298b3c391f24313d02a25",
+      "centroid": {
+        "lat": 42.7898433049,
+        "lng": -83.6855080291
+      },
+      "center": {
+        "lat": 42.7894918722,
+        "lng": -83.685494253
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of Fenton",
+        "City of Fenton, MI",
+        "City of Fenton, Michigan",
+        "City of Fenton, Oakland County, Michigan",
+        "Fenton",
+        "Fenton City",
+        "Fenton City, MI",
+        "Fenton City, Michigan",
+        "Fenton City, Oakland County, Michigan",
+        "Fenton, MI",
+        "Fenton, Michigan",
+        "Fenton, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "55",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-09-21T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-70060-charter-township",
+      "name": "Royal Oak",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "70060",
+      "geometrySha256": "72b28af6dc1bb28ec887b00f5a22fec0df24d65bef0d2bb07cb2745afc8e25d0",
+      "centroid": {
+        "lat": 42.4497551563,
+        "lng": -83.1623013678
+      },
+      "center": {
+        "lat": 42.4497557159,
+        "lng": -83.1617283806
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Royal Oak",
+        "Charter Township of Royal Oak, MI",
+        "Charter Township of Royal Oak, Michigan",
+        "Charter Township of Royal Oak, Oakland County, Michigan",
+        "Royal Oak",
+        "Royal Oak Charter Township",
+        "Royal Oak Charter Township, MI",
+        "Royal Oak Charter Township, Michigan",
+        "Royal Oak Charter Township, Oakland County, Michigan",
+        "Royal Oak Township",
+        "Royal Oak Township, MI",
+        "Royal Oak Township, Michigan",
+        "Royal Oak Township, Oakland County, Michigan",
+        "Royal Oak Twp",
+        "Royal Oak Twp, MI",
+        "Royal Oak Twp, Michigan",
+        "Royal Oak Twp, Oakland County, Michigan",
+        "Royal Oak, MI",
+        "Royal Oak, Michigan",
+        "Royal Oak, Oakland County, Michigan",
+        "Township of Royal Oak",
+        "Township of Royal Oak, MI",
+        "Township of Royal Oak, Michigan",
+        "Township of Royal Oak, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "56",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2005-02-17T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-75760-charter-township",
+      "name": "Springfield",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "75760",
+      "geometrySha256": "c52cbe1aa4bc359599b3e11d19131b5e8f0cf18b42b1c03503644b94f920796c",
+      "centroid": {
+        "lat": 42.7441983125,
+        "lng": -83.5075053281
+      },
+      "center": {
+        "lat": 42.7442176876,
+        "lng": -83.5075148252
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Springfield",
+        "Charter Township of Springfield, MI",
+        "Charter Township of Springfield, Michigan",
+        "Charter Township of Springfield, Oakland County, Michigan",
+        "Springfield",
+        "Springfield Charter Township",
+        "Springfield Charter Township, MI",
+        "Springfield Charter Township, Michigan",
+        "Springfield Charter Township, Oakland County, Michigan",
+        "Springfield Township",
+        "Springfield Township, MI",
+        "Springfield Township, Michigan",
+        "Springfield Township, Oakland County, Michigan",
+        "Springfield Twp",
+        "Springfield Twp, MI",
+        "Springfield Twp, Michigan",
+        "Springfield Twp, Oakland County, Michigan",
+        "Springfield, MI",
+        "Springfield, Michigan",
+        "Springfield, Oakland County, Michigan",
+        "Township of Springfield",
+        "Township of Springfield, MI",
+        "Township of Springfield, Michigan",
+        "Township of Springfield, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "57",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2024-11-13T15:04:15Z"
+    },
+    {
+      "placeId": "us-26-125-86860-charter-township",
+      "name": "White Lake",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "86860",
+      "geometrySha256": "2fae4f097529e4f496e3b27b925a027ef25b919e962f3dd521ee477c6b50c05a",
+      "centroid": {
+        "lat": 42.6567460243,
+        "lng": -83.5041218955
+      },
+      "center": {
+        "lat": 42.6559929321,
+        "lng": -83.5040468483
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of White Lake",
+        "Charter Township of White Lake, MI",
+        "Charter Township of White Lake, Michigan",
+        "Charter Township of White Lake, Oakland County, Michigan",
+        "Township of White Lake",
+        "Township of White Lake, MI",
+        "Township of White Lake, Michigan",
+        "Township of White Lake, Oakland County, Michigan",
+        "White Lake",
+        "White Lake Charter Township",
+        "White Lake Charter Township, MI",
+        "White Lake Charter Township, Michigan",
+        "White Lake Charter Township, Oakland County, Michigan",
+        "White Lake Township",
+        "White Lake Township, MI",
+        "White Lake Township, Michigan",
+        "White Lake Township, Oakland County, Michigan",
+        "White Lake Twp",
+        "White Lake Twp, MI",
+        "White Lake Twp, Michigan",
+        "White Lake Twp, Oakland County, Michigan",
+        "White Lake, MI",
+        "White Lake, Michigan",
+        "White Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "58",
+      "resolutionEligible": true,
+      "limitations": []
+    },
+    {
+      "placeId": "us-26-125-49820-charter-township",
+      "name": "Lyon",
+      "type": "Charter Township",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "49820",
+      "geometrySha256": "10d1f10a0adf0d67ae5b6164daf3cf97a1f425eab4abe50cee432338c5a7e8f1",
+      "centroid": {
+        "lat": 42.4794718824,
+        "lng": -83.6061713841
+      },
+      "center": {
+        "lat": 42.4778732182,
+        "lng": -83.5988071909
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Charter Township of Lyon",
+        "Charter Township of Lyon, MI",
+        "Charter Township of Lyon, Michigan",
+        "Charter Township of Lyon, Oakland County, Michigan",
+        "Lyon",
+        "Lyon Charter Township",
+        "Lyon Charter Township, MI",
+        "Lyon Charter Township, Michigan",
+        "Lyon Charter Township, Oakland County, Michigan",
+        "Lyon Township",
+        "Lyon Township, MI",
+        "Lyon Township, Michigan",
+        "Lyon Township, Oakland County, Michigan",
+        "Lyon Twp",
+        "Lyon Twp, MI",
+        "Lyon Twp, Michigan",
+        "Lyon Twp, Oakland County, Michigan",
+        "Lyon, MI",
+        "Lyon, Michigan",
+        "Lyon, Oakland County, Michigan",
+        "Township of Lyon",
+        "Township of Lyon, MI",
+        "Township of Lyon, Michigan",
+        "Township of Lyon, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "59",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2025-11-17T20:46:01Z"
+    },
+    {
+      "placeId": "us-26-125-53960-village",
+      "name": "Milford",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "53960",
+      "geometrySha256": "5fa3150b90e37d8378c21e06270aeb29c8d1a492cb86c32dd1d734d45ec2f8b1",
+      "centroid": {
+        "lat": 42.5870604504,
+        "lng": -83.6012312899
+      },
+      "center": {
+        "lat": 42.5874495121,
+        "lng": -83.6004048762
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Milford",
+        "Milford Village",
+        "Milford Village, MI",
+        "Milford Village, Michigan",
+        "Milford Village, Oakland County, Michigan",
+        "Milford, MI",
+        "Milford, Michigan",
+        "Milford, Oakland County, Michigan",
+        "Village of Milford",
+        "Village of Milford, MI",
+        "Village of Milford, Michigan",
+        "Village of Milford, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "60",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2004-02-23T00:00:00Z"
+    },
+    {
+      "placeId": "us-26-125-75100-city",
+      "name": "South Lyon",
+      "type": "City",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "75100",
+      "geometrySha256": "27cb0b0ac4179cecb31e1ba0a38d38d3b15c50ba197ec6002080d37621fa87ac",
+      "centroid": {
+        "lat": 42.4612963346,
+        "lng": -83.6526137024
+      },
+      "center": {
+        "lat": 42.4579866423,
+        "lng": -83.6515096986
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "City of South Lyon",
+        "City of South Lyon, MI",
+        "City of South Lyon, Michigan",
+        "City of South Lyon, Oakland County, Michigan",
+        "South Lyon",
+        "South Lyon City",
+        "South Lyon City, MI",
+        "South Lyon City, Michigan",
+        "South Lyon City, Oakland County, Michigan",
+        "South Lyon, MI",
+        "South Lyon, Michigan",
+        "South Lyon, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "61",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2025-11-17T20:46:01Z"
+    },
+    {
+      "placeId": "us-26-125-62020-village",
+      "name": "Oxford",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": "62020",
+      "geometrySha256": "0716505f2ed9ccc1b554892c777c6f8e3885f92552d7589b91f83a13a766f650",
+      "centroid": {
+        "lat": 42.8218272445,
+        "lng": -83.2566986015
+      },
+      "center": {
+        "lat": 42.8199154519,
+        "lng": -83.2556457675
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Oxford",
+        "Oxford Village",
+        "Oxford Village, MI",
+        "Oxford Village, Michigan",
+        "Oxford Village, Oakland County, Michigan",
+        "Oxford, MI",
+        "Oxford, Michigan",
+        "Oxford, Oakland County, Michigan",
+        "Village of Oxford",
+        "Village of Oxford, MI",
+        "Village of Oxford, Michigan",
+        "Village of Oxford, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "62",
+      "resolutionEligible": true,
+      "limitations": [],
+      "revisionDate": "2006-11-30T00:00:00Z"
+    },
+    {
+      "placeId": "oakland-municipal-district-objectid-63-village",
+      "name": "Cass Lake",
+      "type": "Village",
+      "stateFips": "26",
+      "countyFips": "125",
+      "localFips": null,
+      "geometrySha256": "4fc566c0e1d78acacc52fa2dadf18b4b7b008315e24099c644347be4e88a4295",
+      "centroid": {
+        "lat": 42.6118300088,
+        "lng": -83.3782434369
+      },
+      "center": {
+        "lat": 42.6118027733,
+        "lng": -83.3783763615
+      },
+      "centerMethod": "GEOS point_on_surface in WGS84 / UTM zone 17N (EPSG:32617), inverse-projected to EPSG:4326; deterministic Shapely 2.1.2/GEOS 3.13.1; 10 decimal places",
+      "aliases": [
+        "Cass Lake",
+        "Cass Lake Village",
+        "Cass Lake Village, MI",
+        "Cass Lake Village, Michigan",
+        "Cass Lake Village, Oakland County, Michigan",
+        "Cass Lake, MI",
+        "Cass Lake, Michigan",
+        "Cass Lake, Oakland County, Michigan",
+        "Village of Cass Lake",
+        "Village of Cass Lake, MI",
+        "Village of Cass Lake, Michigan",
+        "Village of Cass Lake, Oakland County, Michigan"
+      ],
+      "sourceRecordId": "63",
+      "resolutionEligible": false,
+      "limitations": [
+        "Official layer feature OBJECTID 63 reports NAME Cass Lake and TYPE Village but LOCALFIPS is null; legal municipal identity is not verified.",
+        "SQUAREMILES 31.31959746 is inconsistent with the feature geometry area; all original attributes and geometry are retained.",
+        "Quarantined metadata-only: not eligible for a positive place resolution or query center until official identity and geometry semantics are verified."
+      ],
+      "revisionDate": "2026-09-04T18:59:13Z"
+    }
+  ],
+  "supplementaryAliasSources": [
+    {
+      "sourceUrl": "https://www.oaklandcountymi.gov/community/local-communities",
+      "observedAt": "2026-10-28T05:45:18.620002+00:00",
+      "responseSha256": "86668aa31063977a70eb4e5ea3013aba16403184df0148ccb8b95f1089079c83",
+      "description": "Official county Local Communities roster; supplemental alias authority, not a replacement for GIS geometry/name/type/FIPS."
+    }
+  ],
+  "indexDigest": "7bcbfb5191d87f7f40d5364ec5d5058c107f2033ade5312fc5c9b98ac9a2a51f"
+}

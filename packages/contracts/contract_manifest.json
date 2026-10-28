@@ -1,9 +1,9 @@
 {
   "version": "0.4.0",
-  "sha256": "7981fa108aeef9156e5d03efedc177e943bbd759392511136f6ef77eff89910a",
+  "sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
   "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts/src/index.ts",
   "generatedConsumer": "roofing-crm/packages/contracts/src/index.ts",
-  "frozen_utc": "2026-10-28T05:44:37.343718+00:00",
+  "frozen_utc": "2026-10-28T05:48:24.487808+00:00",
   "prior_version": "0.3.0",
   "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
   "revision_reason": "Authoritative municipal-place references, explicit unknown permit status, evidence-presence predicates and typed sorting; no inference of contractor role, active license or unchanged tenure."

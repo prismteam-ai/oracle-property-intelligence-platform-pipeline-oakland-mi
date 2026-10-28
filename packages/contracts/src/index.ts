@@ -207,6 +207,19 @@ export const PlaceReferenceSchema = z.object({
   limitations: z.array(z.string().max(500)).max(20),
   sourceUrl: z.url(),
   observedAt: z.iso.datetime(),
+  aliasEvidence: z
+    .array(
+      z.object({
+        sourceUrl: z.url(),
+        responseSha256: z.string().regex(/^[a-f0-9]{64}$/),
+        reportedName: z.string(),
+        reportedType: z.string(),
+        officialWebsite: z.url(),
+        aliases: z.array(z.string()),
+        basis: z.string(),
+      }),
+    )
+    .optional(),
   revisionDate: z.string().nullable().optional(),
   indexDigest: z.string().regex(/^[a-f0-9]{64}$/),
 });
