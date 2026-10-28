@@ -1,3 +1,4 @@
+import { parseFunctionConcurrencyOutput } from "../packages/hosted-runtime/src/function-concurrency.ts";
 import {
   reviewedDeploymentFeatures,
   deploymentFeatureContext,
@@ -385,12 +386,14 @@ const assertDeployed = (o: Record<string, string>) => {
       o.RuntimeFunctionName!,
     ]),
   );
-  const actualReservation = JSON.parse(
+  const actualReservation = parseFunctionConcurrencyOutput(
     aws([
       "lambda",
       "get-function-concurrency",
       "--function-name",
       o.RuntimeFunctionName!,
+      "--output",
+      "json",
     ]),
   );
   const actualStage = JSON.parse(
