@@ -280,6 +280,22 @@ test("protected canonical permits retain metadata, exclude issuance from open fi
         await create([issued, issued], "duplicate.parquet"),
       ),
     ).rejects.toThrow("Duplicate");
+    const bulk = await RealSnapshot.open(
+      out,
+      await create(
+        Array.from({ length: 101 }, (_, i) =>
+          make(`SYN-BULK-${i}`, "oakland-parcel-1"),
+        ),
+        "bulk.parquet",
+      ),
+    );
+    try {
+      expect(
+        (await bulk.detail("oakland-parcel-1", bulk.snapshotId)).permits,
+      ).toHaveLength(101);
+    } finally {
+      bulk.close();
+    }
   } finally {
     db.closeSync();
     instance.closeSync();

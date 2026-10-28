@@ -482,8 +482,8 @@ export class RealSnapshot {
     });
     const permits = await (
       await this.connection.run(
-        "SELECT * FROM permits WHERE property_id=$id ORDER BY id LIMIT 100",
-        { id },
+        "SELECT * FROM permits WHERE property_id=$id ORDER BY id LIMIT $bound",
+        { id, bound: PRIVATE_PERMIT_LIMIT },
       )
     ).getRowObjectsJson();
     return PropertySchema.parse({
