@@ -6,6 +6,12 @@ import type {
   FullSourceAudit,
 } from "../../county/src/private-full-source.ts";
 export interface SnapshotOpenOptions {
+  protectedProviderObservationsFile?: string;
+  protectedProviderObservationsSha256?: string;
+  protectedTransferObservationsFile?: string;
+  protectedTransferObservationsSha256?: string;
+  protectedSourceRunsFile?: string;
+  protectedSourceRunsSha256?: string;
   protectedDerivativeFile?: string;
   protectedDerivativeSha256?: string;
   protectedEnrichmentFile?: string;
@@ -39,5 +45,6 @@ export type SnapshotConstructionArguments = [
   permitSourceCounts: Record<string, number>,
   sourceIntakeCount: number,
   fullSourceAudits: FullSourceAudit[],
+  sourceObservationAudit: import("./real-source-observations.ts").SourceObservationAudit,
   temporaryDirectory: string,
 ];

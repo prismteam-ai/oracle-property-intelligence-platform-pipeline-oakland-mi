@@ -16,6 +16,9 @@ export function privateEmulationEnvironment(
     enrichment: "PRISM_PRIVATE_ENRICHMENT",
     permits: "PRISM_PRIVATE_PERMITS",
     "source-intake": "PRISM_PRIVATE_SOURCE_INTAKE",
+    "provider-permit-observations": "PRISM_PRIVATE_PROVIDER_OBSERVATIONS",
+    "recorded-transfer-observations": "PRISM_PRIVATE_TRANSFER_OBSERVATIONS",
+    "private-source-runs": "PRISM_PRIVATE_SOURCE_RUNS",
   } as const;
   const env: Record<string, string> = {},
     full: FullSourceConfig[] = [];

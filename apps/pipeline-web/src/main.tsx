@@ -19,6 +19,7 @@ import {
   type Manifest,
   type Health,
 } from "./model.ts";
+import { SourceFilters, initialSourceFilters } from "./source-filters.tsx";
 import { OverviewPanel } from "./overview.tsx";
 import { ArtifactsPanel } from "./artifacts.tsx";
 import { EvidenceDetails } from "./details.tsx";
@@ -37,6 +38,7 @@ function App() {
       "any",
     ),
     [minDays, setMinDays] = useState(0);
+  const [sourceFilters, setSourceFilters] = useState(initialSourceFilters);
   const [health, setHealth] = useState<Health | null>(null),
     [accessRequired, setAccessRequired] = useState(false),
     [accessCode, setAccessCode] = useState(""),
@@ -99,6 +101,18 @@ function App() {
       roofMinAgeYears: age,
       permitStatus: permits,
       minOpenDays: minDays,
+      ...(sourceFilters.providerStatus !== "any"
+        ? { providerPermitStatus: sourceFilters.providerStatus }
+        : {}),
+      ...(sourceFilters.activity !== "any"
+        ? { permitActivityClaim: sourceFilters.activity }
+        : {}),
+      ...(sourceFilters.issueAge > 0
+        ? { minPermitAgeSinceIssueDays: sourceFilters.issueAge }
+        : {}),
+      ...(sourceFilters.deedGap > 0
+        ? { minRecordedDeedGapYears: sourceFilters.deedGap }
+        : {}),
       includeUnknown: age === 0,
       ownerRegion,
       ...(active.mode === "real"
@@ -429,7 +443,7 @@ function App() {
                 <h2>Find opportunities by evidence</h2>
                 <p>
                   {health?.mode === "real"
-                    ? "Official evidence · exact radius from site-address coordinates"
+                    ? "Source-qualified evidence · exact radius from site-address coordinates"
                     : "Synthetic DuckDB cohort · explicit demonstration mode"}
                 </p>
               </div>
@@ -569,6 +583,15 @@ function App() {
                   </small>
                 )}
               </label>
+              {health?.mode === "real" && (
+                <SourceFilters
+                  value={sourceFilters}
+                  onChange={(next) => {
+                    invalidate();
+                    setSourceFilters(next);
+                  }}
+                />
+              )}
               <button
                 className="primary"
                 disabled={loading || !health || accessRequired}

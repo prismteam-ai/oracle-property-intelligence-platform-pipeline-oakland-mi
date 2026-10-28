@@ -7,6 +7,7 @@ import {
 import { createHash } from "node:crypto";
 import {
   CONTRACT_VERSION,
+  recordedDeedGapMatches,
   DomainError,
   QuerySchema,
   SearchResponseSchema,
@@ -19,6 +20,8 @@ import {
   observedPermitOpenDays,
   reportedSaleOlderThan,
   compareQueryRows,
+  permitSourceObservationMatches,
+  roofingCandidateMatches,
 } from "../../contracts/src/query-predicates.ts";
 export {
   distanceMeters,
@@ -105,6 +108,13 @@ export class SnapshotReader {
         )
           return [];
         if (
+          q.minRecordedDeedGapYears !== undefined &&
+          !(p.ownership.recordedTransferIndexObservations ?? []).some((row) =>
+            recordedDeedGapMatches(row, q.minRecordedDeedGapYears!),
+          )
+        )
+          return [];
+        if (
           q.minReportedSaleAgeYears !== undefined &&
           !reportedSaleOlderThan(p, q.minReportedSaleAgeYears)
         )
@@ -128,8 +138,9 @@ export class SnapshotReader {
         ) {
           const permit = p.permits.some(
             (x) =>
-              x.kind !== "other" &&
+              roofingCandidateMatches(x, q) &&
               permitEvidenceMatches(x, q) &&
+              permitSourceObservationMatches(x, q) &&
               (q.permitStatus === "any" ||
                 observedPermitStatus(x) === q.permitStatus) &&
               (q.minOpenDays === 0 ||

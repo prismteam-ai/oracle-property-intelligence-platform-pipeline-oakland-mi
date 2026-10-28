@@ -22,6 +22,7 @@ import {
   type FullSourceAudit,
 } from "../../county/src/private-full-source.ts";
 import { quote, verifySnapshotDirectory } from "./real-utils.ts";
+import { loadSourceObservations } from "./real-source-observations.ts";
 import { loadFullSources } from "./real-full-sources.ts";
 import type {
   SnapshotOpenOptions,
@@ -395,6 +396,13 @@ export async function loadRealSnapshot<T>(
       throw new Error(
         "Combined municipal full-source intake exceeds the versioned 50000-record envelope",
       );
+    const sourceObservationAudit = await loadSourceObservations({
+      db,
+      options,
+      publicSnapshotId: verified.manifest.snapshotId,
+      checkPrivate,
+      overlayDigests,
+    });
     await db.run("CREATE INDEX address_location ON site_addresses(lat,lng)");
     await db.run(
       "CREATE INDEX link_property ON parcel_address_links(property_id)",
@@ -441,6 +449,7 @@ export async function loadRealSnapshot<T>(
       permitSourceCounts,
       sourceIntakeCount,
       fullSourceAudits,
+      sourceObservationAudit,
       temporaryDirectory,
     );
   } catch (error) {

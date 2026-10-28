@@ -4,6 +4,7 @@ import type {
 } from "../../../packages/contracts/src/index.ts";
 import type { Health } from "./model.ts";
 import { roofBasis } from "./model.ts";
+import { PermitSourceDetails, DeedSourceDetails } from "./source-details.tsx";
 import { MunicipalSource } from "./municipal-source.tsx";
 export function EvidenceDetails({
   selected,
@@ -38,7 +39,7 @@ export function EvidenceDetails({
         <h2 id="evidence-title">{selected.address}</h2>
         <span className="badge teal">
           {health?.mode === "real"
-            ? "Official source evidence"
+            ? "Real source evidence"
             : "Synthetic fixture"}
         </span>
         <p className="muted">
@@ -126,10 +127,23 @@ export function EvidenceDetails({
             ))}
           </>
         )}
+        <DeedSourceDetails property={selected} />
         <h3>Permits and contractor evidence</h3>
         {selected.permits.map((p) => (
-          <article className="detail-permit" key={p.id}>
+          <article
+            className={
+              "detail-permit" +
+              (health?.dataMode === "protected-real"
+                ? " private-protected-evidence"
+                : "")
+            }
+            data-private-evidence={
+              health?.dataMode === "protected-real" ? "true" : undefined
+            }
+            key={p.id}
+          >
             <strong>{p.permitNumber ?? p.id}</strong>
+            <PermitSourceDetails permit={p} />
             <p>
               {p.jurisdiction ?? "Jurisdiction unavailable"} ·{" "}
               {p.reportedPermitType?.trim() || "Permit type unavailable"}
@@ -153,11 +167,15 @@ export function EvidenceDetails({
                 : ""}
             </p>
             <p>
-              {p.provenance.some(
-                (source) => source.sourceId === "official-troy-issued-permits",
-              )
-                ? "Business applicant (contractor role unverified): "
-                : "Reported contractor: "}
+              {(p.sourceObservations?.length ?? 0) > 0 &&
+              !p.contractor.verifiedCompanyId
+                ? "Provider-listed party (contractor role unverified): "
+                : p.provenance.some(
+                      (source) =>
+                        source.sourceId === "official-troy-issued-permits",
+                    )
+                  ? "Business applicant (contractor role unverified): "
+                  : "Reported contractor: "}
               {p.contractor.reportedName ?? "Unavailable"}
             </p>
             <p>

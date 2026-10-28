@@ -1,3 +1,10 @@
+import {
+  EFFECTIVE_PERMIT_STATUS_SQL,
+  EFFECTIVE_OPEN_DAYS_SQL,
+  SOURCE_OBSERVATION_FILTER_SQL,
+  RECORDED_DEED_FILTER_SQL,
+  ROOFING_CANDIDATE_SQL,
+} from "./source-predicates.ts";
 import { resolveQueryPlace } from "../../places/src/index.ts";
 import { PERMIT_EVIDENCE_SQL, needsPermitEvidence } from "./predicates.ts";
 import { rmSync } from "node:fs";
@@ -48,6 +55,7 @@ export class RealSnapshot {
     readonly permitSourceCounts: Readonly<Record<string, number>>,
     readonly sourceIntakeCount: number,
     readonly fullSourceAudits: readonly FullSourceAudit[],
+    readonly sourceObservationAudit: import("./real-source-observations.ts").SourceObservationAudit,
     private temporaryDirectory: string,
   ) {
     this.publicSnapshotId = manifest.snapshotId;
@@ -185,7 +193,33 @@ export class RealSnapshot {
         ],
       })),
     );
-    this.runs = runs;
+    if (sourceObservationAudit.providerObservations)
+      this.coverage.push({
+        source: "PermitStack roofing status observations",
+        scope:
+          "Protected Troy provider observations; municipal facts remain separately retained",
+        state: "partial_provider_reported",
+        count: sourceObservationAudit.providerObservations,
+        limitations: [
+          `${sourceObservationAudit.existingPermitAssociations} existing municipal permit associations; ${sourceObservationAudit.newSourceCandidates} additional provider source candidates, not verified new legal permits.`,
+          `${sourceObservationAudit.providerCategoryDisagreements} provider ROOFING classifications differ from the retained municipal-work projection kind=other. Provider-qualified candidate filters may include them; native activity/duration filters retain the independently qualified roofing scope.`,
+          `${sourceObservationAudit.currentlyReportedActive} current reported-active observations. ISSUED is not OPEN; issue age is not continuous open duration.`,
+          "Provider classifications and contractor identity/role are independently qualified. No public redistribution.",
+        ],
+      });
+    if (sourceObservationAudit.deedObservations)
+      this.coverage.push({
+        source: "Official current-PIN recorded-deed index observations",
+        scope:
+          "Bounded exact-current-PIN queries, all visible result pages; predecessor-parcel lineage not established",
+        state: "partial_current_pin_index",
+        count: sourceObservationAudit.deedObservations,
+        limitations: [
+          `${sourceObservationAudit.tenYearDeedObservations} no-observed-deed gaps exceed ten years through ${sourceObservationAudit.deedObservedThrough}.`,
+          "Advertised global index start is not proven current-PIN historical lineage coverage. This is not legal ownership continuity or title verification.",
+        ],
+      });
+    this.runs = [...runs, ...sourceObservationAudit.runs];
   }
   static async open(
     directory: string,
@@ -324,6 +358,12 @@ export class RealSnapshot {
         { id, bound: PRIVATE_PERMIT_LIMIT },
       )
     ).getRowObjectsJson();
+    const deedObservations = await (
+      await this.connection.run(
+        "SELECT canonical_json FROM private_transfer_observations WHERE property_id=$id",
+        { id },
+      )
+    ).getRowObjectsJson();
     return PropertySchema.parse({
       id,
       nativeId: String(row.native_id),
@@ -404,6 +444,13 @@ export class RealSnapshot {
             },
       ),
       ownership: {
+        ...(deedObservations.length
+          ? {
+              recordedTransferIndexObservations: deedObservations.map(
+                (o) => JSON.parse(String(o.canonical_json)) as unknown,
+              ),
+            }
+          : {}),
         ...(reportedOwners.length
           ? {
               reportedOwnerObservations: reportedOwners.map(
@@ -487,7 +534,7 @@ export class RealSnapshot {
     if (q.minOwnershipYears !== undefined)
       throw new DomainError(
         "UNSUPPORTED_TOOL",
-        "Ownership tenure is unknown: no legitimate transfer-event source is present. Source revision date is not a transfer date.",
+        "Ownership tenure is unknown; legal continuity is unestablished. The separate minRecordedDeedGapYears filter supports only a bounded current-PIN official-index no-observed-deed gap; it does not establish unchanged ownership.",
       );
     if (
       q.ownerRegion &&
@@ -557,6 +604,16 @@ export class RealSnapshot {
       minConfidence: q.minConfidence,
       owner: q.ownerRegion ?? "any",
       statusRequired,
+      sourceRequired:
+        q.providerPermitStatus !== undefined ||
+        q.permitActivityClaim !== undefined ||
+        q.minPermitAgeSinceIssueDays !== undefined,
+      providerStatus: q.providerPermitStatus ?? null,
+      activityClaim: q.permitActivityClaim ?? null,
+      issueAge: q.minPermitAgeSinceIssueDays ?? null,
+      deedGap: q.minRecordedDeedGapYears ?? null,
+      allowProviderRoof:
+        q.minOpenDays === 0 && q.permitActivityClaim !== "native_reported_open",
       status: q.permitStatus,
       days: q.minOpenDays,
       limit: q.limit,
@@ -569,7 +626,7 @@ export class RealSnapshot {
       requiresVerifiedLicense: Boolean(q.requiresVerifiedLicense),
       requiresBbbRating: Boolean(q.requiresBbbRating),
     };
-    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL}) AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)) ${PERMIT_EVIDENCE_SQL})))`;
+    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(${EFFECTIVE_OPEN_DAYS_SQL}) FROM permits x WHERE x.property_id=p.id AND ${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR ${EFFECTIVE_OPEN_DAYS_SQL} >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL}) AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE true ${RECORDED_DEED_FILTER_SQL} AND ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR (${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${EFFECTIVE_OPEN_DAYS_SQL} >= $days)) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))`;
     const native = await (
       await this.connection.run(
         cte +

@@ -9,3 +9,7 @@ CloudFront and private S3 serve the UI and proxy the HTTP API. An AWS Lambda rea
 The release candidate uses the standard CDK default synthesizer with qualifier `prismrvw`, measured ZIP assets and actual CDK deployment. Exact source, contract, account, region, package, snapshot and budget pins guard effects. Existing-stack updates checksum-stage data before activation; acknowledged first creation remains fail closed with an unconfigured access secret until its exact data uploads are verified.
 
 See [security](SECURITY_PRIVACY.md), [deployment](DEPLOYMENT.md) and [observability](OBSERVABILITY.md).
+
+`real-source-observations.ts` validates every new observation against the strict canonical contract, file digest, exact JSON digest, snapshot/property binding and existing municipal-permit association. Separate source tables support typed predicates and private coverage; unknown legacy municipal status is retained in the response. Independent native closure takes precedence over provider activity. The current-PIN deed index table carries an explicit bounded claim window and verified cutoff, separate from the advertised source-wide index start. A public load without the private sidecars creates empty source tables and does not project these observations.
+
+Contract metadata distinguishes the compatibility entry-file SHA-256 from the SHA-256 of the complete sorted source-module hash inventory. Both active manifests and the canonical verifier bind all three TypeScript modules; API version changes do not rewrite old public artifact manifests.

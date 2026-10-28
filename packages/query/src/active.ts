@@ -37,6 +37,11 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
     const protectedEnrichmentFile = process.env.PRISM_PRIVATE_ENRICHMENT;
     const protectedPermitsFile = process.env.PRISM_PRIVATE_PERMITS;
     const protectedSourceIntakeFile = process.env.PRISM_PRIVATE_SOURCE_INTAKE;
+    const protectedProviderObservationsFile =
+      process.env.PRISM_PRIVATE_PROVIDER_OBSERVATIONS;
+    const protectedTransferObservationsFile =
+      process.env.PRISM_PRIVATE_TRANSFER_OBSERVATIONS;
+    const protectedSourceRunsFile = process.env.PRISM_PRIVATE_SOURCE_RUNS;
     const protectedFullSources = parseFullSourceConfigs(
       JSON.parse(process.env.PRISM_PRIVATE_FULL_SOURCES || "[]"),
     );
@@ -45,6 +50,9 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
         protectedEnrichmentFile ||
         protectedPermitsFile ||
         protectedSourceIntakeFile ||
+        protectedProviderObservationsFile ||
+        protectedTransferObservationsFile ||
+        protectedSourceRunsFile ||
         protectedFullSources.length > 0) &&
       process.env.PRISM_REQUIRE_AUTH !== "1"
     )
@@ -63,6 +71,14 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
         protectedSourceIntakeFile,
         protectedSourceIntakeSha256:
           process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256,
+        protectedProviderObservationsFile,
+        protectedProviderObservationsSha256:
+          process.env.PRISM_PRIVATE_PROVIDER_OBSERVATIONS_SHA256,
+        protectedTransferObservationsFile,
+        protectedTransferObservationsSha256:
+          process.env.PRISM_PRIVATE_TRANSFER_OBSERVATIONS_SHA256,
+        protectedSourceRunsFile,
+        protectedSourceRunsSha256: process.env.PRISM_PRIVATE_SOURCE_RUNS_SHA256,
         protectedFullSources,
       },
     );

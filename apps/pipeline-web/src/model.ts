@@ -1,4 +1,5 @@
 export interface Run {
+  kind?: string;
   id: string;
   at: string;
   source: string;

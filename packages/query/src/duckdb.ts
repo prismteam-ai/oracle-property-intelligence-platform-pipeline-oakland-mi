@@ -1,3 +1,8 @@
+import {
+  SOURCE_OBSERVATION_FILTER_SQL,
+  RECORDED_DEED_FILTER_SQL,
+  ROOFING_CANDIDATE_SQL,
+} from "./source-predicates.ts";
 import { resolveQueryPlace } from "../../places/src/index.ts";
 import {
   PERMIT_EVIDENCE_SQL,
@@ -43,7 +48,13 @@ export class DuckSnapshot {
       "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON, reported_sale DATE, tenure_since DATE, tenure_from DATE, tenure_through DATE)",
     );
     await db.run(
-      "CREATE TABLE permits (property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR, verified_company_id VARCHAR, canonical_json JSON)",
+      "CREATE TABLE permits (id VARCHAR, property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR, verified_company_id VARCHAR, canonical_json JSON)",
+    );
+    await db.run(
+      "CREATE TABLE private_provider_observations(permit_id VARCHAR,provider_status VARCHAR,activity_claim VARCHAR,lifecycle VARCHAR,age_days INTEGER,continuous_open_days INTEGER)",
+    );
+    await db.run(
+      "CREATE TABLE private_transfer_observations(property_id VARCHAR,claim_window_start DATE,observed_through DATE,last_deed_date DATE)",
     );
     const confidence = { high: 3, medium: 2, low: 1, unknown: 0 };
     for (const p of rows) {
@@ -68,8 +79,31 @@ export class DuckSnapshot {
             : null,
         ],
       );
-      for (const permit of p.permits)
-        await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4,$5,$6)", [
+      for (const row of p.ownership.recordedTransferIndexObservations ?? [])
+        await db.run(
+          "INSERT INTO private_transfer_observations VALUES($property,$start,$through,$deed)",
+          {
+            property: p.id,
+            start: row.claimWindowStart,
+            through: row.observedThrough,
+            deed: row.lastRecordedDeedDate,
+          },
+        );
+      for (const permit of p.permits) {
+        for (const row of permit.sourceObservations ?? [])
+          await db.run(
+            "INSERT INTO private_provider_observations VALUES($permit,$status,$activity,$lifecycle,$age,$continuous)",
+            {
+              permit: permit.id,
+              status: row.providerStatus,
+              activity: row.activityClaim,
+              lifecycle: row.supportedLifecycle,
+              age: row.ageSinceIssueDays,
+              continuous: row.continuousOpenDays,
+            },
+          );
+        await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4,$5,$6,$7)", [
+          permit.id,
           p.id,
           observedPermitStatus(permit),
           observedPermitOpenDays(permit, p.roof.asOf),
@@ -77,6 +111,7 @@ export class DuckSnapshot {
           permit.contractor.verifiedCompanyId,
           JSON.stringify(permit),
         ]);
+      }
     }
     return new DuckSnapshot(snapshotId, rows, db, instance);
   }
@@ -121,8 +156,9 @@ export class DuckSnapshot {
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
     const sql = `WITH matches AS (
       SELECT id,payload,age,${distanceSql} AS distance,
-      (SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL}) AS priority
+      (SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL}) AS priority
       FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence
+      ${RECORDED_DEED_FILTER_SQL}
       AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL))
       AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner)
       AND ($years IS NULL OR (tenure_since IS NOT NULL
@@ -133,10 +169,10 @@ export class DuckSnapshot {
         AND reported_sale <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)
         AND reported_sale < CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL '1 year'))
       AND (($status='any' AND $days=0 AND NOT $evidenceRequired)
-        OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other'
+        OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND ${ROOFING_CANDIDATE_SQL}
           AND ($status='any' OR x.status=$status)
           AND ($days=0 OR (x.status='open' AND x.open_days >= $days))
-          ${PERMIT_EVIDENCE_SQL})))
+          ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))
       SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius
       ORDER BY CASE WHEN $sortRoof THEN age ELSE NULL END DESC NULLS LAST,
         CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id
@@ -148,6 +184,17 @@ export class DuckSnapshot {
       roof: query.roofMinAgeYears ?? null,
       unknown: query.includeUnknown,
       status: query.permitStatus,
+      sourceRequired:
+        query.providerPermitStatus !== undefined ||
+        query.permitActivityClaim !== undefined ||
+        query.minPermitAgeSinceIssueDays !== undefined,
+      providerStatus: query.providerPermitStatus ?? null,
+      activityClaim: query.permitActivityClaim ?? null,
+      issueAge: query.minPermitAgeSinceIssueDays ?? null,
+      deedGap: query.minRecordedDeedGapYears ?? null,
+      allowProviderRoof:
+        query.minOpenDays === 0 &&
+        query.permitActivityClaim !== "native_reported_open",
       days: query.minOpenDays,
       owner: query.ownerRegion ?? "any",
       years: query.minOwnershipYears ?? null,

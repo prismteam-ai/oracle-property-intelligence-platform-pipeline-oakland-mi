@@ -37,7 +37,11 @@ export function OverviewPanel({
             {latest?.added === null ? "Unknown" : `+${latest?.added ?? 0}`}
             <i> / {latest?.changed ?? "Unknown"} changed</i>
           </strong>
-          <small>{latest?.deleted ?? "Unknown"} tombstones recorded</small>
+          <small>
+            {latest?.kind === "protected-source-refresh"
+              ? "Source observations; property count unchanged"
+              : `${latest?.deleted ?? "Unknown"} tombstones recorded`}
+          </small>
         </div>
         <div>
           <span>PUBLIC REPLICAS</span>
@@ -83,6 +87,11 @@ export function OverviewPanel({
                     <span>{run.deleted ?? "Unknown"} removed</span>
                     <span>{run.unchanged ?? "Unknown"} unchanged</span>
                   </div>
+                  {run.limitations?.map((text) => (
+                    <p className="muted" key={text}>
+                      {text}
+                    </p>
+                  ))}
                   {run.raw !== undefined && (
                     <details>
                       <summary>Exact source run receipt</summary>

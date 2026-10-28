@@ -60,6 +60,36 @@ test("official MCP initialization, discovery, strict bounded calls and no prohib
     });
     expect(good.isError).not.toBe(true);
     expect(good.structuredContent).toMatchObject({ snapshotId: SNAPSHOT_ID });
+    const searchSchema = list.tools.find(
+      (tool) => tool.name === "search_properties",
+    )!.inputSchema;
+    expect(searchSchema.additionalProperties).toBe(false);
+    for (const key of [
+      "providerPermitStatus",
+      "permitActivityClaim",
+      "minPermitAgeSinceIssueDays",
+      "minRecordedDeedGapYears",
+    ])
+      expect(searchSchema.properties).toHaveProperty(key);
+    for (const filter of [
+      { providerPermitStatus: "ISSUED" },
+      { permitActivityClaim: "provider_reported_active" },
+      { minPermitAgeSinceIssueDays: 3650 },
+      { minRecordedDeedGapYears: 10 },
+    ]) {
+      const bounded = await client.callTool({
+        name: "search_properties",
+        arguments: {
+          snapshotId: SNAPSHOT_ID,
+          lat: 42.66,
+          lng: -83.29,
+          radiusMeters: 8000,
+          ...filter,
+        },
+      });
+      expect(bounded.isError).not.toBe(true);
+      expect(bounded.structuredContent).toMatchObject({ total: 0, rows: [] });
+    }
     const drift = await client.callTool({
       name: "snapshot_status",
       arguments: { snapshotId: "other" },
