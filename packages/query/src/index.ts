@@ -34,6 +34,33 @@ export function openDays(openedAt: string | null, asOf: string): number | null {
     return null;
   return Math.floor((end - start) / 86400000);
 }
+/** A reported sale is a partial observation; a transfer/tenure date is never substituted. */
+export function latestReportedSale(property: Property): string | null {
+  const dates = (property.ownership.events ?? [])
+    .filter((e) => e.kind === "reported_sale")
+    .map((e) => e.date)
+    .sort();
+  return dates.at(-1) ?? null;
+}
+export function reportedSaleOlderThan(
+  property: Property,
+  years: number,
+): boolean {
+  const sale = latestReportedSale(property),
+    cutoff = new Date(property.roof.asOf);
+  if (!sale || !Number.isFinite(cutoff.valueOf()) || sale > property.roof.asOf)
+    return false;
+  const month = cutoff.getUTCMonth(),
+    day = cutoff.getUTCDate(),
+    year = cutoff.getUTCFullYear() - years;
+  cutoff.setUTCDate(1);
+  cutoff.setUTCFullYear(year);
+  cutoff.setUTCMonth(month);
+  cutoff.setUTCDate(
+    Math.min(day, new Date(Date.UTC(year, month + 1, 0)).getUTCDate()),
+  );
+  return sale < cutoff.toISOString().slice(0, 10);
+}
 export class SnapshotReader {
   constructor(
     readonly snapshotId: string,
@@ -121,6 +148,11 @@ export class SnapshotReader {
           if (anniversary.toISOString().slice(0, 10) > p.roof.asOf) return [];
         }
         if (
+          q.minReportedSaleAgeYears !== undefined &&
+          !reportedSaleOlderThan(p, q.minReportedSaleAgeYears)
+        )
+          return [];
+        if (
           q.roofMinAgeYears !== undefined &&
           (p.roof.ageYears === null
             ? !q.includeUnknown
@@ -183,6 +215,11 @@ export class SnapshotReader {
         "Synthetic fixture coverage is not county coverage",
         "Unknown roof evidence is excluded unless requested",
         "No public IPFS/Atlas publication or live model inference in P1",
+        ...(q.minReportedSaleAgeYears !== undefined
+          ? [
+              "Reported-sale age uses only the latest observed reported-sale event and snapshot date. Partial observations do not establish ownership tenure or rule out unobserved later sales; unknown dates are excluded.",
+            ]
+          : []),
       ],
     });
   }

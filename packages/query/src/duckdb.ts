@@ -7,7 +7,7 @@ import {
   type Property,
   type SearchResponse,
 } from "../../contracts/src/index.ts";
-import { SnapshotReader, openDays } from "./index.ts";
+import { SnapshotReader, openDays, latestReportedSale } from "./index.ts";
 import { digest } from "../../identity/src/index.ts";
 const distanceSql =
   "12742017.6 * asin(sqrt(least(1.0,pow(sin(radians(lat-$lat)/2),2)+cos(radians($lat))*cos(radians(lat))*pow(sin(radians(lng-$lng)/2),2))))";
@@ -29,20 +29,21 @@ export class DuckSnapshot {
     });
     const db = await instance.connect();
     await db.run(
-      "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON)",
+      "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON, reported_sale DATE)",
     );
     await db.run(
       "CREATE TABLE permits (property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR)",
     );
     const confidence = { high: 3, medium: 2, low: 1, unknown: 0 };
     for (const p of rows) {
-      await db.run("INSERT INTO properties VALUES ($1,$2,$3,$4,$5,$6)", [
+      await db.run("INSERT INTO properties VALUES ($1,$2,$3,$4,$5,$6,$7)", [
         p.id,
         p.coordinates?.lat ?? null,
         p.coordinates?.lng ?? null,
         p.roof.ageYears,
         confidence[p.roof.confidence],
         JSON.stringify(p),
+        latestReportedSale(p),
       ]);
       for (const permit of p.permits)
         await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4)", [
@@ -92,7 +93,7 @@ export class DuckSnapshot {
         );
       }
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
-    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner) AND ($years IS NULL OR try_cast(json_extract_string(payload,'$.ownership.lastTransferDate') AS DATE) + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
+    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner) AND ($years IS NULL OR try_cast(json_extract_string(payload,'$.ownership.lastTransferDate') AS DATE) + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)) AND ($reportedSaleAge IS NULL OR (reported_sale IS NOT NULL AND reported_sale <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) AND reported_sale < CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL '1 year')) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
     const result = await this.connection.run(sql, {
       lat: query.lat,
       lng: query.lng,
@@ -103,6 +104,7 @@ export class DuckSnapshot {
       days: query.minOpenDays,
       owner: query.ownerRegion ?? "any",
       years: query.minOwnershipYears ?? null,
+      reportedSaleAge: query.minReportedSaleAgeYears ?? null,
       radius: query.radiusMeters,
       prioritize: query.permitStatus === "open" || query.minOpenDays > 0,
       limit: query.limit,
@@ -142,6 +144,11 @@ export class DuckSnapshot {
         "P1 fixture/sample scope, not county coverage",
         "Local DuckDB accepted-snapshot query; no upstream MCP deployment",
         "No actual public CID or provider persistence verified",
+        ...(query.minReportedSaleAgeYears !== undefined
+          ? [
+              "Reported-sale age uses only the latest observed reported-sale event and snapshot date. Partial observations do not establish ownership tenure or rule out unobserved later sales; unknown dates are excluded.",
+            ]
+          : []),
       ],
     });
   }
