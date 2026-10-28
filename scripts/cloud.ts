@@ -1,3 +1,4 @@
+import { withPrivateCliInput } from "../packages/hosted-runtime/src/private-cli-input.ts";
 import { parseFunctionConcurrencyOutput } from "../packages/hosted-runtime/src/function-concurrency.ts";
 import {
   reviewedDeploymentFeatures,
@@ -284,17 +285,18 @@ function aws(args: string[], input?: string) {
   });
   let missingTaskStack: boolean;
   try {
-    return execFileSync("aws", ["--region", pins.region, ...args], {
-      encoding: "utf8",
-      timeout: 1200000,
-      input,
-      stdio: ["pipe", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        AWS_REGION: pins.region,
-        AWS_DEFAULT_REGION: pins.region,
-      },
-    }).trim();
+    return withPrivateCliInput(operations, args, input, (preparedArgs) =>
+      execFileSync("aws", ["--region", pins.region, ...preparedArgs], {
+        encoding: "utf8",
+        timeout: 1200000,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          AWS_REGION: pins.region,
+          AWS_DEFAULT_REGION: pins.region,
+        },
+      }).trim(),
+    );
   } catch (error) {
     const stderr =
       error && typeof error === "object" && "stderr" in error
