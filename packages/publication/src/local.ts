@@ -16,7 +16,11 @@ import {
   PublicRunManifestSchema,
   type PublicRunManifest,
 } from "./run-manifest.ts";
-import { PublicRunHistorySchema } from "./run-history.ts";
+import { PublicRunHistorySchema, publicRunLayers } from "./run-history.ts";
+import {
+  PublicPredecessorSchema,
+  type PublicPredecessor,
+} from "./run-manifest.ts";
 import type { ArtifactManifest } from "../../county/src/build.ts";
 export const PUBLICATION_FILES = [
   "parcels.parquet",
@@ -33,13 +37,17 @@ export const RUN_PUBLICATION_FILES = [
   "runs.json",
   "run-manifest.json",
 ] as const;
-export type PublicationProfile = "legacy-data-v1" | "run-history-v2";
+export type PublicationProfile =
+  "legacy-data-v1" | "run-history-v2" | "run-history-v3";
 function approvedFiles(profile: PublicationProfile): readonly string[] {
   if (profile === "legacy-data-v1") return PUBLICATION_FILES;
-  if (profile === "run-history-v2") return RUN_PUBLICATION_FILES;
+  if (profile === "run-history-v2" || profile === "run-history-v3")
+    return RUN_PUBLICATION_FILES;
   throw new Error("Unknown publication profile");
 }
-async function verifiedPreviousPublication(directory: string | undefined) {
+export async function verifiedPreviousPublication(
+  directory: string | undefined,
+) {
   if (!directory)
     throw new Error("Verified previous publication directory required");
   if ((await lstat(directory)).isSymbolicLink())
@@ -54,7 +62,7 @@ async function verifiedPreviousPublication(directory: string | undefined) {
       !info.isFile() ||
       info.isSymbolicLink() ||
       info.nlink !== 1 ||
-      info.size > 1048576
+      info.size > 16 * 1048576
     )
       throw new Error("Unsafe previous publication metadata");
   }
@@ -107,6 +115,9 @@ async function verifiedPreviousPublication(directory: string | undefined) {
     snapshotId: string;
     datasetDigest: string;
     car: { bytes: number; sha256: string };
+    publicationProfile?: PublicationProfile;
+    files: { name: string; bytes: number; sha256: string }[];
+    history: unknown;
   };
   if (
     dataset.snapshotId !== prior.snapshotId ||
@@ -127,23 +138,122 @@ async function verifiedPreviousPublication(directory: string | undefined) {
     sha256(await readFile(car)) !== publication.car.sha256
   )
     throw new Error("Previous CAR integrity failure");
-  await verifyLocalCar(
+  const profile = publication.publicationProfile ?? "legacy-data-v1";
+  const expectedNames = [...approvedFiles(profile)].sort();
+  if (
+    !Array.isArray(publication.files) ||
+    stableJson(publication.files.map((f) => f.name).sort()) !==
+      stableJson(expectedNames)
+  )
+    throw new Error("Previous publication file profile mismatch");
+  const carProof = await verifyLocalCar(
     car,
     publication.rootCid,
-    prior.files.filter((f) =>
-      (PUBLICATION_FILES as readonly string[]).includes(f.name),
+    publication.files,
+    profile,
+  );
+  const historyBytes = await readFile(path.join(directory, "runs.json"));
+  const history = PublicRunHistorySchema.parse(
+    JSON.parse(historyBytes.toString()),
+  );
+  let run: PublicRunManifest | undefined,
+    runManifestSha256: string | null = null;
+  let prefix: PublicPredecessor[] = [];
+  if (profile !== "legacy-data-v1") {
+    const runInfo = await lstat(path.join(directory, "run-manifest.json"));
+    if (
+      !runInfo.isFile() ||
+      runInfo.isSymbolicLink() ||
+      runInfo.nlink !== 1 ||
+      runInfo.size > 16 * 1048576
+    )
+      throw new Error("Unsafe previous run manifest");
+    const bytes = await readFile(path.join(directory, "run-manifest.json"));
+    runManifestSha256 = sha256(bytes);
+    run = PublicRunManifestSchema.parse(JSON.parse(bytes.toString()));
+    if (
+      run.runsSha256 !== sha256(historyBytes) ||
+      run.datasetManifestSha256 !==
+        prior.files.find((f) => f.name === "dataset-manifest.json")?.sha256 ||
+      run.datasetSnapshotId !== prior.snapshotId ||
+      run.datasetDigest !== prior.digest ||
+      run.runId !== history.at(-1)?.id
+    )
+      throw new Error("Previous run identity mismatch");
+    prefix =
+      run.version === "public-run-manifest-v2"
+        ? run.predecessors
+        : history.slice(0, -1).map((r) => ({
+            runId: r.id,
+            snapshotId: r.snapshotId,
+            datasetDigest: r.digest,
+            rootCid: run!.priorRootCid,
+          }));
+    if (
+      prefix.length !== history.length - 1 ||
+      prefix.some(
+        (p, i) =>
+          p.runId !== history[i]!.id ||
+          p.snapshotId !== history[i]!.snapshotId ||
+          p.datasetDigest !== history[i]!.digest,
+      )
+    )
+      throw new Error("Previous immutable catalog/history mismatch");
+    if (
+      run.version !== "public-run-manifest-v2" &&
+      history
+        .slice(0, -1)
+        .some((r) => r.snapshotId !== run!.priorDatasetSnapshotId)
+    )
+      throw new Error("Historical predecessor snapshot mismatch");
+  } else if (
+    history.some(
+      (r) => r.snapshotId !== prior.snapshotId || r.digest !== prior.digest,
+    )
+  )
+    throw new Error("Legacy data-only history may not relabel another dataset");
+  const catalog = history.map((r, i) =>
+    PublicPredecessorSchema.parse(
+      i < history.length - 1 && run
+        ? prefix[i]
+        : {
+            runId: r.id,
+            snapshotId: r.snapshotId,
+            datasetDigest: r.digest,
+            rootCid: publication.rootCid,
+          },
     ),
   );
+  if (
+    catalog.at(-1)?.snapshotId !== prior.snapshotId ||
+    catalog.at(-1)?.datasetDigest !== prior.digest
+  )
+    throw new Error("Previous latest history/data mismatch");
+  const expectedHistory = history.map((r, i) => ({
+    runId: r.id,
+    kind: r.kind,
+    complete: r.complete,
+    snapshotId: r.snapshotId,
+    datasetRootCid: catalog[i]!.rootCid,
+    deltas: r.deltas,
+  }));
+  if (stableJson(publication.history) !== stableJson(expectedHistory))
+    throw new Error("Previous publication history relabeling rejected");
   return {
     manifest: prior,
     dataset,
     rootCid: publication.rootCid,
-    history: JSON.parse(
-      await readFile(path.join(directory, "runs.json"), "utf8"),
-    ) as unknown,
+    history,
+    catalog,
+    profile,
+    artifactManifestSha256: sha256(await readFile(file)),
+    historySha256: sha256(historyBytes),
+    runManifestSha256,
+    runManifest: run,
+    carProof,
   };
 }
-async function publicRunManifest(
+export async function publicRunManifest(
   root: string,
   manifest: {
     snapshotId: string;
@@ -155,26 +265,28 @@ async function publicRunManifest(
     files: readonly { name: string; sha256: string }[];
   },
   previousDirectory: string | undefined,
-): Promise<PublicRunManifest> {
+) {
   const file = path.join(root, "run-manifest.json"),
     info = await lstat(file);
   if (
     !info.isFile() ||
     info.isSymbolicLink() ||
     info.nlink !== 1 ||
-    info.size > 1048576
+    info.size > 16 * 1048576
   )
     throw new Error("Unsafe public run manifest");
   const run = PublicRunManifestSchema.parse(
     JSON.parse(await readFile(file, "utf8")),
   );
-  if ((await stat(path.join(root, "runs.json"))).size > 1048576)
+  if ((await stat(path.join(root, "runs.json"))).size > 16 * 1048576)
     throw new Error("Public run history exceeds minimized bound");
   const history = PublicRunHistorySchema.parse(
     JSON.parse(await readFile(path.join(root, "runs.json"), "utf8")),
   );
   const previous = await verifiedPreviousPublication(previousDirectory);
   const current = history.filter((r) => r.id === run.runId);
+  const priorLast = previous.history.at(-1)!,
+    priorLayers = publicRunLayers(priorLast);
   const dataset = JSON.parse(
     await readFile(path.join(root, "dataset-manifest.json"), "utf8"),
   ) as Record<string, unknown>;
@@ -184,7 +296,9 @@ async function publicRunManifest(
     run.contractVersion !== manifest.contractVersion ||
     run.priorRootCid !== previous.rootCid ||
     run.priorDatasetSnapshotId !== previous.manifest.snapshotId ||
-    stableJson(history.slice(0, 2)) !== stableJson(previous.history) ||
+    history.length !== previous.history.length + 1 ||
+    history.at(-1)?.id !== run.runId ||
+    stableJson(history.slice(0, -1)) !== stableJson(previous.history) ||
     run.datasetManifestSha256 !==
       manifest.files.find((f) => f.name === "dataset-manifest.json")?.sha256 ||
     run.runsSha256 !==
@@ -196,11 +310,11 @@ async function publicRunManifest(
     current[0]?.startedAt !== run.startedAt ||
     current[0]?.completedAt !== run.completedAt ||
     current[0]?.canonicalPropertyCount !== manifest.count ||
-    history[0].snapshotId !== run.priorDatasetSnapshotId ||
-    history[0].digest !== previous.manifest.digest ||
-    history[0].canonicalPropertyCount !== previous.manifest.count ||
-    history[0].layers.parcel.count !== previous.manifest.parcelCount ||
-    history[0].layers.address.count !== previous.manifest.addressCount ||
+    priorLast.snapshotId !== run.priorDatasetSnapshotId ||
+    priorLast.digest !== previous.manifest.digest ||
+    priorLast.canonicalPropertyCount !== previous.manifest.count ||
+    priorLayers.tax_parcel.count !== previous.manifest.parcelCount ||
+    priorLayers.site_address.count !== previous.manifest.addressCount ||
     stableJson(current[0]?.deltas) !== stableJson(run.factDelta) ||
     dataset.termsDigest !== run.acceptedTermsDigest ||
     dataset.fieldClassificationDigest !== run.publicFieldClassificationDigest ||
@@ -226,7 +340,11 @@ async function publicRunManifest(
           dataset[parcel ? "parcelContentDigest" : "addressContentDigest"] ||
         stableJson(layer.delta) !==
           stableJson(
-            current[0]?.layers[parcel ? "tax_parcel" : "site_address"].delta,
+            current[0]
+              ? publicRunLayers(current[0])[
+                  parcel ? "tax_parcel" : "site_address"
+                ].delta
+              : null,
           ) ||
         layer.delta.deleted + layer.delta.changed + layer.delta.unchanged !==
           (parcel
@@ -236,7 +354,23 @@ async function publicRunManifest(
     })
   )
     throw new Error("Run manifest differs from verified data/history identity");
-  return run;
+  if (run.version === "public-run-manifest-v2") {
+    const entry = current[0]!;
+    if (
+      !("version" in entry) ||
+      run.previousRunId !== priorLast.id ||
+      run.previousArtifactManifestSha256 !== previous.artifactManifestSha256 ||
+      run.previousHistorySha256 !== previous.historySha256 ||
+      run.previousRunManifestSha256 !== previous.runManifestSha256 ||
+      stableJson(run.predecessors) !== stableJson(previous.catalog) ||
+      run.observationDigest !== entry.observationDigest ||
+      stableJson(run.sourceObservations) !==
+        stableJson(entry.sourceObservations) ||
+      stableJson(run.failures) !== stableJson(entry.failures)
+    )
+      throw new Error("Generic predecessor/observation lineage mismatch");
+  }
+  return { run, previous };
 }
 async function allBytes(
   parts: AsyncIterable<Uint8Array> | Iterable<Uint8Array>,
@@ -353,14 +487,21 @@ export async function rehearsePublication(
     await verifySnapshotDirectory(directory);
   const profile = options.profile ?? "legacy-data-v1",
     allowed = approvedFiles(profile);
-  const run =
-    profile === "run-history-v2"
+  const verifiedRun =
+    profile !== "legacy-data-v1"
       ? await publicRunManifest(
           root,
           manifest,
           options.previousPublicationDirectory,
         )
       : undefined;
+  const run = verifiedRun?.run;
+  if (
+    run &&
+    (profile === "run-history-v3") !==
+      (run.version === "public-run-manifest-v2")
+  )
+    throw new Error("Run manifest/profile version mismatch");
   const store = new MemoryBlockstore();
   const inputs = [];
   for (const name of [...allowed].sort())
@@ -478,16 +619,18 @@ export async function rehearsePublication(
       roots: [rootNode.cid.toString()],
       ...proof,
     },
-    history: runs.map((r) => ({
+    history: runs.map((r, i) => ({
       runId: r.id,
       kind: r.kind,
       complete: r.complete,
       snapshotId:
-        run && r.id !== run.runId
-          ? run.priorDatasetSnapshotId
+        run && i < runs.length - 1
+          ? verifiedRun!.previous.catalog[i]!.snapshotId
           : manifest.snapshotId,
       datasetRootCid:
-        run && r.id !== run.runId ? run.priorRootCid : rootNode.cid.toString(),
+        run && i < runs.length - 1
+          ? verifiedRun!.previous.catalog[i]!.rootCid
+          : rootNode.cid.toString(),
       deltas: r.deltas ?? null,
     })),
     historyExclusion: run
@@ -500,6 +643,31 @@ export async function rehearsePublication(
           factDelta: run.factDelta,
           dataFactsChanged: run.dataFactsChanged,
           schemaOrProvenanceChanged: run.schemaOrProvenanceChanged,
+        }
+      : {}),
+    ...(profile === "run-history-v3"
+      ? {
+          classification: "public-safe-assessment-product-snapshot",
+          artifacts: [
+            {
+              name: "/",
+              artifactKind: "directory",
+              cid: rootNode.cid.toString(),
+              bytes: (await allBytes(store.get(rootNode.cid))).length,
+              codec: "dag-pb",
+              sha256: sha256(await allBytes(store.get(rootNode.cid))),
+              classification: "public-safe",
+            },
+            ...files.map((f) => ({
+              name: f.name,
+              artifactKind: "file",
+              cid: f.cid,
+              bytes: f.bytes,
+              codec: f.codec,
+              sha256: f.sha256,
+              classification: "public-safe",
+            })),
+          ],
         }
       : {}),
     publicUpload: false,

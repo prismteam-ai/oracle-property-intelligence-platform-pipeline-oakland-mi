@@ -30,7 +30,9 @@
     "mcp:stdio": "tsx scripts/mcp-stdio.ts",
     "publication:local": "tsx scripts/publication-local.ts",
     "benchmark:real": "tsx scripts/benchmark-real.ts",
-    "cdk:check": "tsx scripts/check-cloud-plan.ts"
+    "cdk:check": "tsx scripts/check-cloud-plan.ts",
+    "snapshot:run": "tsx scripts/build-county-run.ts",
+    "publication:restore": "tsx scripts/restore-publication.ts"
   },
   "dependencies": {
     "react": "19.3.1",

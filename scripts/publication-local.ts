@@ -13,14 +13,14 @@ while (args.length) {
   if (
     option === "--profile" &&
     value &&
-    ["legacy-data-v1", "run-history-v2"].includes(value)
+    ["legacy-data-v1", "run-history-v2", "run-history-v3"].includes(value)
   )
     profile = value as PublicationProfile;
   else if (option === "--previous" && value)
     previousPublicationDirectory = value;
   else
     throw new Error(
-      "Expected directory [--profile legacy-data-v1|run-history-v2] [--previous trusted-previous-publication-directory]",
+      "Expected directory [--profile legacy-data-v1|run-history-v2|run-history-v3] [--previous trusted-previous-publication-directory]",
     );
 }
 const manifest = await rehearsePublication(directory, {
