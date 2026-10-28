@@ -17,6 +17,10 @@ import {
 import { buildProtectedEnrichment } from "../packages/county/src/enrichment.ts";
 import { DuckDBInstance } from "@duckdb/node-api";
 import {
+  createPrivateSourceIntakeRow,
+  SOURCE_INTAKE_COLUMNS,
+} from "../packages/county/src/private-source-intake.ts";
+import {
   matchTroyIssued,
   normalizeTroyIssued,
   TROY_SOURCE,
@@ -133,6 +137,105 @@ async function sourceFixture() {
   await writeFile(manifest, JSON.stringify(source));
   return { root, privateRoot, manifest, source };
 }
+test("private full-source intake retains unmatched/source-only fields in DuckDB without exporting them to property/search DTOs", async () => {
+  const f = await sourceFixture(),
+    out = path.join(f.root, "public"),
+    m = await buildCountySnapshot({
+      sourceManifest: f.manifest,
+      outputDir: out,
+      privateOutputDir: path.join(f.privateRoot, "owners"),
+    });
+  const fields = {
+    "Permit Type": "Res., Roof",
+    "Permit Number": "SYN-INTAKE",
+    "Date Issued": "Jan 1, 2011",
+    Address: "Synthetic site 1",
+    Applicant: "PRIVATE_SYNTHETIC_PERSON_SENTINEL",
+    "Applicant Address": "PRIVATE_SYNTHETIC_POSTAL_SENTINEL",
+    "Applicant City State Zip": "PRIVATE_SYNTHETIC_CITYZIP_SENTINEL",
+    "Parcel #": "0012345678",
+    Lot: "PRIVATE_SYNTHETIC_LOT_SENTINEL",
+    Subdivision: "PRIVATE_SYNTHETIC_SUBDIVISION_SENTINEL",
+    "Work Description": "PRIVATE_SYNTHETIC_RAW_SCOPE_SENTINEL",
+    Value: "$1000",
+  };
+  const row = createPrivateSourceIntakeRow(fields, {
+    publicSnapshotId: m.snapshotId,
+    observedAt: "2026-10-28T01:00:00.000Z",
+    receiptDigest: sha256("synthetic"),
+    matchedPropertyId: null,
+    joinStatus: "unmatched",
+  });
+  const i = await DuckDBInstance.create(":memory:"),
+    db = await i.connect();
+  const create = async (value: typeof row, name: string) => {
+    await db.run(
+      "CREATE OR REPLACE TABLE intake(" +
+        SOURCE_INTAKE_COLUMNS.map((x) => x + " VARCHAR").join(",") +
+        ")",
+    );
+    await db.run(
+      "INSERT INTO intake VALUES(" +
+        SOURCE_INTAKE_COLUMNS.map((_, i) => "$" + (i + 1)).join(",") +
+        ")",
+      SOURCE_INTAKE_COLUMNS.map((k) => value[k]),
+    );
+    const file = path.join(f.privateRoot, name);
+    await db.run(
+      `COPY intake TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    return {
+      protectedSourceIntakeFile: file,
+      protectedSourceIntakeSha256: sha256(await readFile(file)),
+    };
+  };
+  try {
+    const reader = await RealSnapshot.open(
+      out,
+      await create(row, "intake.parquet"),
+    );
+    try {
+      expect(reader.sourceIntakeCount).toBe(1);
+      expect(reader.snapshotId).not.toBe(m.snapshotId);
+      const audit = await reader.auditPrivateSourceIntake();
+      expect(audit).toMatchObject({
+        rows: 1,
+        matched: 0,
+        unassigned: 1,
+        rawRowsReturned: false,
+      });
+      expect(audit.visibleSourceFields).toHaveLength(12);
+      const result = await reader.search({
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 5000,
+      });
+      const detail = await reader.detail("oakland-parcel-1", reader.snapshotId);
+      expect(
+        JSON.stringify({ result, detail, coverage: reader.coverage, audit }),
+      ).not.toContain("PRIVATE_SYNTHETIC_");
+    } finally {
+      reader.close();
+    }
+    await expect(
+      RealSnapshot.open(
+        out,
+        await create(
+          {
+            ...row,
+            matched_property_id: "missing-property",
+            join_status: "matched",
+          },
+          "invalid-binding.parquet",
+        ),
+      ),
+    ).rejects.toThrow("binding");
+  } finally {
+    db.closeSync();
+    i.closeSync();
+  }
+});
 test("protected canonical permits retain metadata, exclude issuance from open filters, and reject broken bindings", async () => {
   const f = await sourceFixture(),
     out = path.join(f.root, "public"),

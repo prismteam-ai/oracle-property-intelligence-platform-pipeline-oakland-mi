@@ -151,3 +151,50 @@ it("v2 requires exactly owner/enrichment/permits, while v1 forbids permits and u
     await rm(root, { recursive: true, force: true });
   }
 });
+it("v3 pins exactly four private roles and keeps source intake forbidden in historical versions", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "prism-private-v3-")),
+    base = "oakland-real-" + "c".repeat(20),
+    data = Buffer.from("synthetic-private");
+  const files = [
+    { name: "owner-derivatives.parquet", role: "owner" },
+    { name: "protected-enrichment.parquet", role: "enrichment" },
+    { name: "protected-permits.parquet", role: "permits" },
+    { name: "private-source-intake.parquet", role: "source-intake" },
+  ].map((f) => ({ ...f, bytes: data.length, sha256: sha256(data) }));
+  const canonical = [...files].sort((a, b) =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    ),
+    manifest = {
+      version: "3",
+      publicSnapshotId: base,
+      snapshotId: base,
+      digest: sha256(stableJson(canonical)),
+      files,
+    };
+  expect(() => validatePrivateManifest(manifest, base)).not.toThrow();
+  for (const invalid of [
+    { ...manifest, version: "2" },
+    { ...manifest, files: files.slice(0, 3) },
+    { ...manifest, files: [...files, { ...files[3] }] },
+  ])
+    expect(() => validatePrivateManifest(invalid, base)).toThrow();
+  const raw = Buffer.from(JSON.stringify(manifest));
+  try {
+    const prepared = await loadPrivateCache({
+      publicSnapshotId: base,
+      reader: {
+        read: async (key) =>
+          key.endsWith("private-operational-manifest.json") ? raw : data,
+      },
+      prefix: "private/v3/",
+      manifestDigest: sha256(raw),
+      cacheRoot: root,
+    });
+    expect(prepared.sourceIntakeFile).toContain(
+      "private-source-intake.parquet",
+    );
+    expect(prepared.sourceIntakeSha256).toBe(sha256(data));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

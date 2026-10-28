@@ -21,6 +21,12 @@ import {
   PRIVATE_PERMIT_LIMIT,
   validateProtectedPermitRow,
 } from "../../county/src/private-permits.ts";
+import {
+  PRIVATE_SOURCE_INTAKE_LIMIT,
+  SOURCE_INTAKE_COLUMNS,
+  TROY_SOURCE_FIELDS,
+  validatePrivateSourceIntakeRow,
+} from "../../county/src/private-source-intake.ts";
 const CORE_FILES = [
   "parcels.parquet",
   "site-addresses.parquet",
@@ -112,6 +118,7 @@ export class RealSnapshot {
     readonly ownerSignalsAvailable: boolean,
     overlayDigests: readonly string[],
     readonly permitCount: number,
+    readonly sourceIntakeCount: number,
   ) {
     this.publicSnapshotId = manifest.snapshotId;
     this.protectedSignals = overlayDigests.length > 0;
@@ -151,9 +158,25 @@ export class RealSnapshot {
                 "Official sales cohorts are partial; built year is a low-confidence roof proxy, not an observed replacement.",
                 "No private observation is promoted to public bytes without redistribution approval.",
                 "Troy permit observations are a bounded cohort selected by the visible roof-description filter. Original non-roof permit types remain retained; only explicit roofing scope qualifies for roofing predicates. Issuance does not establish open status or completed work.",
-                "The Troy Applicant field is retained only for clearly reported businesses. It does not establish contractor role; license metadata describes that reported business.",
+                "Property views retain only clearly reported business Applicants with contractor role unverified. The full source working intake retains original Applicant values privately; license metadata describes the reported business.",
               ],
               permitCount,
+            },
+          ]
+        : []),
+      ...(overlayDigests.some((digest) => digest.startsWith("source-intake:"))
+        ? [
+            {
+              source: "Private Troy source intake",
+              scope:
+                "All acquired visible source fields, including records without a canonical property assignment",
+              state: "partial",
+              count: sourceIntakeCount,
+              limitations: [
+                "Original source fields, including personal/unclassified Applicant and source address fields, are retained only in the protected working database.",
+                "Full source fields are excluded from Property responses, agent/model tools and public publication.",
+                "An Applicant is not necessarily a contractor; unassigned source records are retained without fabricated property links.",
+              ],
             },
           ]
         : []),
@@ -185,6 +208,8 @@ export class RealSnapshot {
       protectedEnrichmentSha256?: string;
       protectedPermitsFile?: string;
       protectedPermitsSha256?: string;
+      protectedSourceIntakeFile?: string;
+      protectedSourceIntakeSha256?: string;
     } = {},
   ): Promise<RealSnapshot> {
     const verified = await verifySnapshotDirectory(directory);
@@ -196,6 +221,7 @@ export class RealSnapshot {
     const db = await instance.connect();
     const overlayDigests: string[] = [];
     let permitCount = 0;
+    let sourceIntakeCount = 0;
     const checkPrivate = async (file: string, expected: string | undefined) => {
       const meta = await lstat(file);
       const resolved = await realpath(file);
@@ -381,6 +407,98 @@ export class RealSnapshot {
         overlayDigests.push("permits:" + options.protectedPermitsSha256);
         await db.run("DROP TABLE protected_permit_rows");
       }
+      if (options.protectedSourceIntakeFile) {
+        await checkPrivate(
+          options.protectedSourceIntakeFile,
+          options.protectedSourceIntakeSha256,
+        );
+        await db.run(
+          `CREATE TABLE private_source_intake AS SELECT * FROM read_parquet(${quote(options.protectedSourceIntakeFile)})`,
+        );
+        const columns = await (
+          await db.run("PRAGMA table_info('private_source_intake')")
+        ).getRowObjectsJson();
+        if (
+          columns.length !== SOURCE_INTAKE_COLUMNS.length ||
+          columns.some(
+            (x, i) =>
+              x.name !== SOURCE_INTAKE_COLUMNS[i] || x.type !== "VARCHAR",
+          )
+        )
+          throw new Error("Protected source intake columns rejected");
+        const count = await (
+          await db.run("SELECT count(*) AS n FROM private_source_intake")
+        ).getRowObjectsJson();
+        if (Number(count[0]!.n) > PRIVATE_SOURCE_INTAKE_LIMIT)
+          throw new Error("Protected source intake row bound rejected");
+        const rows = await (
+            await db.run("SELECT * FROM private_source_intake")
+          ).getRowObjectsJson(),
+          ids = new Set<string>();
+        for (const candidate of rows) {
+          const { row } = validatePrivateSourceIntakeRow(
+            candidate,
+            verified.manifest.snapshotId,
+          );
+          if (ids.has(row.native_id))
+            throw new Error(
+              "Duplicate protected source intake native identity",
+            );
+          ids.add(row.native_id);
+        }
+        const invalid = await (
+          await db.run(
+            "WITH canonical AS (SELECT id,count(*) AS n FROM properties GROUP BY id) SELECT count(*) AS n FROM private_source_intake r LEFT JOIN canonical p ON p.id=r.matched_property_id WHERE r.matched_property_id IS NOT NULL AND coalesce(p.n,0)!=1",
+          )
+        ).getRowObjectsJson();
+        if (Number(invalid[0]!.n))
+          throw new Error(
+            "Protected source intake canonical property binding rejected",
+          );
+        if (options.protectedPermitsFile) {
+          const alignment = await (
+            await db.run(
+              "SELECT (SELECT count(*) FROM private_source_intake r LEFT JOIN permits p ON p.native_id=r.native_id AND p.property_id=r.matched_property_id AND p.source_id=r.source_id WHERE r.matched_property_id IS NOT NULL AND p.id IS NULL) AS missing_permit,(SELECT count(*) FROM permits p LEFT JOIN private_source_intake r ON r.native_id=p.native_id AND r.matched_property_id=p.property_id AND r.source_id=p.source_id WHERE p.source_id='official-troy-issued-permits' AND r.native_id IS NULL) AS missing_intake",
+            )
+          ).getRowObjectsJson();
+          if (
+            Number(alignment[0]!.missing_permit) ||
+            Number(alignment[0]!.missing_intake)
+          )
+            throw new Error(
+              "Protected source intake/minimized permit alignment rejected",
+            );
+        }
+        sourceIntakeCount = rows.length;
+        overlayDigests.push(
+          "source-intake:" + options.protectedSourceIntakeSha256,
+        );
+      } else
+        await db.run(
+          "CREATE TABLE private_source_intake(source_id VARCHAR,native_id VARCHAR,source_record_digest VARCHAR,observed_at VARCHAR,public_snapshot_id VARCHAR,source_fields_json VARCHAR,matched_property_id VARCHAR,join_status VARCHAR,source_receipt_digest VARCHAR)",
+        );
+      const sourceAliases = [
+        "permit_type",
+        "permit_number",
+        "date_issued",
+        "address",
+        "applicant",
+        "applicant_address",
+        "applicant_city_state_zip",
+        "parcel_number",
+        "lot",
+        "subdivision",
+        "work_description",
+        "value",
+      ];
+      await db.run(
+        "CREATE VIEW private_troy_source_fields AS SELECT source_id,native_id,source_record_digest,observed_at,public_snapshot_id,matched_property_id,join_status,source_receipt_digest," +
+          TROY_SOURCE_FIELDS.map(
+            (field, i) =>
+              `json_extract_string(source_fields_json,'$."${field}"') AS ${sourceAliases[i]}`,
+          ).join(",") +
+          " FROM private_source_intake",
+      );
       await db.run("CREATE INDEX address_location ON site_addresses(lat,lng)");
       await db.run(
         "CREATE INDEX link_property ON parcel_address_links(property_id)",
@@ -414,12 +532,39 @@ export class RealSnapshot {
         Boolean(options.protectedDerivativeFile),
         overlayDigests,
         permitCount,
+        sourceIntakeCount,
       );
     } catch (error) {
       db.closeSync();
       instance.closeSync();
       throw error;
     }
+  }
+  /** Counts only. Full source text has no Property/API/model-tool export path. */
+  async auditPrivateSourceIntake() {
+    const rows = await (
+      await this.connection.run(
+        "SELECT count(*) AS rows,count(DISTINCT native_id) AS unique_records,count(*) FILTER(WHERE matched_property_id IS NOT NULL) AS matched,count(*) FILTER(WHERE matched_property_id IS NULL) AS unassigned FROM private_source_intake",
+      )
+    ).getRowObjectsJson();
+    const nonempty: Record<string, number> = {};
+    for (const field of TROY_SOURCE_FIELDS) {
+      const result = await (
+        await this.connection.run(
+          `SELECT count(*) FILTER(WHERE json_extract_string(source_fields_json,'$."${field}"')!='') AS n FROM private_source_intake`,
+        )
+      ).getRowObjectsJson();
+      nonempty[field] = Number(result[0]!.n);
+    }
+    return {
+      rows: Number(rows[0]!.rows),
+      uniqueRecords: Number(rows[0]!.unique_records),
+      matched: Number(rows[0]!.matched),
+      unassigned: Number(rows[0]!.unassigned),
+      visibleSourceFields: [...TROY_SOURCE_FIELDS],
+      nonemptyFieldCounts: nonempty,
+      rawRowsReturned: false,
+    };
   }
   private async property(
     row: Row,

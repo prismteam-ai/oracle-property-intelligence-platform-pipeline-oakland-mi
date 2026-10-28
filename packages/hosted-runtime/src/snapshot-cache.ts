@@ -41,10 +41,11 @@ export class S3ObjectReader implements ObjectReader {
 }
 const hash = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
-function parse(bytes: Uint8Array, allowPrivateV2 = false): Manifest {
+function parse(bytes: Uint8Array, allowPrivateVersions = false): Manifest {
   const m = JSON.parse(Buffer.from(bytes).toString("utf8")) as Manifest;
   if (
-    (m.version !== "1" && !(allowPrivateV2 && m.version === "2")) ||
+    (m.version !== "1" &&
+      !(allowPrivateVersions && ["2", "3"].includes(m.version))) ||
     !m.snapshotId ||
     !Array.isArray(m.files) ||
     m.files.length < 1 ||

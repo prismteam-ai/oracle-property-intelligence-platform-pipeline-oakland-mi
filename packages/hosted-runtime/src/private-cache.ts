@@ -10,13 +10,14 @@ export interface PrivateFile {
   name:
     | "owner-derivatives.parquet"
     | "protected-enrichment.parquet"
-    | "protected-permits.parquet";
-  role: "owner" | "enrichment" | "permits";
+    | "protected-permits.parquet"
+    | "private-source-intake.parquet";
+  role: "owner" | "enrichment" | "permits" | "source-intake";
   bytes: number;
   sha256: string;
 }
 export interface PrivateManifest {
-  version: "1" | "2";
+  version: "1" | "2" | "3";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -40,11 +41,11 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    !["1", "2"].includes(m.version) ||
+    !["1", "2", "3"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    m.files.length !== (m.version === "2" ? 3 : 2)
+    m.files.length !== (m.version === "3" ? 4 : m.version === "2" ? 3 : 2)
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
@@ -59,9 +60,11 @@ export function validatePrivateManifest(
         ? f.name !== "owner-derivatives.parquet"
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
-          : f.role === "permits" && m.version === "2"
+          : f.role === "permits" && ["2", "3"].includes(m.version)
             ? f.name !== "protected-permits.parquet"
-            : true) ||
+            : f.role === "source-intake" && m.version === "3"
+              ? f.name !== "private-source-intake.parquet"
+              : true) ||
       names.has(f.name) ||
       roles.has(f.role) ||
       !Number.isSafeInteger(f.bytes) ||
@@ -100,7 +103,8 @@ export async function loadPrivateCache(options: {
   ) as PrivateManifest;
   const owner = m.files.find((f) => f.role === "owner")!,
     enrichment = m.files.find((f) => f.role === "enrichment")!,
-    permits = m.files.find((f) => f.role === "permits");
+    permits = m.files.find((f) => f.role === "permits"),
+    intake = m.files.find((f) => f.role === "source-intake");
   return {
     ownerFile: path.join(directory, owner.name),
     ownerSha256: owner.sha256,
@@ -108,6 +112,8 @@ export async function loadPrivateCache(options: {
     enrichmentSha256: enrichment.sha256,
     permitsFile: permits ? path.join(directory, permits.name) : undefined,
     permitsSha256: permits?.sha256,
+    sourceIntakeFile: intake ? path.join(directory, intake.name) : undefined,
+    sourceIntakeSha256: intake?.sha256,
   };
 }
 export async function preparePrivateCache(publicSnapshotId: string) {
@@ -141,5 +147,13 @@ export async function preparePrivateCache(publicSnapshotId: string) {
   } else {
     delete process.env.PRISM_PRIVATE_PERMITS;
     delete process.env.PRISM_PRIVATE_PERMITS_SHA256;
+  }
+  if (prepared.sourceIntakeFile) {
+    process.env.PRISM_PRIVATE_SOURCE_INTAKE = prepared.sourceIntakeFile;
+    process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256 =
+      prepared.sourceIntakeSha256;
+  } else {
+    delete process.env.PRISM_PRIVATE_SOURCE_INTAKE;
+    delete process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256;
   }
 }

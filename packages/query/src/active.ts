@@ -35,10 +35,12 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
     const protectedDerivativeFile = process.env.PRISM_OWNER_DERIVATIVES;
     const protectedEnrichmentFile = process.env.PRISM_PRIVATE_ENRICHMENT;
     const protectedPermitsFile = process.env.PRISM_PRIVATE_PERMITS;
+    const protectedSourceIntakeFile = process.env.PRISM_PRIVATE_SOURCE_INTAKE;
     if (
       (protectedDerivativeFile ||
         protectedEnrichmentFile ||
-        protectedPermitsFile) &&
+        protectedPermitsFile ||
+        protectedSourceIntakeFile) &&
       process.env.PRISM_REQUIRE_AUTH !== "1"
     )
       throw new Error(
@@ -53,6 +55,9 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
         protectedEnrichmentSha256: process.env.PRISM_PRIVATE_ENRICHMENT_SHA256,
         protectedPermitsFile,
         protectedPermitsSha256: process.env.PRISM_PRIVATE_PERMITS_SHA256,
+        protectedSourceIntakeFile,
+        protectedSourceIntakeSha256:
+          process.env.PRISM_PRIVATE_SOURCE_INTAKE_SHA256,
       },
     );
   }
