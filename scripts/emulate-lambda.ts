@@ -2,6 +2,8 @@ import type { RuntimeIdentity } from "../packages/hosted-runtime/src/release.ts"
 import { sourceIdentity } from "../packages/hosted-runtime/src/source-identity.ts";
 import { validatePrivateManifest } from "../packages/hosted-runtime/src/private-cache.ts";
 import { privateEmulationEnvironment } from "../packages/hosted-runtime/src/private-emulation-env.ts";
+import { protectedPermitOpenDays } from "../packages/county/src/private-permits.ts";
+import type { SearchResponse } from "../packages/contracts/src/index.ts";
 import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile, mkdtemp, rm, mkdir } from "node:fs/promises";
@@ -353,6 +355,34 @@ try {
       )
     )
       throw new Error("Protected roof proxy semantics failed");
+    const open = await invoke(
+      "POST",
+      "/api/search",
+      {
+        ...q,
+        radiusMeters: 32000,
+        permitStatus: "open",
+        minOpenDays: 1827,
+        includeUnknown: false,
+        limit: 2,
+      },
+      cookie,
+    );
+    const openEvidence = JSON.parse(open.out.body) as SearchResponse;
+    if (
+      open.out.statusCode !== 200 ||
+      !Array.isArray(openEvidence.rows) ||
+      !Number.isSafeInteger(openEvidence.total) ||
+      openEvidence.total < openEvidence.rows.length ||
+      openEvidence.rows.length > 2 ||
+      !openEvidence.rows.every((row) =>
+        row.permits.some(
+          (permit) =>
+            (protectedPermitOpenDays(permit, row.roof.asOf) ?? -1) >= 1827,
+        ),
+      )
+    )
+      throw new Error("Packaged explicit open-duration filter failed");
     const context = await invoke(
         "GET",
         "/api/source-context?sourceId=official-novi-residential-sales-pdf&page=2",
@@ -380,6 +410,8 @@ try {
       sourceContextMetadataNoRows: true,
       sourceContextDeclaredPeriodUnknown: true,
       roofProxyMatches: evidence.total,
+      explicitOpenOverFiveYearsMatches: openEvidence.total,
+      emptyOpenResultAccepted: openEvidence.total === 0,
       returnedProxyRows: evidence.rows.length,
       sourceReportedSaleEvents: evidence.rows.reduce(
         (a, p) =>
