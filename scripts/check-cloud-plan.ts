@@ -3,10 +3,29 @@ import os from "node:os";
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import assert from "node:assert/strict";
+import {
+  APPROVED_PUBLIC_MANIFEST_SHA256,
+  APPROVED_PRIVATE_MANIFEST_SHA256,
+} from "../packages/hosted-runtime/src/release.ts";
+const localEnv = {
+  ...process.env,
+  PRISM_RELEASE_STAGE: "local",
+  PRISM_CONCURRENCY_MODE: "reserved",
+  PRISM_RESERVED_CONCURRENCY: "5",
+  PRISM_API_RATE_PER_SECOND: "5",
+  PRISM_API_BURST: "10",
+  CDK_CONTEXT_JSON: "{}",
+};
+for (const key of [
+  "PRISM_EXPECTED_ACCOUNT_ID",
+  "PRISM_DEPLOY_ASSET_BUCKET",
+  "PRISM_ACCOUNT_CONCURRENCY_PROOF",
+])
+  delete (localEnv as Record<string, string | undefined>)[key];
 execFileSync(
   process.execPath,
   ["node_modules/tsx/dist/cli.mjs", "infra/cdk/app.ts"],
-  { stdio: "pipe" },
+  { stdio: "pipe", env: localEnv },
 );
 const t = JSON.parse(
   await readFile("cdk.out/PrismOracleReview.template.json", "utf8"),
@@ -98,7 +117,7 @@ assert.equal(env.PRISM_DATA_MODE, "real");
 assert.equal(env.PRISM_DEPLOY_REGION, "us-east-1");
 assert.equal(
   env.PRISM_SNAPSHOT_MANIFEST_SHA256,
-  "0ea109aae29cb7739ec166cddbb36782c170ef18ce97ef3b525ca9d7e50e7422",
+  APPROVED_PUBLIC_MANIFEST_SHA256,
 );
 assert.equal(env.PRISM_RELEASE_STAGE, "local");
 assert(!("PRISM_ENABLE_PROTECTED_VIEW" in env));
@@ -120,12 +139,11 @@ execFileSync(
   {
     stdio: "pipe",
     env: {
-      ...process.env,
+      ...localEnv,
       CDK_OUTDIR: "data/cdk-protected-map-check",
       CDK_CONTEXT_JSON: JSON.stringify({
         enableProtectedView: "true",
-        privateManifestSha256:
-          "a2836c423fd90e665432e79138f7f2631c585f60dbbc1b3bc441f8d287353b98",
+        privateManifestSha256: APPROVED_PRIVATE_MANIFEST_SHA256,
         enableLocationMap: "true",
         crmMapOrigin: "https://dfixture.cloudfront.net",
         mapKeyExpiresAt: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -168,7 +186,7 @@ assert.equal(
       Variables: Record<string, string>;
     }
   ).Variables.PRISM_PRIVATE_SNAPSHOT_MANIFEST_SHA256,
-  "a2836c423fd90e665432e79138f7f2631c585f60dbbc1b3bc441f8d287353b98",
+  APPROVED_PRIVATE_MANIFEST_SHA256,
 );
 assert.throws(() =>
   execFileSync(
@@ -177,7 +195,7 @@ assert.throws(() =>
     {
       stdio: "pipe",
       env: {
-        ...process.env,
+        ...localEnv,
         CDK_CONTEXT_JSON: JSON.stringify({ deploymentRegion: "us-east-2" }),
       },
     },
@@ -208,7 +226,7 @@ try {
     {
       stdio: "pipe",
       env: {
-        ...process.env,
+        ...localEnv,
         CDK_OUTDIR: "data/cdk-shared-account-check",
         PRISM_CONCURRENCY_MODE: "existing-account-shared",
         PRISM_SHARED_ACCOUNT_CONCURRENCY_APPROVED: "yes",
