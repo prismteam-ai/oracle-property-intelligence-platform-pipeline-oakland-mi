@@ -104,9 +104,7 @@
     "name": "snapshot.car",
     "bytes": 53864111,
     "sha256": "069137cc3d1190fce1a396788d3fef0f53f32c9cdf50c2874b2c2a24e11e4d73",
-    "roots": [
-      "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna"
-    ],
+    "roots": ["bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna"],
     "rootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
     "blocks": 218,
     "files": 10,
