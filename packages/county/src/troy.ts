@@ -10,7 +10,7 @@ const SourceRow = z
     siteAddress: z.string().trim().min(1).max(250),
     applicant: z.string().trim().max(500),
     parcel: z.string().trim().max(80),
-    reportedPermitType: z.string().trim().min(1).max(120),
+    reportedPermitType: z.string().trim().max(120),
     description: z.string().max(5000),
     value: z.string().max(100),
   })

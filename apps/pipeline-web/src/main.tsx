@@ -1239,7 +1239,7 @@ function App() {
                 <strong>{p.permitNumber ?? p.id}</strong>
                 <p>
                   {p.jurisdiction ?? "Jurisdiction unavailable"} ·{" "}
-                  {p.reportedPermitType ?? p.kind.replaceAll("_", " ")}
+                  {p.reportedPermitType?.trim() || "Permit type unavailable"}
                 </p>
                 <p>
                   Issued {p.issuedAt ?? "date unavailable"} · Status {p.status}

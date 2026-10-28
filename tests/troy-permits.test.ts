@@ -57,6 +57,21 @@ describe("Troy issued-roof source boundary", () => {
     });
     expect(p.classificationBasis).toBe("description_explicit_roof_replacement");
   });
+  it("retains an unreported original permit type instead of dropping an available record", () => {
+    const x = normalizeTroyIssued(
+      {
+        ...raw,
+        reportedPermitType: "",
+        description: "Existing roof to remain; interior construction only.",
+      },
+      provenance,
+    );
+    expect(x.permit).toMatchObject({
+      reportedPermitType: "",
+      kind: "other",
+      statusBasis: "issued_only",
+    });
+  });
   it("retains incidental non-roof permit facts as other and rejects unexpected contact columns", () => {
     const p = normalizeTroyIssued(
       {

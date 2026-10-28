@@ -136,7 +136,7 @@ export function validateProtectedPermitRow(
       !permit.issuedAt ||
       permit.issuedAt > row.observed_at.slice(0, 10) ||
       permit.jurisdiction !== "City of Troy, Oakland County, Michigan" ||
-      !permit.reportedPermitType ||
+      typeof permit.reportedPermitType !== "string" ||
       !classification ||
       !permit.proposedWorkScope ||
       !permit.matchEvidence ||
