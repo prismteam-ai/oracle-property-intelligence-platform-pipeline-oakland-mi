@@ -380,27 +380,32 @@ export class RealSnapshot {
           throw new Error(
             "Protected permit canonical property/identity binding rejected",
           );
-        for (const { row, permit, openDays } of validated) {
+        const projected = validated.map(({ row, permit, openDays }) => ({
+          property_id: row.property_id,
+          id: permit.id,
+          status: permit.status,
+          kind: permit.kind,
+          opened_at: permit.openedAt,
+          closed_at: permit.closedAt,
+          open_days: openDays,
+          reported_contractor: permit.contractor.reportedName,
+          verified_company_id: permit.contractor.verifiedCompanyId,
+          license: permit.contractor.license,
+          rating: permit.contractor.rating,
+          source_id: row.source_id,
+          native_id: row.native_id,
+          receipt_digest: row.record_digest,
+          observed_at: row.observed_at,
+          canonical_json: JSON.stringify(permit),
+        }));
+        for (let offset = 0; offset < projected.length; offset += 256) {
+          const payload = JSON.stringify(projected.slice(offset, offset + 256));
+          if (Buffer.byteLength(payload) > 16 * 1024 ** 2)
+            throw new Error("Protected permit batch byte bound rejected");
           await db.run(
-            "INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json) VALUES($property,$id,$status,$kind,$opened,$closed,$days,$reported,$company,$license,$rating,$source,$native,$digest,$observed,$canonical)",
-            {
-              property: row.property_id,
-              id: permit.id,
-              status: permit.status,
-              kind: permit.kind,
-              opened: permit.openedAt,
-              closed: permit.closedAt,
-              days: openDays,
-              reported: permit.contractor.reportedName,
-              company: permit.contractor.verifiedCompanyId,
-              license: permit.contractor.license,
-              rating: permit.contractor.rating,
-              source: row.source_id,
-              native: row.native_id,
-              digest: row.record_digest,
-              observed: row.observed_at,
-              canonical: JSON.stringify(permit),
-            },
+            `INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json)
+            SELECT json_extract_string(value,'$.property_id'),json_extract_string(value,'$.id'),json_extract_string(value,'$.status'),json_extract_string(value,'$.kind'),json_extract_string(value,'$.opened_at'),json_extract_string(value,'$.closed_at'),CAST(json_extract(value,'$.open_days') AS INTEGER),json_extract_string(value,'$.reported_contractor'),json_extract_string(value,'$.verified_company_id'),json_extract_string(value,'$.license'),CAST(json_extract(value,'$.rating') AS DOUBLE),json_extract_string(value,'$.source_id'),json_extract_string(value,'$.native_id'),json_extract_string(value,'$.receipt_digest'),json_extract_string(value,'$.observed_at'),json_extract_string(value,'$.canonical_json') FROM json_each($rows)`,
+            { rows: payload },
           );
         }
         permitCount = rows.length;

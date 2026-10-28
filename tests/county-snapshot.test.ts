@@ -245,13 +245,17 @@ test("protected canonical permits retain metadata, exclude issuance from open fi
       privateOutputDir: path.join(f.privateRoot, "owners"),
     });
   const observedAt = "2026-10-28T01:00:00.000Z";
-  const make = (number: string, property: string) => {
+  const make = (
+    number: string,
+    property: string,
+    business = "Synthetic Roofing LLC",
+  ) => {
     const obs = normalizeTroyIssued(
       {
         permitNumber: number,
         issuedDate: "Apr 15, 2011",
         siteAddress: "Synthetic site 1",
-        applicant: "Synthetic Roofing LLC",
+        applicant: business,
         parcel: "88-00-12-345-678",
         reportedPermitType: "Res., Roof",
         description: "Roof work",
@@ -386,8 +390,14 @@ test("protected canonical permits retain metadata, exclude issuance from open fi
     const bulk = await RealSnapshot.open(
       out,
       await create(
-        Array.from({ length: 101 }, (_, i) =>
-          make(`SYN-BULK-${i}`, "oakland-parcel-1"),
+        Array.from({ length: 257 }, (_, i) =>
+          make(
+            `SYN-BULK-${i}`,
+            "oakland-parcel-1",
+            i === 256
+              ? `O'Brien "Quoted" Roofing LLC`
+              : "Synthetic Roofing LLC",
+          ),
         ),
         "bulk.parquet",
       ),
@@ -395,7 +405,21 @@ test("protected canonical permits retain metadata, exclude issuance from open fi
     try {
       expect(
         (await bulk.detail("oakland-parcel-1", bulk.snapshotId)).permits,
-      ).toHaveLength(101);
+      ).toHaveLength(257);
+      const quoted = (
+        await bulk.detail("oakland-parcel-1", bulk.snapshotId)
+      ).permits.find((x) => x.permitNumber === "SYN-BULK-256");
+      expect(quoted).toMatchObject({
+        issuedAt: "2011-04-15",
+        status: "unknown",
+        openedAt: null,
+        closedAt: null,
+        contractor: {
+          reportedName: `O'Brien "Quoted" Roofing LLC`,
+          license: null,
+          rating: null,
+        },
+      });
     } finally {
       bulk.close();
     }
