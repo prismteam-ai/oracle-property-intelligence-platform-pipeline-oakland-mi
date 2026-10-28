@@ -1,6 +1,6 @@
 # Run history publication
 
-`pnpm publication:local <verified-snapshot-directory>` keeps the legacy eight-file data root. The explicit `--profile run-history-v2` option adds `runs.json` and a strict, minimized `run-manifest.json` to those eight files. It verifies the new run's history, source content digests, counts, dataset identity, and public field allowlists before creating a deterministic CAR. It makes no network requests or provider changes.
+`pnpm publication:local <verified-snapshot-directory>` keeps the legacy eight-file data root. The explicit `--profile run-history-v2 --previous <trusted-legacy-publication-directory>` option adds `runs.json` and a strict, minimized `run-manifest.json` to those eight files. It strictly validates every history row and nested field, verifies the prior publication files and CAR, and binds prior CID/snapshot history and schema/provenance claims to that trusted local input. It also verifies source content digests, counts, dataset identity, and public field allowlists before creating a deterministic CAR. It makes no network requests or provider changes.
 
 The run profile retains the prior dataset CID and snapshot ID in history. A genuine complete source reconciliation with zero added, changed, or deleted facts can still produce a new run root from observation history, contract changes, or provenance. Its manifest states fact changes separately from schema/provenance changes; a new CID alone is not evidence that county facts changed. The source observation window is not a transactional server snapshot.
 

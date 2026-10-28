@@ -16,6 +16,8 @@ import {
   PublicRunManifestSchema,
   type PublicRunManifest,
 } from "./run-manifest.ts";
+import { PublicRunHistorySchema } from "./run-history.ts";
+import type { ArtifactManifest } from "../../county/src/build.ts";
 export const PUBLICATION_FILES = [
   "parcels.parquet",
   "site-addresses.parquet",
@@ -37,6 +39,110 @@ function approvedFiles(profile: PublicationProfile): readonly string[] {
   if (profile === "run-history-v2") return RUN_PUBLICATION_FILES;
   throw new Error("Unknown publication profile");
 }
+async function verifiedPreviousPublication(directory: string | undefined) {
+  if (!directory)
+    throw new Error("Verified previous publication directory required");
+  if ((await lstat(directory)).isSymbolicLink())
+    throw new Error("Previous publication symlink rejected");
+  for (const name of [
+    "artifact-manifest.json",
+    "publication-manifest.json",
+    "runs.json",
+  ]) {
+    const info = await lstat(path.join(directory, name));
+    if (
+      !info.isFile() ||
+      info.isSymbolicLink() ||
+      info.nlink !== 1 ||
+      info.size > 1048576
+    )
+      throw new Error("Unsafe previous publication metadata");
+  }
+  const file = path.join(directory, "artifact-manifest.json");
+  const prior = JSON.parse(await readFile(file, "utf8")) as ArtifactManifest;
+  const allowed = [...PUBLICATION_FILES, "runs.json"];
+  if (
+    prior.version !== "1" ||
+    !/^\d+\.\d+\.\d+$/.test(prior.contractVersion) ||
+    !/^oakland-real-[a-f0-9]{20}$/.test(prior.snapshotId) ||
+    !/^[a-f0-9]{64}$/.test(prior.digest) ||
+    ![prior.count, prior.parcelCount, prior.addressCount].every(
+      (n) => Number.isSafeInteger(n) && n > 0 && n <= 10000000,
+    ) ||
+    !Array.isArray(prior.files) ||
+    prior.files.length !== allowed.length ||
+    new Set(prior.files.map((f) => f.name)).size !== allowed.length
+  )
+    throw new Error("Invalid previous publication manifest");
+  let total = 0;
+  for (const f of prior.files) {
+    if (
+      !(allowed as readonly string[]).includes(f.name) ||
+      !Number.isSafeInteger(f.bytes) ||
+      f.bytes < 0 ||
+      f.bytes > 512 * 1024 ** 2 ||
+      !/^[a-f0-9]{64}$/.test(f.sha256)
+    )
+      throw new Error("Unsafe previous file manifest");
+    const full = path.join(directory, f.name),
+      info = await lstat(full);
+    total += info.size;
+    if (
+      !info.isFile() ||
+      info.isSymbolicLink() ||
+      info.nlink !== 1 ||
+      info.size !== f.bytes ||
+      total > 1024 ** 3 ||
+      sha256(await readFile(full)) !== f.sha256
+    )
+      throw new Error("Previous publication integrity failure");
+  }
+  const dataset = JSON.parse(
+    await readFile(path.join(directory, "dataset-manifest.json"), "utf8"),
+  ) as Record<string, unknown>;
+  const publication = JSON.parse(
+    await readFile(path.join(directory, "publication-manifest.json"), "utf8"),
+  ) as {
+    rootCid: string;
+    snapshotId: string;
+    datasetDigest: string;
+    car: { bytes: number; sha256: string };
+  };
+  if (
+    dataset.snapshotId !== prior.snapshotId ||
+    dataset.digest !== prior.digest ||
+    dataset.contractVersion !== prior.contractVersion ||
+    publication.snapshotId !== prior.snapshotId ||
+    publication.datasetDigest !== prior.digest
+  )
+    throw new Error("Previous publication identity mismatch");
+  const car = path.join(directory, "snapshot.car"),
+    info = await lstat(car);
+  if (
+    !info.isFile() ||
+    info.isSymbolicLink() ||
+    info.nlink !== 1 ||
+    info.size > 128 * 1024 ** 2 ||
+    info.size !== publication.car.bytes ||
+    sha256(await readFile(car)) !== publication.car.sha256
+  )
+    throw new Error("Previous CAR integrity failure");
+  await verifyLocalCar(
+    car,
+    publication.rootCid,
+    prior.files.filter((f) =>
+      (PUBLICATION_FILES as readonly string[]).includes(f.name),
+    ),
+  );
+  return {
+    manifest: prior,
+    dataset,
+    rootCid: publication.rootCid,
+    history: JSON.parse(
+      await readFile(path.join(directory, "runs.json"), "utf8"),
+    ) as unknown,
+  };
+}
 async function publicRunManifest(
   root: string,
   manifest: {
@@ -45,8 +151,10 @@ async function publicRunManifest(
     contractVersion: string;
     parcelCount: number;
     addressCount: number;
+    count: number;
     files: readonly { name: string; sha256: string }[];
   },
+  previousDirectory: string | undefined,
 ): Promise<PublicRunManifest> {
   const file = path.join(root, "run-manifest.json"),
     info = await lstat(file);
@@ -60,12 +168,12 @@ async function publicRunManifest(
   const run = PublicRunManifestSchema.parse(
     JSON.parse(await readFile(file, "utf8")),
   );
-  const runs: unknown = JSON.parse(
-    await readFile(path.join(root, "runs.json"), "utf8"),
+  if ((await stat(path.join(root, "runs.json"))).size > 1048576)
+    throw new Error("Public run history exceeds minimized bound");
+  const history = PublicRunHistorySchema.parse(
+    JSON.parse(await readFile(path.join(root, "runs.json"), "utf8")),
   );
-  const history = Array.isArray(runs)
-    ? (runs as Record<string, unknown>[])
-    : [];
+  const previous = await verifiedPreviousPublication(previousDirectory);
   const current = history.filter((r) => r.id === run.runId);
   const dataset = JSON.parse(
     await readFile(path.join(root, "dataset-manifest.json"), "utf8"),
@@ -74,6 +182,9 @@ async function publicRunManifest(
     run.datasetSnapshotId !== manifest.snapshotId ||
     run.datasetDigest !== manifest.digest ||
     run.contractVersion !== manifest.contractVersion ||
+    run.priorRootCid !== previous.rootCid ||
+    run.priorDatasetSnapshotId !== previous.manifest.snapshotId ||
+    stableJson(history.slice(0, 2)) !== stableJson(previous.history) ||
     run.datasetManifestSha256 !==
       manifest.files.find((f) => f.name === "dataset-manifest.json")?.sha256 ||
     run.runsSha256 !==
@@ -84,16 +195,43 @@ async function publicRunManifest(
     current[0]?.digest !== run.datasetDigest ||
     current[0]?.startedAt !== run.startedAt ||
     current[0]?.completedAt !== run.completedAt ||
+    current[0]?.canonicalPropertyCount !== manifest.count ||
+    history[0].snapshotId !== run.priorDatasetSnapshotId ||
+    history[0].digest !== previous.manifest.digest ||
+    history[0].canonicalPropertyCount !== previous.manifest.count ||
+    history[0].layers.parcel.count !== previous.manifest.parcelCount ||
+    history[0].layers.address.count !== previous.manifest.addressCount ||
     stableJson(current[0]?.deltas) !== stableJson(run.factDelta) ||
     dataset.termsDigest !== run.acceptedTermsDigest ||
     dataset.fieldClassificationDigest !== run.publicFieldClassificationDigest ||
+    run.schemaOrProvenanceChanged !==
+      [
+        "transformVersion",
+        "contractVersion",
+        "fieldClassificationDigest",
+        "termsDigest",
+        "parcelProvenanceDigest",
+        "addressProvenanceDigest",
+      ].some((key) => dataset[key] !== previous.dataset[key]) ||
+    run.dataFactsChanged !==
+      ["parcelContentDigest", "addressContentDigest"].some(
+        (key) => dataset[key] !== previous.dataset[key],
+      ) ||
     run.sourceLayers.some((layer) => {
       const parcel = layer.id === "oakland-tax-parcel-plus";
       return (
         layer.count !==
           (parcel ? manifest.parcelCount : manifest.addressCount) ||
         layer.contentDigest !==
-          dataset[parcel ? "parcelContentDigest" : "addressContentDigest"]
+          dataset[parcel ? "parcelContentDigest" : "addressContentDigest"] ||
+        stableJson(layer.delta) !==
+          stableJson(
+            current[0]?.layers[parcel ? "tax_parcel" : "site_address"].delta,
+          ) ||
+        layer.delta.deleted + layer.delta.changed + layer.delta.unchanged !==
+          (parcel
+            ? previous.manifest.parcelCount
+            : previous.manifest.addressCount)
       );
     })
   )
@@ -206,7 +344,10 @@ export async function verifyLocalCar(
 /** Local-only deterministic UnixFS DAG/CAR generation; never contacts a node, gateway or provider. */
 export async function rehearsePublication(
   directory: string,
-  options: { profile?: PublicationProfile } = {},
+  options: {
+    profile?: PublicationProfile;
+    previousPublicationDirectory?: string;
+  } = {},
 ): Promise<Record<string, unknown>> {
   const { directory: root, manifest } =
     await verifySnapshotDirectory(directory);
@@ -214,7 +355,11 @@ export async function rehearsePublication(
     allowed = approvedFiles(profile);
   const run =
     profile === "run-history-v2"
-      ? await publicRunManifest(root, manifest)
+      ? await publicRunManifest(
+          root,
+          manifest,
+          options.previousPublicationDirectory,
+        )
       : undefined;
   const store = new MemoryBlockstore();
   const inputs = [];

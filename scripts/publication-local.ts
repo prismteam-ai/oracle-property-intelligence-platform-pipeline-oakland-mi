@@ -6,16 +6,25 @@ const args = process.argv.slice(2),
   directory = args.shift() ?? process.env.PRISM_SNAPSHOT_DIR;
 if (!directory) throw new Error("Snapshot directory required");
 let profile: PublicationProfile = "legacy-data-v1";
-if (args.length) {
+let previousPublicationDirectory: string | undefined;
+while (args.length) {
+  const option = args.shift(),
+    value = args.shift();
   if (
-    args.length !== 2 ||
-    args[0] !== "--profile" ||
-    !["legacy-data-v1", "run-history-v2"].includes(args[1]!)
+    option === "--profile" &&
+    value &&
+    ["legacy-data-v1", "run-history-v2"].includes(value)
   )
+    profile = value as PublicationProfile;
+  else if (option === "--previous" && value)
+    previousPublicationDirectory = value;
+  else
     throw new Error(
-      "Expected directory [--profile legacy-data-v1|run-history-v2]",
+      "Expected directory [--profile legacy-data-v1|run-history-v2] [--previous trusted-previous-publication-directory]",
     );
-  profile = args[1] as PublicationProfile;
 }
-const manifest = await rehearsePublication(directory, { profile });
+const manifest = await rehearsePublication(directory, {
+  profile,
+  previousPublicationDirectory,
+});
 console.log(JSON.stringify(manifest, null, 2));

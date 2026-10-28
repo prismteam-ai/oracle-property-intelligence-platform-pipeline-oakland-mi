@@ -425,10 +425,12 @@ await writeFile(
 );
 const publication = await rehearsePublication(output, {
   profile: "run-history-v2",
+  previousPublicationDirectory: baseline,
 });
 const first = sha256(await readFile(path.join(output, "snapshot.car")));
 const repeated = await rehearsePublication(output, {
   profile: "run-history-v2",
+  previousPublicationDirectory: baseline,
 });
 assert.equal(repeated.rootCid, publication.rootCid);
 assert.equal(sha256(await readFile(path.join(output, "snapshot.car"))), first);
