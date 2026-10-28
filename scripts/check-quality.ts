@@ -8,10 +8,24 @@ if (action === "contract") {
   const raw = await readFile("packages/contracts/src/index.ts");
   const lock = JSON.parse(
     await readFile("packages/contracts/contract.lock.json", "utf8"),
-  ) as { version: string; sha256: string };
+  ) as { version: string; sha256: string; files?: Record<string, string> };
   const version = raw.toString().match(/CONTRACT_VERSION\s*=\s*"([^"]+)"/)?.[1];
   if (hash(raw) !== lock.sha256 || version !== lock.version)
     throw new Error("Explicit shared contract lock drift");
+  const names = (await readdir("packages/contracts/src"))
+    .filter((name) => name.endsWith(".ts"))
+    .sort();
+  if (
+    !lock.files ||
+    JSON.stringify(names) !== JSON.stringify(Object.keys(lock.files).sort())
+  )
+    throw new Error("Shared contract source file inventory drift");
+  for (const name of names)
+    if (
+      hash(await readFile(path.join("packages/contracts/src", name))) !==
+      lock.files[name]
+    )
+      throw new Error("Shared contract module hash drift");
   console.log("PASS_EXPLICIT_CONTRACT_VERSION_AND_HASH");
 } else if (action === "source") {
   const files = execFileSync(
