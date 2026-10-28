@@ -257,9 +257,7 @@ test("real default UI presents complete selected layers and source-bound details
     .getByRole("button", { name: /Inspect evidence for/ })
     .first()
     .click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "Official source evidence",
-  );
+  await expect(page.getByRole("dialog")).toContainText("Real source evidence");
   await expect(page.getByRole("dialog")).toContainText("Unknown");
   await proof(page, "P2-real-detail", {
     health,

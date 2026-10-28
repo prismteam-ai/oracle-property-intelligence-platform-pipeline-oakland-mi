@@ -112,7 +112,9 @@ test("synthetic responses exercise real-view issued, contractor and reported-sal
   );
   await expect(page.locator("tbody")).toContainText("Status unknown");
   await expect(page.locator("tbody")).not.toContainText("0 open");
-  await page.getByLabel("Permit status").selectOption("unknown");
+  await page
+    .getByLabel("Permit status", { exact: true })
+    .selectOption("unknown");
   await page.getByRole("button", { name: "Run query", exact: true }).click();
   await expect(page.locator(".query-panel")).toHaveAttribute(
     "aria-busy",
@@ -129,6 +131,30 @@ test("synthetic responses exercise real-view issued, contractor and reported-sal
   );
   expect(requests.at(-1)?.minReportedSaleAgeYears).toBe(10);
   expect(requests.at(-1)?.minOwnershipYears).toBeUndefined();
+  await page
+    .getByLabel("Provider permit status", { exact: true })
+    .selectOption("ISSUED");
+  await page
+    .getByLabel("Permit activity evidence", { exact: true })
+    .selectOption("not_established");
+  await page.getByLabel("Minimum age since permit issue (days)").fill("1827");
+  await page
+    .getByLabel("No observed recorded-deed gap older than (years)")
+    .fill("10");
+  await expect(page.locator("tbody tr")).toHaveCount(0);
+  await page.getByRole("button", { name: "Run query", exact: true }).click();
+  await expect(page.locator(".query-panel")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
+  expect(requests.at(-1)).toMatchObject({
+    providerPermitStatus: "ISSUED",
+    permitActivityClaim: "not_established",
+    minPermitAgeSinceIssueDays: 1827,
+    minRecordedDeedGapYears: 10,
+    minOpenDays: 0,
+  });
+  // Intercepted records above are synthetic UI fixtures, not evidence of a real positive cohort.
   await page
     .getByRole("button", { name: `Inspect evidence for ${property.id}` })
     .click();

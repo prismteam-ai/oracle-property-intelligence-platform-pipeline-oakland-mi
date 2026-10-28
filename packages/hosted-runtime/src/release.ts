@@ -5,7 +5,7 @@ export const BOOTSTRAP_QUALIFIER = "prismrvw" as const;
 export const APPROVED_PUBLIC_MANIFEST_SHA256 =
   "d3f82cc0b00eb8345f94c7e5ffb21e37fd928bc9c5af771d005e6f700d879bbb";
 export const APPROVED_PRIVATE_MANIFEST_SHA256 =
-  "1d43e5b3b3af14f7d263581de2fe4d0af7cea1df2d7733b0b6e54fe71031b909";
+  "5d835ee72a5893b0e441c4fbe22d03ae564a3bfd5cfb248b0d88263f4404a044";
 export interface SourceIdentity {
   head: string;
   tree: string;

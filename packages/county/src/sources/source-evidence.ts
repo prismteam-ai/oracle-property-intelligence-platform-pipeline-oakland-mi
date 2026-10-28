@@ -123,7 +123,14 @@ export const RecordedTransferIndexObservation = z
   })
   .strict();
 
-/** A bounded current-PIN index observation is never a legal ownership chain. */
+/**
+ * Legacy acquisition-candidate compatibility projector, retained to reproduce
+ * unchanged captured receipts. Its original searchCoverage fields are not the
+ * API/private0.5 serving contract and must never be served directly.
+ * RecordedTransferIndexObservationSchema validates the separate advertised
+ * index start, bounded current-PIN claim window and verified cutoff for serving.
+ * A current-PIN index observation is never a legal ownership chain.
+ */
 export function projectRecordedTransferObservation(input: unknown) {
   try {
     const row = RecordedTransferIndexObservation.parse(input);
