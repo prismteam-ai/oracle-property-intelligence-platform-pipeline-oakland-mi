@@ -246,6 +246,9 @@ const handler = new Function(stack, "ReadApi", {
     PRISM_ACCESS_SECRET_ARN: access.secretArn,
     PRISM_QUOTA_TABLE: table.tableName,
     PRISM_BUILD_ID: report.identity.buildId,
+    PRISM_LAMBDA_ARCHIVE_SHA256: archiveDigest,
+    PRISM_FRONTEND_ASSET_MANIFEST_SHA256:
+      process.env.PRISM_FRONTEND_ASSET_MANIFEST_SHA256 ?? "unbuilt-local",
     PRISM_DEPLOY_REGION: region,
     PRISM_RELEASE_STAGE: stage,
     PRISM_MCP_ALLOWED_ORIGINS: String(

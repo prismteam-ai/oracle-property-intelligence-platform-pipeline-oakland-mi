@@ -1,0 +1,60 @@
+{
+  "publicationProfile": "run-history-v2",
+  "rootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+  "priorRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+  "publicSnapshotId": "oakland-real-e08111dc398302e141d3",
+  "datasetDigest": "e08111dc398302e141d38807c6e79b10a22b562bcc324d62416a9c13b4faa8d8",
+  "carSha256": "069137cc3d1190fce1a396788d3fef0f53f32c9cdf50c2874b2c2a24e11e4d73",
+  "carBytes": 53864111,
+  "history": [
+    {
+      "runId": "run-01",
+      "kind": "full-baseline",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 1050476,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 0
+      }
+    },
+    {
+      "runId": "run-02",
+      "kind": "complete-content-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    },
+    {
+      "runId": "run-03",
+      "kind": "full-public-field-incremental-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-e08111dc398302e141d3",
+      "datasetRootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    }
+  ],
+  "sourceFactDelta": {
+    "added": 0,
+    "changed": 0,
+    "deleted": 0,
+    "unchanged": 1050476
+  },
+  "publicationVerification": "Exact root retained by Filebase and Pinata on Free plans; every file matched size/SHA256 through both public operators",
+  "metadataExplanation": "New provenance, contract0.3.0 and run history; no changed county facts",
+  "publicManifestPath": "/assessment-publication-manifest.json",
+  "operatorGatewayProofPath": "/assessment-gateway-proof.json"
+}

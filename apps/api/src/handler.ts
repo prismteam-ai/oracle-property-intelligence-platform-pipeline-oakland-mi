@@ -1,3 +1,4 @@
+import { assessmentEvidence } from "../../../packages/hosted-runtime/src/assessment-evidence.ts";
 import { sourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
 import { serveMcpFetch } from "../../../packages/mcp-adapter/src/server.ts";
 import { compiledIdentity } from "../../../packages/hosted-runtime/src/runtime-identity.ts";
@@ -111,6 +112,20 @@ export function createApi(options: ApiOptions) {
           engine: "DuckDB immutable snapshot",
           upstreamMcp: false,
         });
+      if (req.method === "GET" && url.pathname === "/api/evidence") {
+        if (url.search)
+          throw new AccessError(400, "Evidence parameters are unsupported");
+        return send(
+          200,
+          assessmentEvidence(options.identity ?? compiledIdentity(), {
+            snapshotId: s.snapshotId,
+            snapshotDigest: s.digest,
+            publicSnapshotId:
+              (s.manifest as { publicSnapshotId?: string }).publicSnapshotId ??
+              s.snapshotId,
+          }),
+        );
+      }
       // Local access is opt-in at the Node adapter and cannot be selected by request headers.
       let subject = "local-review";
       if (!options.local) {

@@ -475,6 +475,9 @@ function App() {
           </p>
           {crmUrl && <a href={crmUrl}>Open Roofing CRM ↗</a>}
         </div>
+        <a href="/api/evidence" target="_blank" rel="noopener noreferrer">
+          Assessment evidence ↗
+        </a>
       </aside>
       <main>
         <header>
