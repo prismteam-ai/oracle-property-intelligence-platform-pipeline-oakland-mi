@@ -190,7 +190,9 @@ function App() {
     [loading, setLoading] = useState(true),
     [radius, setRadius] = useState(5),
     [age, setAge] = useState(0),
-    [permits, setPermits] = useState<"any" | "open" | "closed">("any"),
+    [permits, setPermits] = useState<"any" | "open" | "closed" | "unknown">(
+      "any",
+    ),
     [minDays, setMinDays] = useState(0);
   const [health, setHealth] = useState<Health | null>(null),
     [accessRequired, setAccessRequired] = useState(false),
@@ -776,6 +778,7 @@ function App() {
                   <option value="any">All permits</option>
                   <option value="open">Open permits</option>
                   <option value="closed">Closed permits</option>
+                  <option value="unknown">Unknown permit status</option>
                 </select>
               </label>
               <label>
@@ -1126,7 +1129,7 @@ function App() {
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
           <span>
-            P4 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
+            P5 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
             {health?.dataMode ?? health?.mode ?? "loading"}
           </span>
         </footer>

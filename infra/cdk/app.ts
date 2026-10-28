@@ -40,6 +40,8 @@ import {
   AllowedMethods,
   OriginRequestPolicy,
   ResponseHeadersPolicy,
+  HeadersFrameOption,
+  HeadersReferrerPolicy,
   PriceClass,
 } from "aws-cdk-lib/aws-cloudfront";
 import { S3BucketOrigin, HttpOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
@@ -307,13 +309,37 @@ apiStage.defaultRouteSettings = {
   throttlingBurstLimit: capacity.apiBurst,
   throttlingRateLimit: capacity.apiRatePerSecond,
 };
+const securityHeaders = new ResponseHeadersPolicy(
+  stack,
+  "ReviewSecurityHeaders",
+  {
+    securityHeadersBehavior: {
+      contentTypeOptions: { override: true },
+      frameOptions: { frameOption: HeadersFrameOption.DENY, override: true },
+      referrerPolicy: {
+        referrerPolicy: HeadersReferrerPolicy.NO_REFERRER,
+        override: true,
+      },
+      strictTransportSecurity: {
+        accessControlMaxAge: Duration.days(365),
+        includeSubdomains: true,
+        override: true,
+      },
+      contentSecurityPolicy: {
+        contentSecurityPolicy:
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+        override: true,
+      },
+    },
+  },
+);
 const cdn = new Distribution(stack, "ReviewSite", {
   defaultRootObject: "index.html",
   priceClass: PriceClass.PRICE_CLASS_100,
   defaultBehavior: {
     origin: S3BucketOrigin.withOriginAccessControl(site),
     viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-    responseHeadersPolicy: ResponseHeadersPolicy.SECURITY_HEADERS,
+    responseHeadersPolicy: securityHeaders,
     cachePolicy: CachePolicy.CACHING_OPTIMIZED,
   },
   additionalBehaviors: {
@@ -325,7 +351,7 @@ const cdn = new Distribution(stack, "ReviewSite", {
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_DISABLED,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-      responseHeadersPolicy: ResponseHeadersPolicy.SECURITY_HEADERS,
+      responseHeadersPolicy: securityHeaders,
     },
   },
 });

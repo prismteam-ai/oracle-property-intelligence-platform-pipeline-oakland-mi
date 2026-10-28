@@ -35,3 +35,13 @@ files byte for byte. The runtime derives the typed observations from that pinned
 file. All prior observation windows remain unchanged. Source GET timestamps
 retain their original precision privately; canonical provenance normalizes the
 same instant to UTC milliseconds. No report event date replaces collection time.
+
+The final local v6 native proof reconciles 4,180 Rochester report records
+(973 issued, 3,207 applied): 3,751 unique-address assignments and 429 unmatched
+records. Exactly 915 assigned issued-report observations enter the permit view,
+raising the combined normalized permit-observation count to 39,282; no unique
+native-permit count is asserted because these PDFs print no native permit number.
+There are 3,746 labeled Owner observations across 1,884 properties, with a maximum
+of 103 per property. All raw-to-typed owner comparisons matched; seven earlier
+v5 data files remain byte-identical. These are source-preparation measurements;
+only final release-bound hosted receipts establish deployment status.

@@ -83,6 +83,54 @@ for (const [k, v] of Object.entries({
 assert.deepEqual(lambda.Architectures, ["x86_64"]);
 assert.equal(of("AWS::CloudFront::OriginAccessControl").length, 1);
 assert.equal(of("AWS::CloudFront::Distribution").length, 1);
+const headerPolicy = of("AWS::CloudFront::ResponseHeadersPolicy");
+assert.equal(headerPolicy.length, 1);
+const headerConfig = headerPolicy[0]![1].Properties!
+  .ResponseHeadersPolicyConfig as {
+  SecurityHeadersConfig: {
+    ContentSecurityPolicy: { ContentSecurityPolicy: string; Override: boolean };
+    FrameOptions: { FrameOption: string; Override: boolean };
+    ContentTypeOptions: { Override: boolean };
+  };
+};
+assert.equal(
+  headerConfig.SecurityHeadersConfig.ContentSecurityPolicy.Override,
+  true,
+);
+for (const directive of [
+  "default-src 'self'",
+  "script-src 'self'",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+])
+  assert(
+    headerConfig.SecurityHeadersConfig.ContentSecurityPolicy.ContentSecurityPolicy.split(
+      ";",
+    ).some((x) => x.trim() === directive),
+  );
+assert.equal(
+  headerConfig.SecurityHeadersConfig.FrameOptions.FrameOption,
+  "DENY",
+);
+assert.equal(
+  headerConfig.SecurityHeadersConfig.ContentTypeOptions.Override,
+  true,
+);
+const cdnConfig = of("AWS::CloudFront::Distribution")[0]![1].Properties!
+  .DistributionConfig as {
+  DefaultCacheBehavior: { ResponseHeadersPolicyId: unknown };
+  CacheBehaviors: { ResponseHeadersPolicyId: unknown }[];
+};
+for (const behavior of [
+  cdnConfig.DefaultCacheBehavior,
+  ...cdnConfig.CacheBehaviors,
+])
+  assert.deepEqual(behavior.ResponseHeadersPolicyId, {
+    Ref: headerPolicy[0]![0],
+  });
+
 assert.equal(of("AWS::DynamoDB::Table").length, 1);
 assert.equal(of("AWS::SecretsManager::Secret").length, 1);
 assert(of("AWS::CloudWatch::Alarm").length >= 4);
