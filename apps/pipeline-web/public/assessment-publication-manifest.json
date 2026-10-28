@@ -1,0 +1,199 @@
+{
+  "version": "1",
+  "mode": "published-verified",
+  "publicationProfile": "run-history-v2",
+  "snapshotId": "oakland-real-e08111dc398302e141d3",
+  "datasetDigest": "e08111dc398302e141d38807c6e79b10a22b562bcc324d62416a9c13b4faa8d8",
+  "rootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+  "rootCodec": "dag-pb",
+  "cidVersion": 1,
+  "multihash": "sha2-256",
+  "deterministicOptions": {
+    "chunkBytes": 262144,
+    "layout": "balanced",
+    "maxChildren": 174,
+    "rawLeaves": true,
+    "mtime": "omitted",
+    "mode": "omitted",
+    "canonicalFileOrder": true,
+    "canonicalCarBlockOrder": true
+  },
+  "files": [
+    {
+      "name": "parcels.parquet",
+      "bytes": 22192608,
+      "sha256": "6af316221370957b18dec20199d324dc066406f067b849e2e84b088ae1d4bd1c",
+      "cid": "bafybeiargtre36j6kt6cyffwttgql5x5ixie7zulninx4vpxzhzbo7gude",
+      "codec": "dag-pb",
+      "cidVersion": 1
+    },
+    {
+      "name": "site-addresses.parquet",
+      "bytes": 30051623,
+      "sha256": "68cbe624fe769db24af8ad4756339588944c72cbd0c573ca94e69e5c54b2ee38",
+      "cid": "bafybeidx3f5dggluxocq3eksix3k6jkzd4hoqjdkntzs4deixlizh7cuiy",
+      "codec": "dag-pb",
+      "cidVersion": 1
+    },
+    {
+      "name": "parcel-address-links.parquet",
+      "bytes": 1584306,
+      "sha256": "a63742f3676f3acae6fbe4b673a447c41887e97daca74ce4a7ead2e379e3903c",
+      "cid": "bafybeicsvwiazfxphowr67uz55sfgoxpyjlofweaaafq6zqimh6jgf2nsu",
+      "codec": "dag-pb",
+      "cidVersion": 1
+    },
+    {
+      "name": "permits.parquet",
+      "bytes": 409,
+      "sha256": "27bf3b0d6efc91295fb10ffe2b53b4f54debb7e8be8102625868dd3931681eeb",
+      "cid": "bafkreibhx45q23x4seuv7mip7yvvhnhvjxv3p2f6qebgewdi3u4tc2a65m",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "coverage.json",
+      "bytes": 2241,
+      "sha256": "557da66cc5e31b47ef9e19c3660395b31d5fe28c9332be4b766242501e235c41",
+      "cid": "bafkreicvpwtgzrpddnd67hqzyntahfntdvp6fdetgk7ew5tcijib4i24ie",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "runs.json",
+      "bytes": 5494,
+      "sha256": "cc90d67a89e089ae84227309cf7815e68c8c55ab6d9f9ffc811ad3c926c0e31f",
+      "cid": "bafkreigmsdlhvcpargxiiittbhhxqfpgrsgflk3nt6p7zai22pesnqhdd4",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "dataset-manifest.json",
+      "bytes": 1082,
+      "sha256": "82c6a184d859059d9612fa14faa83d5b84b322032008a65523753ac9309b5783",
+      "cid": "bafkreiecy2qyjwczawozmex2ct5kqpk3qszseazabctfki3vhletbg2xqm",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "schema.json",
+      "bytes": 888,
+      "sha256": "19ac85126079f6cd43d198069e2db8c430cf0212b57f8bdde2f83597ee8bfd27",
+      "cid": "bafkreiazvscreydz63guhumya2pc3ogegdhqeevvp6f53yxygwl65c75e4",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "sample.json",
+      "bytes": 2319,
+      "sha256": "f9715f082424d77643fadf8a82487e918bf7f73d0466f191b8bb6f5f249a9adc",
+      "cid": "bafkreihzofpqqjbe253eh6w7rkbeq7urrp37opiem3yzdof3n5psjgu23q",
+      "codec": "raw",
+      "cidVersion": 1
+    },
+    {
+      "name": "run-manifest.json",
+      "bytes": 3595,
+      "sha256": "114bac03e5a8bf09cce47229a2ec9a40e12851d42ec6dbce15b76e9094e89eec",
+      "cid": "bafkreiarjowahznix4e4zzdsfgrozgsa4eufdvboy3n44fnxn2ijj2e65q",
+      "codec": "raw",
+      "cidVersion": 1
+    }
+  ],
+  "car": {
+    "name": "snapshot.car",
+    "bytes": 53864111,
+    "sha256": "069137cc3d1190fce1a396788d3fef0f53f32c9cdf50c2874b2c2a24e11e4d73",
+    "roots": [
+      "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna"
+    ],
+    "rootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+    "blocks": 218,
+    "files": 10,
+    "bytesVerified": 53844565
+  },
+  "history": [
+    {
+      "runId": "run-01",
+      "kind": "full-baseline",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 1050476,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 0
+      }
+    },
+    {
+      "runId": "run-02",
+      "kind": "complete-content-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    },
+    {
+      "runId": "run-03",
+      "kind": "full-public-field-incremental-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-e08111dc398302e141d3",
+      "datasetRootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    }
+  ],
+  "historyExclusion": "Public run history and strict minimized run-manifest are included in this publication root. Fact delta and schema/provenance change are stated separately; prior root remains immutable.",
+  "runId": "run-03",
+  "priorRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+  "factDelta": {
+    "added": 0,
+    "changed": 0,
+    "deleted": 0,
+    "unchanged": 1050476
+  },
+  "dataFactsChanged": false,
+  "schemaOrProvenanceChanged": true,
+  "publicUpload": {
+    "state": "published",
+    "authority": "Direct ongoing user assessment authorization; exact-byte review recorded",
+    "paidUSD": 0
+  },
+  "ipns": {
+    "name": "k51qzi5uqu5dhw010uk4t6axj2dnlofvyptarqfp74cuq1f74rzuzssv4zkf8h",
+    "resolvedCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+    "verifiedAt": "2026-10-28T02:22:31.597905+00:00",
+    "uiValidity": "48h",
+    "beyondNovember17Verified": false
+  },
+  "atlas": {
+    "state": "deferred_not_submitted"
+  },
+  "providerPersistence": {
+    "Filebase": {
+      "recursivePinVerified": true,
+      "method": "Exact CAR import"
+    },
+    "Pinata": {
+      "exactRootVerified": true,
+      "method": "Free folder upload"
+    }
+  },
+  "limitations": [
+    "County source fact delta is zero; new root records genuine observation provenance, contract0.3.0 and actual history.",
+    "Protected permit, ownership/enrichment observations and contacts are outside public roots.",
+    "Recorded two-operator public retrieval is not a continuous availability or permanent-retention guarantee.",
+    "Extended IPNS validity was rejected; immutable CID remains durable identity."
+  ],
+  "operationalReceipt": "Derived publication state after exact byte verification; frozen prepublication metadata retained in assessment evidence."
+}

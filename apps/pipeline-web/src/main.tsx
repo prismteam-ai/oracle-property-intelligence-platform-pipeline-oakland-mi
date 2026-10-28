@@ -1,3 +1,4 @@
+import publicationEvidence from "../../../packages/hosted-runtime/src/public-run-evidence.json";
 import { useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type {
@@ -120,14 +121,16 @@ function normalizeRun(value: unknown): Run {
     id: String(r.id ?? "Source run"),
     at: String(r.completedAt ?? r.startedAt ?? ""),
     source: String(r.kind ?? "official source"),
-    sourceCount: null,
-    processed: null,
-    added: null,
-    changed: null,
-    deleted: null,
-    unchanged: null,
+    sourceCount: number(r.sourceCount),
+    processed: number(r.processed),
+    added: number(r.added),
+    changed: number(r.changed),
+    deleted: number(r.deleted),
+    unchanged: number(r.unchanged),
     state: r.complete ? "COMPLETE" : "INCOMPLETE",
-    limitations: ["Use the source receipt for layer counts and delta details."],
+    limitations: Array.isArray(r.limitations)
+      ? r.limitations.map(String)
+      : ["Source-layer counts differ from canonical property counts."],
     raw: value,
   };
 }
@@ -343,8 +346,7 @@ function App() {
     setError("");
     try {
       const h = await get<Health>("health", abort.signal);
-      // A review runtime has two reserved slots. Pace bootstrap reads so a
-      // single browser does not saturate them before the workspace opens.
+      // Pace immutable bootstrap reads within the bounded review capacity.
       const r = await get<unknown[]>("runs", abort.signal);
       const c = await get<unknown[]>("coverage", abort.signal);
       const m = await get<Manifest>("manifest", abort.signal);
@@ -1054,36 +1056,57 @@ function App() {
                 ))}
               </article>
               <article className="publication-gate">
-                <h3>Public base published on two free providers</h3>
+                <h3>Two immutable public snapshots</h3>
                 <p>
-                  Recorded October 27, 2026: Filebase and Pinata both pinned the
-                  exact public P2 base. All eight files matched their SHA-256
-                  hashes on each provider. Pinata retrieval also passed while
-                  the Filebase pin was temporarily removed, then restored.
+                  Filebase and Pinata retain both roots on Free plans. Every
+                  file in both snapshots matched its size and SHA-256 through
+                  each operator's public gateway. This is recorded verification,
+                  not an availability monitor.
                 </p>
                 <p>
-                  <strong>Public base only:</strong>{" "}
-                  oakland-real-71c0ba7aafadd0e4301b
+                  <strong>Previous root · runs 1 and 2</strong>
                 </p>
-                <code>
-                  bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu
-                </code>
+                <code>{publicationEvidence.priorRootCid}</code>
                 <p>
-                  Owner derivatives, protected observations, contacts and
-                  provider records were excluded. The runtime manifest alongside
-                  this receipt describes the current working view.
+                  <strong>Current public root · run 3</strong>
+                </p>
+                <code>{publicationEvidence.rootCid}</code>
+                <p>
+                  Run 3 freshly reconciled 1,050,476 source records: zero added,
+                  changed or deleted facts. The new root records observation
+                  provenance, contract 0.3.0 and immutable run history. A new
+                  CID alone does not establish changed county facts.
+                </p>
+                <p>
+                  The protected working view includes separate permit and
+                  enrichment observations. These are outside both public roots.
+                </p>
+                <p>
+                  <a
+                    href="/assessment-publication-manifest.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Public file manifest and CAR identity ↗
+                  </a>
+                </p>
+                <p>
+                  <a
+                    href="/assessment-gateway-proof.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Independent public gateway verification ↗
+                  </a>
                 </p>
                 <p className="muted">
-                  This is recorded verification, not a live availability
-                  monitor. Public gateways ipfs.io and dweb.link could not be
-                  verified from the assessment network. Provider pins do not
-                  prove isolated storage or permanent retention. IPNS was
-                  verified with a 48-hour validity period; renewal is not
-                  scheduled.
+                  The existing IPNS name resolves to the current CID. Extended
+                  validity was rejected; the provider's current default is 48
+                  hours. Immutable CIDs remain the durable identity.
                 </p>
                 <p className="muted">
-                  Publication was performed separately under explicit user
-                  approval. This interface performs no uploads or IPNS updates.
+                  This interface performs no uploads, renewal, or provider
+                  changes.
                 </p>
               </article>
             </div>
@@ -1096,7 +1119,7 @@ function App() {
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
           <span>
-            P3 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
+            P4 · {health?.stage ?? "local"} · {health?.region ?? "us-east-1"} ·{" "}
             {health?.dataMode ?? health?.mode ?? "loading"}
           </span>
         </footer>

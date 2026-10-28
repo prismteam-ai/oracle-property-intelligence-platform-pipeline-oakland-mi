@@ -1,3 +1,4 @@
+import { writeReviewerAssetManifest } from "../packages/hosted-runtime/src/reviewer-assets.ts";
 import { buildConcurrencyPolicy } from "../packages/hosted-runtime/src/concurrency.ts";
 import { loadConcurrencyProof } from "../packages/hosted-runtime/src/concurrency-file.ts";
 /** P3 guarded operator entry point. No effect occurs without --execute and exact private release pins. */
@@ -188,6 +189,8 @@ if (action === "deploy") {
     },
   });
   assertPinnedSource(pins, sourceIdentity());
+  process.env.PRISM_FRONTEND_ASSET_MANIFEST_SHA256 =
+    await writeReviewerAssetManifest("dist", report.identity.buildId);
   const files: { name: string; sha256: string; bytes: number }[] = [];
   async function walk(directory: string) {
     for (const entry of (
@@ -590,6 +593,10 @@ try {
         "--paths",
         "/",
         "/index.html",
+        "/release-identity.json",
+        "/assessment-asset-manifest.json",
+        "/assessment-publication-manifest.json",
+        "/assessment-gateway-proof.json",
       ]);
     });
     await writeFile(
@@ -677,7 +684,7 @@ try {
               contractVersion: report.identity.contractVersion,
               contractSha256: report.identity.contractSha256,
               mode: "real",
-              publicSnapshotId: "oakland-real-71c0ba7aafadd0e4301b",
+              publicSnapshotId: "oakland-real-e08111dc398302e141d3",
             },
           }),
         ),

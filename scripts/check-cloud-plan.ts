@@ -96,7 +96,7 @@ assert.equal(env.PRISM_DATA_MODE, "real");
 assert.equal(env.PRISM_DEPLOY_REGION, "us-east-1");
 assert.equal(
   env.PRISM_SNAPSHOT_MANIFEST_SHA256,
-  "777885ed0bbbf317b457ab4394155da875313fab01516f86b25c3b51008c50b4",
+  "0ea109aae29cb7739ec166cddbb36782c170ef18ce97ef3b525ca9d7e50e7422",
 );
 assert.equal(env.PRISM_RELEASE_STAGE, "local");
 assert(!("PRISM_ENABLE_PROTECTED_VIEW" in env));
