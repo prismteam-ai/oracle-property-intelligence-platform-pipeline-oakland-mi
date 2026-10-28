@@ -45,7 +45,9 @@ function parse(bytes: Uint8Array, allowPrivateVersions = false): Manifest {
   const m = JSON.parse(Buffer.from(bytes).toString("utf8")) as Manifest;
   if (
     (m.version !== "1" &&
-      !(allowPrivateVersions && ["2", "3", "4", "5"].includes(m.version))) ||
+      !(
+        allowPrivateVersions && ["2", "3", "4", "5", "6"].includes(m.version)
+      )) ||
     !m.snapshotId ||
     !Array.isArray(m.files) ||
     m.files.length < 1 ||

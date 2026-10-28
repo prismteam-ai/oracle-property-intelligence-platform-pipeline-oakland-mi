@@ -19,7 +19,8 @@ export interface PrivateFile {
     | "private-source-intake.parquet"
     | "county-parcels.parquet"
     | "county-addresses.parquet"
-    | "municipal-permit-source.parquet";
+    | "municipal-permit-source.parquet"
+    | "rochester-hills-building-reports.parquet";
   role: "owner" | "enrichment" | "permits" | "source-intake" | FullSourceRole;
   bytes: number;
   sha256: string;
@@ -29,7 +30,7 @@ export interface PrivateFile {
   sourceValidatedOffline?: true;
 }
 export interface PrivateManifest {
-  version: "1" | "2" | "3" | "4" | "5";
+  version: "1" | "2" | "3" | "4" | "5" | "6";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -53,16 +54,18 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    !["1", "2", "3", "4", "5"].includes(m.version) ||
+    !["1", "2", "3", "4", "5", "6"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    (m.version === "5"
-      ? m.files.length !== 7
-      : m.version === "4"
-        ? m.files.length !== 6
-        : m.files.length !==
-          (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
+    (m.version === "6"
+      ? m.files.length !== 8
+      : m.version === "5"
+        ? m.files.length !== 7
+        : m.version === "4"
+          ? m.files.length !== 6
+          : m.files.length !==
+            (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
@@ -81,7 +84,7 @@ export function validatePrivateManifest(
             "role",
             "bytes",
             "sha256",
-            ...(full && ["4", "5"].includes(m.version)
+            ...(full && ["4", "5", "6"].includes(m.version)
               ? [
                   "sourceSchemaSha256",
                   "sourceRecordCount",
@@ -95,11 +98,13 @@ export function validatePrivateManifest(
         ? f.name !== "owner-derivatives.parquet"
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
-          : f.role === "permits" && ["2", "3", "4", "5"].includes(m.version)
+          : f.role === "permits" &&
+              ["2", "3", "4", "5", "6"].includes(m.version)
             ? f.name !== "protected-permits.parquet"
-            : f.role === "source-intake" && ["3", "4", "5"].includes(m.version)
+            : f.role === "source-intake" &&
+                ["3", "4", "5", "6"].includes(m.version)
               ? f.name !== "private-source-intake.parquet"
-              : full && ["4", "5"].includes(m.version)
+              : full && ["4", "5", "6"].includes(m.version)
                 ? f.name !== full.name
                 : true) ||
       names.has(f.name) ||
@@ -121,14 +126,15 @@ export function validatePrivateManifest(
     roles.add(f.role);
   }
   if (
-    ["4", "5"].includes(m.version) &&
+    ["4", "5", "6"].includes(m.version) &&
     (!roles.has("owner") ||
       !roles.has("enrichment") ||
       !roles.has("permits") ||
       !roles.has("source-intake") ||
       !roles.has("county-parcels") ||
       !roles.has("county-addresses") ||
-      (m.version === "5" && !roles.has("municipal-source")) ||
+      (["5", "6"].includes(m.version) && !roles.has("municipal-source")) ||
+      (m.version === "6" && !roles.has("rochester-source")) ||
       m.files
         .filter((f) => ["county-parcels", "county-addresses"].includes(f.role))
         .reduce((n, f) => n + f.sourceRecordCount!, 0) > 1_200_000)

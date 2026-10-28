@@ -19,16 +19,18 @@ it("requires all seven v5 roles and pins municipal proof metadata and bounded in
       ["permits", "protected-permits.parquet"],
       ["source-intake", "private-source-intake.parquet"],
     ].map(([role, name]) => ({ role, name, bytes: 1, sha256: "b".repeat(64) })),
-    ...Object.entries(FULL_SOURCE_DEFINITIONS).map(([role, d]) => ({
-      role,
-      name: d.name,
-      bytes: 1,
-      sha256: "c".repeat(64),
-      sourceSchemaSha256: "d".repeat(64),
-      sourceRecordCount: role === "municipal-source" ? 33014 : 2,
-      sourceValidationSha256: "e".repeat(64),
-      sourceValidatedOffline: true,
-    })),
+    ...Object.entries(FULL_SOURCE_DEFINITIONS)
+      .filter(([role]) => role !== "rochester-source")
+      .map(([role, d]) => ({
+        role,
+        name: d.name,
+        bytes: 1,
+        sha256: "c".repeat(64),
+        sourceSchemaSha256: "d".repeat(64),
+        sourceRecordCount: role === "municipal-source" ? 33014 : 2,
+        sourceValidationSha256: "e".repeat(64),
+        sourceValidatedOffline: true,
+      })),
   ];
   const make = (f: { name: string }[]) => ({
     version: "5",

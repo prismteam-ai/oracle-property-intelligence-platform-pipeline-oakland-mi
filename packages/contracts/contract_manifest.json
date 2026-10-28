@@ -1,11 +1,12 @@
 {
   "version": "0.4.0",
-  "sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c",
+  "sha256": "64177d6d301d67f77602ad1a378b945447992cbd52b8d092a875cbb569e8970e",
   "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts/src/index.ts",
   "generatedConsumer": "roofing-crm/packages/contracts/src/index.ts",
-  "frozen_utc": "2026-10-28T05:48:24.487808+00:00",
+  "frozen_utc": "2026-10-28T07:54:51.285098+00:00",
   "prior_version": "0.3.0",
   "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
-  "revision_reason": "Authoritative municipal-place references, explicit unknown permit status, evidence-presence predicates and typed sorting; no inference of contractor role, active license or unchanged tenure.",
-  "queryPredicateSha256": "0cd980a0c52997ae70d8ed79d03ba8475254bfb9312ad550c29373e037324401"
+  "revision_reason": "Finalize the unreleased P5 0.4.0 contract before its first deployment: optional source-labeled owner observations carry unknown effective date, unverified role and separate issued/applied event. Public run4 wire fields and immutable bytes stay unchanged.",
+  "queryPredicateSha256": "0cd980a0c52997ae70d8ed79d03ba8475254bfb9312ad550c29373e037324401",
+  "superseded_unreleased_p5_draft_sha256": "e25324824dc8b3b70d1cbf7f00493b90afceba6cf089e3024832d9429711357c"
 }

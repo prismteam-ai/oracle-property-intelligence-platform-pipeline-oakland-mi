@@ -9,3 +9,8 @@ The official place layer contains one quarantined Cass Lake anomaly and ambiguou
 CID1/CID2 are custom assessment-product snapshots. Local current Elephant CLI conformance, any local Atlas page and an IPNS observation do not establish Atlas publication or global synchronization. Run 4 is unpublished. External map/provider availability and AWS shared-account concurrency require observed runtime proof. Costs remain metered; Free plans and budgets do not guarantee zero spend.
 
 The user requires both operator validation and independent lead agreement before media. A local review packet is not final submission or permission to push, publish or record media.
+
+Rochester Hills source-labeled Owner observations are neither current legal-owner
+verification nor ten-year tenure proof. Applied reports are not issued permits.
+Printed PDF record/cost totals have documented discrepancies; the source values
+and independently fenced record rows are retained without forcing reconciliation.

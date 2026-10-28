@@ -148,6 +148,27 @@ export const PropertySchema = z.object({
   }),
   permits: z.array(PermitSchema),
   ownership: z.object({
+    reportedOwnerObservations: z
+      .array(
+        z
+          .object({
+            reportedName: z.string().min(1).max(2000),
+            sourceLabel: z.literal("Owner"),
+            relatedPermitEvent: z
+              .object({
+                kind: z.enum(["issued", "applied"]),
+                date: z.iso.date(),
+              })
+              .strict(),
+            ownershipEffectiveDate: z.null(),
+            roleVerification: z.literal("source_reported_unverified"),
+            provenance: z.array(ProvenanceSchema).min(1).max(10),
+            limitations: z.array(z.string().max(500)).min(1).max(10),
+          })
+          .strict(),
+      )
+      .max(256)
+      .optional(),
     lastTransferDate: z.iso.date().nullable(),
     events: z
       .array(

@@ -42,7 +42,7 @@ import {
   syntheticProperties,
   SNAPSHOT_ID,
 } from "../packages/test-support/src/fixtures.ts";
-async function sourceFixture() {
+async function sourceFixture(jurisdiction = "Synthetic jurisdiction") {
   const root = await mkdtemp(path.join(os.tmpdir(), "prism-county-"));
   const privateRoot = path.join(root, "private");
   await mkdir(privateRoot, { mode: 0o700 });
@@ -55,7 +55,7 @@ async function sourceFixture() {
       PIN: i === 2 ? "0012345678" : i === 1 ? "0012345678" : "2003",
       REVISIONDATE: 1791806753000,
       CVTTAXCODE: "test",
-      CVTTAXDESCRIPTION: "Synthetic jurisdiction",
+      CVTTAXDESCRIPTION: jurisdiction,
       CLASSCODE: "unknown",
       SITEADDRESS: "Synthetic site " + i,
       SITECITY: "Synthetic town",
@@ -1117,4 +1117,133 @@ test("owner address comparison never aliases street-number or unit prefixes", ()
     ownerRegion: "unknown",
     locationClass: "unknown",
   });
+});
+
+test("protected Rochester source projects only labeled owners and issued permits with exact snapshot address assignments", async () => {
+  const { rhRow, rhSchema } = await import("./private-rochester.fixture.ts");
+  const f = await sourceFixture("CITY OF ROCHESTER HILLS"),
+    out = path.join(f.root, "public");
+  const m = await buildCountySnapshot({
+    sourceManifest: f.manifest,
+    outputDir: out,
+    privateOutputDir: path.join(f.privateRoot, "owners"),
+  });
+  const instance = await DuckDBInstance.create(":memory:"),
+    db = await instance.connect();
+  const create = async (
+    rows: ReturnType<typeof rhRow>[],
+    name: string,
+  ): Promise<FullSourceConfig> => {
+    await db.run(
+      "CREATE OR REPLACE TABLE rh(" +
+        FULL_SOURCE_COLUMNS.map((k) => k + " VARCHAR").join(",") +
+        ")",
+    );
+    for (const row of rows)
+      await db.run(
+        "INSERT INTO rh VALUES(" +
+          FULL_SOURCE_COLUMNS.map((_, i) => "$" + (i + 1)).join(",") +
+          ")",
+        FULL_SOURCE_COLUMNS.map((k) => row[k]),
+      );
+    const file = path.join(f.privateRoot, name);
+    await db.run(`COPY rh TO '${file.replaceAll("'", "''")}' (FORMAT PARQUET)`);
+    return {
+      role: "rochester-source",
+      file,
+      sha256: sha256(await readFile(file)),
+      sourceSchemaSha256: rhSchema,
+      sourceRecordCount: rows.length,
+      sourceValidationSha256: sha256("synthetic-source-proof"),
+      sourceValidatedOffline: true,
+    };
+  };
+  const rows = [
+    rhRow(1, "issued"),
+    rhRow(2, "applied"),
+    rhRow(3, "applied"),
+  ].map((x) => ({ ...x, public_snapshot_id: m.snapshotId }));
+  const unmatched = JSON.parse(rows[2]!.source_record_json);
+  unmatched.propertyAddressRaw = "Synthetic unmatched site";
+  rows[2]!.property_id = null;
+  rows[2]!.source_record_json = JSON.stringify(unmatched);
+  rows[2]!.record_digest = sha256(rows[2]!.source_record_json);
+  try {
+    const config = await create(rows, "valid-rh.parquet"),
+      reader = await RealSnapshot.open(out, { protectedFullSources: [config] }),
+      publicReader = await RealSnapshot.open(out);
+    try {
+      const detail = await reader.detail("oakland-parcel-1", reader.snapshotId);
+      expect(reader.permitCount).toBe(1);
+      expect(detail.permits).toHaveLength(1);
+      expect(detail.permits[0]).toMatchObject({
+        status: "unknown",
+        statusBasis: "issued_only",
+        contractor: { reportedName: null },
+      });
+      expect(detail.ownership.reportedOwnerObservations).toHaveLength(2);
+      expect(
+        detail.ownership.reportedOwnerObservations!.map(
+          (x) => x.relatedPermitEvent.kind,
+        ),
+      ).toEqual(["issued", "applied"]);
+      expect(detail.ownership.lastTransferDate).toBeNull();
+      expect(detail.ownership.uninterruptedTenure?.state).toBe(
+        "insufficient_history",
+      );
+      const q = {
+        snapshotId: reader.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 5000,
+        permitStatus: "unknown",
+      };
+      expect((await reader.search(q)).total).toBe(1);
+      expect(JSON.stringify(detail)).not.toContain("SYNTHETIC_UNKNOWN_PARTY");
+      expect(JSON.stringify(detail)).not.toContain("SYNTHETIC_PHONE");
+      expect(
+        JSON.stringify(
+          await publicReader.detail(
+            "oakland-parcel-1",
+            publicReader.snapshotId,
+          ),
+        ),
+      ).not.toContain("SYNTHETIC_OWNER_ONLY");
+      const conn = (reader as unknown as { connection: typeof db }).connection;
+      const retained = await (
+        await conn.run(
+          "SELECT count(*) AS n FROM private_rochester_building_reports",
+        )
+      ).getRowObjectsJson();
+      expect(Number(retained[0]!.n)).toBe(3);
+    } finally {
+      reader.close();
+      publicReader.close();
+    }
+    for (const [i, property] of ["missing", "oakland-parcel-3", null].entries())
+      await expect(
+        RealSnapshot.open(out, {
+          protectedFullSources: [
+            await create(
+              [{ ...rows[0]!, property_id: property }],
+              "bad-rh-" + i + ".parquet",
+            ),
+          ],
+        }),
+      ).rejects.toThrow(/property binding|exact-address/);
+    const overflow = Array.from({ length: 257 }, (_, i) => ({
+      ...rhRow(i + 1, "applied"),
+      public_snapshot_id: m.snapshotId,
+    }));
+    await expect(
+      RealSnapshot.open(out, {
+        protectedFullSources: [
+          await create(overflow, "owner-overflow.parquet"),
+        ],
+      }),
+    ).rejects.toThrow("reported-owner property bound");
+  } finally {
+    db.closeSync();
+    instance.closeSync();
+  }
 });

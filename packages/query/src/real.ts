@@ -12,6 +12,7 @@ import {
   QuerySchema,
   SearchResponseSchema,
   type Property,
+  type Permit,
   type SearchResponse,
 } from "../../contracts/src/index.ts";
 import {
@@ -38,6 +39,8 @@ import {
   type FullSourceConfig,
   type FullSourceAudit,
 } from "../../county/src/private-full-source.ts";
+import { normalizeTroyAddress } from "../../county/src/troy.ts";
+import { projectRochesterReportRow } from "../../county/src/private-rochester.ts";
 const CORE_FILES = [
   "parcels.parquet",
   "site-addresses.parquet",
@@ -226,17 +229,42 @@ export class RealSnapshot {
             },
           ]
         : []),
+      ...(permitSourceCounts[
+        "official-rochester-hills-building-permit-reports"
+      ] !== undefined
+        ? [
+            {
+              source:
+                "Official Rochester Hills issued/applied building reports",
+              scope:
+                "Exact normalized site-address and jurisdiction associations; issued records supply unknown-status permit observations, applied records remain separate report events",
+              state: "partial",
+              count:
+                permitSourceCounts[
+                  "official-rochester-hills-building-permit-reports"
+                ],
+              limitations: [
+                "Count denotes assigned issued records only, not all raw report rows or owner observations. All acquired issued/applied rows remain in the protected working intake.",
+                "Source-labeled Owner text has no verified effective date, current legal role, role at the permit event, or uninterrupted-tenure meaning.",
+                "Unlabeled grouping-party names and contact fields are retained privately without inferred roles. Applications and issued-only observations do not prove open, completed or continuously open work.",
+              ],
+            },
+          ]
+        : []),
     ];
     this.coverage.push(
       ...fullSourceAudits.map((audit) => ({
         source: FULL_SOURCE_DEFINITIONS[audit.role].title,
-        scope: FULL_SOURCE_DEFINITIONS[audit.role].geometryIncluded
-          ? "Complete observed source attributes and point geometry retained in protected working views"
-          : "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
+        scope:
+          audit.role === "rochester-source"
+            ? "All records in the twelve acquired April–September 2026 issued/applied building reports; source has no point geometry"
+            : FULL_SOURCE_DEFINITIONS[audit.role].geometryIncluded
+              ? "Complete observed source attributes and point geometry retained in protected working views"
+              : "Complete observed source attributes retained in protected working views; geometry is excluded by the acquisition scope",
         state: "source_retained_private",
         count: audit.records,
         limitations: [
-          "Raw source fields are not Property, agent/model or public-publication projections.",
+          "Full raw source records are excluded from Property responses, agent/model input and public publication. Explicitly typed owner/report observations may appear in authenticated Property responses; owner names remain excluded from model input.",
           "Source name/party fields do not establish verified ownership, contractor role or tenure.",
           "All JSON keys/types/digests were validated offline against the pinned source schema and file hash; runtime checks metadata, native IDs and non-null canonical bindings setwise.",
         ],
@@ -306,6 +334,48 @@ export class RealSnapshot {
         throw new Error("Unsafe protected sidecar path/size");
       if (!expected || sha256(await readFile(file)) !== expected)
         throw new Error("Protected sidecar integrity required");
+    };
+    const insertProtectedPermits = async (
+      input: readonly {
+        row: {
+          property_id: string | null;
+          source_id: string;
+          native_id: string;
+          record_digest: string;
+          observed_at: string;
+        };
+        permit: Permit;
+        openDays: number | null;
+      }[],
+    ) => {
+      const projected = input.map(({ row, permit, openDays }) => ({
+        property_id: row.property_id,
+        id: permit.id,
+        status: permit.status,
+        kind: permit.kind,
+        opened_at: permit.openedAt,
+        closed_at: permit.closedAt,
+        open_days: openDays,
+        reported_contractor: permit.contractor.reportedName,
+        verified_company_id: permit.contractor.verifiedCompanyId,
+        license: permit.contractor.license,
+        rating: permit.contractor.rating,
+        source_id: row.source_id,
+        native_id: row.native_id,
+        receipt_digest: row.record_digest,
+        observed_at: row.observed_at,
+        canonical_json: JSON.stringify(permit),
+      }));
+      for (let offset = 0; offset < projected.length; offset += 256) {
+        const payload = JSON.stringify(projected.slice(offset, offset + 256));
+        if (Buffer.byteLength(payload) > 16 * 1024 ** 2)
+          throw new Error("Protected permit batch byte bound rejected");
+        await db.run(
+          `INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json)
+            SELECT json_extract_string(value,'$.property_id'),json_extract_string(value,'$.id'),json_extract_string(value,'$.status'),json_extract_string(value,'$.kind'),json_extract_string(value,'$.opened_at'),json_extract_string(value,'$.closed_at'),CAST(json_extract(value,'$.open_days') AS INTEGER),json_extract_string(value,'$.reported_contractor'),json_extract_string(value,'$.verified_company_id'),json_extract_string(value,'$.license'),CAST(json_extract(value,'$.rating') AS DOUBLE),json_extract_string(value,'$.source_id'),json_extract_string(value,'$.native_id'),json_extract_string(value,'$.receipt_digest'),json_extract_string(value,'$.observed_at'),json_extract_string(value,'$.canonical_json') FROM json_each($rows)`,
+          { rows: payload },
+        );
+      }
     };
     try {
       for (const [table, file] of [
@@ -451,34 +521,7 @@ export class RealSnapshot {
           throw new Error(
             "Protected permit canonical property/identity binding rejected",
           );
-        const projected = validated.map(({ row, permit, openDays }) => ({
-          property_id: row.property_id,
-          id: permit.id,
-          status: permit.status,
-          kind: permit.kind,
-          opened_at: permit.openedAt,
-          closed_at: permit.closedAt,
-          open_days: openDays,
-          reported_contractor: permit.contractor.reportedName,
-          verified_company_id: permit.contractor.verifiedCompanyId,
-          license: permit.contractor.license,
-          rating: permit.contractor.rating,
-          source_id: row.source_id,
-          native_id: row.native_id,
-          receipt_digest: row.record_digest,
-          observed_at: row.observed_at,
-          canonical_json: JSON.stringify(permit),
-        }));
-        for (let offset = 0; offset < projected.length; offset += 256) {
-          const payload = JSON.stringify(projected.slice(offset, offset + 256));
-          if (Buffer.byteLength(payload) > 16 * 1024 ** 2)
-            throw new Error("Protected permit batch byte bound rejected");
-          await db.run(
-            `INSERT INTO permits(property_id,id,status,kind,opened_at,closed_at,open_days,reported_contractor,verified_company_id,license,rating,source_id,native_id,receipt_digest,observed_at,canonical_json)
-            SELECT json_extract_string(value,'$.property_id'),json_extract_string(value,'$.id'),json_extract_string(value,'$.status'),json_extract_string(value,'$.kind'),json_extract_string(value,'$.opened_at'),json_extract_string(value,'$.closed_at'),CAST(json_extract(value,'$.open_days') AS INTEGER),json_extract_string(value,'$.reported_contractor'),json_extract_string(value,'$.verified_company_id'),json_extract_string(value,'$.license'),CAST(json_extract(value,'$.rating') AS DOUBLE),json_extract_string(value,'$.source_id'),json_extract_string(value,'$.native_id'),json_extract_string(value,'$.receipt_digest'),json_extract_string(value,'$.observed_at'),json_extract_string(value,'$.canonical_json') FROM json_each($rows)`,
-            { rows: payload },
-          );
-        }
+        await insertProtectedPermits(validated);
         permitCount = rows.length;
         for (const { row } of validated)
           permitSourceCounts[row.source_id] =
@@ -580,6 +623,9 @@ export class RealSnapshot {
       );
       // Full source JSON remains in hash-verified local Parquet. Only narrow metadata
       // columns are scanned at boot; producer/schema validation is pinned separately.
+      await db.run(
+        "CREATE TABLE private_reported_owner_observations(property_id VARCHAR,source_id VARCHAR,native_id VARCHAR,canonical_json VARCHAR)",
+      );
       for (const config of fullSources) {
         const definition = FULL_SOURCE_DEFINITIONS[config.role];
         await checkPrivate(config.file, config.sha256);
@@ -599,8 +645,9 @@ export class RealSnapshot {
           throw new Error("Protected full-source outer schema rejected");
         const summary = await (
           await db.run(
-            `SELECT count(*) AS records,count(DISTINCT native_id) AS unique_ids,count(*) FILTER(WHERE property_id IS NOT NULL) AS matched,count(*) FILTER(WHERE property_id IS NULL) AS unassigned,count(*) FILTER(WHERE version IS NULL OR version!=$version OR source_id IS NULL OR source_id!=$source OR public_snapshot_id IS NULL OR public_snapshot_id!=$snapshot OR source_schema_sha256 IS NULL OR source_schema_sha256!=$schema OR native_id IS NULL OR NOT regexp_full_match(native_id,'[0-9]{1,20}') OR record_digest IS NULL OR NOT regexp_full_match(record_digest,'[a-f0-9]{64}') OR observed_at IS NULL OR NOT regexp_full_match(observed_at,'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z')) AS invalid FROM ${definition.table}`,
+            `SELECT count(*) AS records,count(DISTINCT native_id) AS unique_ids,count(*) FILTER(WHERE property_id IS NOT NULL) AS matched,count(*) FILTER(WHERE property_id IS NULL) AS unassigned,count(*) FILTER(WHERE version IS NULL OR version!=$version OR source_id IS NULL OR source_id!=$source OR public_snapshot_id IS NULL OR public_snapshot_id!=$snapshot OR source_schema_sha256 IS NULL OR source_schema_sha256!=$schema OR native_id IS NULL OR NOT regexp_full_match(native_id,$nativePattern) OR record_digest IS NULL OR NOT regexp_full_match(record_digest,'[a-f0-9]{64}') OR observed_at IS NULL OR NOT regexp_full_match(observed_at,'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z')) AS invalid FROM ${definition.table}`,
             {
+              nativePattern: definition.nativeIdPattern,
               version: definition.version,
               source: definition.sourceId,
               snapshot: verified.manifest.snapshotId,
@@ -648,6 +695,85 @@ export class RealSnapshot {
               "Protected municipal source/permit alignment rejected",
             );
         }
+        if (config.role === "rochester-source") {
+          const inputs = await (
+            await db.run(`SELECT * FROM ${definition.table} ORDER BY native_id`)
+          ).getRowObjectsJson();
+          const projected = inputs.map((candidate) =>
+            projectRochesterReportRow(
+              candidate,
+              verified.manifest.snapshotId,
+              config.sourceSchemaSha256,
+            ),
+          );
+          // Recheck the producer's exact, unique address/jurisdiction assignment
+          // against this pinned public snapshot, including retained unassigned rows.
+          const addresses = await (
+            await db.run(
+              "SELECT p.id,p.address AS parcel_address,a.address AS site_address FROM properties p LEFT JOIN parcel_address_links l ON l.property_id=p.id LEFT JOIN site_addresses a ON a.id=l.address_id WHERE p.jurisdiction_name=$jurisdiction",
+              { jurisdiction: "CITY OF ROCHESTER HILLS" },
+            )
+          ).getRowObjectsJson();
+          const addressIndex = new Map<string, Set<string>>();
+          for (const a of addresses)
+            for (const value of [a.parcel_address, a.site_address]) {
+              const key = normalizeTroyAddress(text(value));
+              if (!key) continue;
+              const ids = addressIndex.get(key) ?? new Set<string>();
+              ids.add(String(a.id));
+              addressIndex.set(key, ids);
+            }
+          for (const x of projected) {
+            const candidates = [
+              ...(addressIndex.get(
+                normalizeTroyAddress(x.source.propertyAddressRaw),
+              ) ?? []),
+            ];
+            const expected = candidates.length === 1 ? candidates[0] : null;
+            if (x.row.property_id !== expected)
+              throw Error(
+                "Protected report exact-address/jurisdiction assignment rejected",
+              );
+          }
+          const permits = projected.flatMap((x) =>
+            x.permit ? [{ ...x, permit: x.permit }] : [],
+          );
+          if (permitCount + permits.length > PRIVATE_PERMIT_LIMIT)
+            throw Error("Combined protected permit bound rejected");
+          await insertProtectedPermits(permits);
+          const collisions = await (
+            await db.run("SELECT count(*)-count(DISTINCT id) AS n FROM permits")
+          ).getRowObjectsJson();
+          if (Number(collisions[0]!.n))
+            throw Error("Protected report permit identity collision rejected");
+          permitCount += permits.length;
+          permitSourceCounts[definition.sourceId] = permits.length;
+          for (let offset = 0; offset < projected.length; offset += 256) {
+            const rows = projected.slice(offset, offset + 256).flatMap((x) =>
+              x.owner
+                ? [
+                    {
+                      property_id: x.row.property_id,
+                      source_id: x.row.source_id,
+                      native_id: x.row.native_id,
+                      canonical_json: JSON.stringify(x.owner),
+                    },
+                  ]
+                : [],
+            );
+            await db.run(
+              "INSERT INTO private_reported_owner_observations SELECT json_extract_string(value,'$.property_id'),json_extract_string(value,'$.source_id'),json_extract_string(value,'$.native_id'),json_extract_string(value,'$.canonical_json') FROM json_each($rows)",
+              { rows: JSON.stringify(rows) },
+            );
+          }
+          const overflow = await (
+            await db.run(
+              "SELECT count(*) AS n FROM (SELECT property_id FROM private_reported_owner_observations GROUP BY property_id HAVING count(*)>256)",
+            )
+          ).getRowObjectsJson();
+          if (Number(overflow[0]!.n))
+            throw Error("Protected reported-owner property bound rejected");
+        }
         fullSourceAudits.push({
           role: config.role,
           sourceId: definition.sourceId,
@@ -667,7 +793,9 @@ export class RealSnapshot {
       if (
         sourceIntakeCount +
           fullSourceAudits
-            .filter((audit) => audit.role === "municipal-source")
+            .filter((audit) =>
+              ["municipal-source", "rochester-source"].includes(audit.role),
+            )
             .reduce((sum, audit) => sum + audit.records, 0) >
         PRIVATE_SOURCE_INTAKE_LIMIT
       )
@@ -798,6 +926,12 @@ export class RealSnapshot {
       )
     ).getRowObjectsJson();
     const o = owner[0];
+    const reportedOwners = await (
+      await this.connection.run(
+        "SELECT canonical_json FROM private_reported_owner_observations WHERE property_id=$id ORDER BY source_id,native_id",
+        { id },
+      )
+    ).getRowObjectsJson();
     const enrichment = await (
       await this.connection.run(
         "SELECT * FROM protected_enrichment WHERE property_id=$id ORDER BY source_id,native_id LIMIT 50",
@@ -909,6 +1043,13 @@ export class RealSnapshot {
             },
       ),
       ownership: {
+        ...(reportedOwners.length
+          ? {
+              reportedOwnerObservations: reportedOwners.map(
+                (o) => JSON.parse(String(o.canonical_json)) as unknown,
+              ),
+            }
+          : {}),
         lastTransferDate: null,
         events: enrichment
           .filter((e) => e.sale_date !== null)

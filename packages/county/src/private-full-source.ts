@@ -20,6 +20,7 @@ export const FULL_SOURCE_DEFINITIONS = {
     maximum: 1_200_000,
     title: "Full official county parcel source intake",
     geometryIncluded: false,
+    nativeIdPattern: "[0-9]{1,20}",
   },
   "county-addresses": {
     name: "county-addresses.parquet",
@@ -29,6 +30,7 @@ export const FULL_SOURCE_DEFINITIONS = {
     maximum: 1_200_000,
     title: "Full official county address source intake",
     geometryIncluded: false,
+    nativeIdPattern: "[0-9]{1,20}",
   },
   "municipal-source": {
     name: "municipal-permit-source.parquet",
@@ -38,13 +40,29 @@ export const FULL_SOURCE_DEFINITIONS = {
     maximum: 50_000,
     title: "Full official Independence permit source intake",
     geometryIncluded: true,
+    nativeIdPattern: "[0-9]{1,20}",
+  },
+  "rochester-source": {
+    name: "rochester-hills-building-reports.parquet",
+    sourceId: "official-rochester-hills-building-permit-reports",
+    version: "official-municipal-building-pdf-full-v2",
+    table: "private_rochester_building_reports",
+    maximum: 5000,
+    title: "Full official Rochester Hills building report intake",
+    geometryIncluded: false,
+    nativeIdPattern: "[a-f0-9]{64}:row:[1-9][0-9]{0,5}",
   },
 } as const;
 export type FullSourceRole = keyof typeof FULL_SOURCE_DEFINITIONS;
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 const Config = z
   .object({
-    role: z.enum(["county-parcels", "county-addresses", "municipal-source"]),
+    role: z.enum([
+      "county-parcels",
+      "county-addresses",
+      "municipal-source",
+      "rochester-source",
+    ]),
     file: z
       .string()
       .min(1)
@@ -72,7 +90,7 @@ export interface FullSourceAudit {
 }
 export function parseFullSourceConfigs(value: unknown): FullSourceConfig[] {
   try {
-    const configs = z.array(Config).max(3).parse(value),
+    const configs = z.array(Config).max(4).parse(value),
       roles = new Set<string>();
     for (const c of configs) {
       if (

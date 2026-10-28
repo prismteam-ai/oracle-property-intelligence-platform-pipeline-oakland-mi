@@ -9,3 +9,29 @@ The complete acquired Troy roof-description-filter cohort has 7,500 raw records,
 Only literal CLOSED maps to closed: 2,298 assigned records across permit kinds, including 31 roof-qualified records. All other reported literals remain unknown. Zero explicit OPEN observations, zero supported continuous-open durations and zero sufficiently complete transfer chains were established. Source completion dates, party/contact fields in Independence are null. Proposed roof scope does not establish completed work. There are 668 building-year proxies and 1,210 partial reported-sale observations; they cannot satisfy actual replacement-age or uninterrupted-tenure claims.
 
 Public-read access is not a general redistribution license. Full county/municipal source attributes and third-party observations remain private. Existing CID1/CID2 contain only the reviewed public projection. No P5 real data was newly published. The municipal source has verified official county organization/municipal ownership but no explicit item redistribution license. Source rights and per-route access results remain separately documented; no BS&A automation was performed. One metadata redirect has incomplete intermediate-hop timing/byte instrumentation, disclosed in the acquisition audit; direct data-bearing cohorts were pinned without redirects.
+
+P5 also integrates the twelve explicitly linked Rochester Hills April–September
+2026 building reports: six issued and six applied. The exact cohort counts, PDF
+identity, extraction fences, joins and unresolved printed footer discrepancies
+are recorded in the final private-v6 source proof. These reports are a finite
+cohort, not complete municipal permit or lifecycle history. Every acquired raw
+record remains in protected DuckDB source views, including unmatched and ambiguous
+addresses and unlabeled grouping-party/contact text. No unlabeled party receives
+an owner, applicant or contractor role.
+
+An explicitly labeled Owner field supplies a private source-reported observation
+with its separate issued/applied event date, actual collection time, provenance
+and uncertainty. Its ownership-effective date is unknown; it does not establish
+current legal ownership, ownership at the permit event, a transfer, or uninterrupted
+tenure. Assigned issued records may supply unknown-status permit observations;
+applications remain separate report events and never establish issuance or OPEN.
+The assignment requires exactly one normalized full site address in the exact
+CITY OF ROCHESTER HILLS jurisdiction and is rechecked against the pinned snapshot
+at runtime. Source phone/grouping text remains raw working data, outside typed
+property responses and model input.
+
+Private manifest v6 adds one report-source file while preserving all seven v5
+files byte for byte. The runtime derives the typed observations from that pinned
+file. All prior observation windows remain unchanged. Source GET timestamps
+retain their original precision privately; canonical provenance normalizes the
+same instant to UTC milliseconds. No report event date replaces collection time.
