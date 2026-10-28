@@ -1,6 +1,6 @@
 # Current documentation
 
-The ten documents linked below are authoritative for the current implementation. Earlier P1–P4 runbooks remain historical evidence and their old identities, limits and outcomes must not be applied to the current release.
+The documents linked below are authoritative for the current implementation. Earlier P1–P4 runbooks remain historical evidence and their old identities, limits and outcomes must not be applied to the current release.
 
 - [Implementation orientation](../IMPLEMENTATION.md)
 - [Architecture](ARCHITECTURE.md)

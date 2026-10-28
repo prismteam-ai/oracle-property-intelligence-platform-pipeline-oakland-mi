@@ -103,7 +103,7 @@ orphan checks; export class/relationship Parquet tables and a CountyTables CAR;
 generate the local Atlas page using `export-tables`. Any failed validation blocks
 the dependent stages. Preserve failed attempts and corrective evidence.
 
-Only the official exporter may create the tables and local Atlas page. A passing
+In the unchanged official profile, the official exporter creates the tables and local Atlas page. A passing
 pilot proves its recorded sample and schemas only. Before a county-wide attempt,
 report measured CPU/time, output bytes, inode/file count, source exclusions, and
 coverage denominator; do not extrapolate a sample pass into county completeness.
@@ -116,6 +116,17 @@ source request because the current address schema declares its fields under
 those facts. A successful official tool run therefore does not establish a
 lossless address-table export. Do not hand-write a replacement table or call the
 gap resolved by running more properties.
+
+The P5 return also records a separately disclosed local fork at
+`acf30e96ba43c4e444143cc0776a37401a763391`, which changes only schema-column
+extraction for compatible direct object `oneOf` alternatives. This is a candidate
+correction, not an upstream release or adoption. Its source, runtime and outputs
+remain separate from the unchanged official profile and its historical omission.
+Only completed full-cohort source/provenance, NULL, table/association, CID,
+privacy and generated-Atlas proofs plus independent outcome review can establish
+that correction's fidelity; the return's report06 records the actual disposition.
+Neither profile uses hand-written replacement tables or Atlas pages, mutates the
+canonical CAR, or establishes external publication or original assessment acceptance.
 
 ## Publication remains separate
 
