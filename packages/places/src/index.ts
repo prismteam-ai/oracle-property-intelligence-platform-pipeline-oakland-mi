@@ -28,7 +28,7 @@ export function normalizePlaceName(value: string): string {
     .normalize("NFKC")
     .toLocaleLowerCase("en-US")
     .replace(/[’‘]/g, "'")
-    .replace(/[.,;:!?"()\[\]]/g, " ")
+    .replace(/[.,;:!?"()[\]]/g, " ")
     .replace(/[‐‑‒–—-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();

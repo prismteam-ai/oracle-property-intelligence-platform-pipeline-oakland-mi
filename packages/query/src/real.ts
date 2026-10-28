@@ -1,3 +1,5 @@
+import { resolveQueryPlace } from "../../places/src/index.ts";
+import { PERMIT_EVIDENCE_SQL, needsPermitEvidence } from "./predicates.ts";
 import { lstat, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -863,6 +865,23 @@ export class RealSnapshot {
         historyCoverage: enrichment.some((e) => e.sale_date !== null)
           ? "partial"
           : "unknown",
+        transferHistoryCoverage: {
+          state: enrichment.some((e) => e.sale_date !== null)
+            ? "partial"
+            : "unknown",
+          from: null,
+          through: null,
+          provenance: [],
+          limitations: [
+            "No complete transfer/deed history with a proved coverage window has been acquired; reported sales remain separate observations.",
+          ],
+        },
+        uninterruptedTenure: {
+          state: "insufficient_history",
+          unchangedSince: null,
+          asOf,
+          provenance: [],
+        },
         ownerRegion: o?.owner_region ?? "unknown",
         locationClass: o?.location_class ?? "unknown",
         siteAddressMatch: o?.site_address_match ?? null,
@@ -894,6 +913,7 @@ export class RealSnapshot {
         "Search parameters outside contract",
       );
     const q = parsed.data;
+    const placeResolution = resolveQueryPlace(q);
     if (q.snapshotId !== this.snapshotId)
       throw new DomainError(
         "SNAPSHOT_UNAVAILABLE",
@@ -954,7 +974,8 @@ export class RealSnapshot {
     const wrapped = rawMin < -180 || rawMax > 180;
     const minLng = rawMin < -180 ? rawMin + 360 : rawMin,
       maxLng = rawMax > 180 ? rawMax - 360 : rawMax;
-    const statusRequired = q.permitStatus !== "any" || q.minOpenDays > 0;
+    const statusRequired =
+      q.permitStatus !== "any" || q.minOpenDays > 0 || needsPermitEvidence(q);
     const params = {
       lat: q.lat,
       lng: q.lng,
@@ -975,13 +996,19 @@ export class RealSnapshot {
       days: q.minOpenDays,
       limit: q.limit,
       offset,
-      prioritize: q.permitStatus === "open" || q.minOpenDays > 0,
+      prioritize:
+        q.sort === "permit_open_days_desc" ||
+        (!q.sort && (q.permitStatus === "open" || q.minOpenDays > 0)),
+      sortRoof: q.sort === "roof_age_desc",
+      requiresContractor: Boolean(q.requiresContractor),
+      requiresVerifiedLicense: Boolean(q.requiresVerifiedLicense),
+      requiresBbbRating: Boolean(q.requiresBbbRating),
     };
-    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)))))`;
+    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days)) ${PERMIT_EVIDENCE_SQL})))`;
     const native = await (
       await this.connection.run(
         cte +
-          " SELECT *,count(*) OVER() AS total FROM matches ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset",
+          " SELECT *,count(*) OVER() AS total FROM matches ORDER BY CASE WHEN $sortRoof THEN roof_priority ELSE NULL END DESC NULLS LAST,CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset",
         params,
       )
     ).getRowObjectsJson();
@@ -1016,6 +1043,7 @@ export class RealSnapshot {
       contractVersion: CONTRACT_VERSION,
       snapshotId: this.snapshotId,
       queryHash,
+      placeResolution,
       rows,
       total,
       truncated: more,

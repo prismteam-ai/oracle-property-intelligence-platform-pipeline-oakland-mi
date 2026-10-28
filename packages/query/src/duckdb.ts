@@ -1,3 +1,9 @@
+import { resolveQueryPlace } from "../../places/src/index.ts";
+import {
+  PERMIT_EVIDENCE_SQL,
+  needsPermitEvidence,
+  hasMinimumVerifiedTenure,
+} from "./predicates.ts";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import {
   CONTRACT_VERSION,
@@ -34,28 +40,42 @@ export class DuckSnapshot {
     });
     const db = await instance.connect();
     await db.run(
-      "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON, reported_sale DATE)",
+      "CREATE TABLE properties (id VARCHAR PRIMARY KEY, lat DOUBLE, lng DOUBLE, age INTEGER, confidence INTEGER, payload JSON, reported_sale DATE, tenure_since DATE, tenure_from DATE, tenure_through DATE)",
     );
     await db.run(
-      "CREATE TABLE permits (property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR)",
+      "CREATE TABLE permits (property_id VARCHAR, status VARCHAR, open_days INTEGER, kind VARCHAR, verified_company_id VARCHAR, canonical_json JSON)",
     );
     const confidence = { high: 3, medium: 2, low: 1, unknown: 0 };
     for (const p of rows) {
-      await db.run("INSERT INTO properties VALUES ($1,$2,$3,$4,$5,$6,$7)", [
-        p.id,
-        p.coordinates?.lat ?? null,
-        p.coordinates?.lng ?? null,
-        p.roof.ageYears,
-        confidence[p.roof.confidence],
-        JSON.stringify(p),
-        latestReportedSale(p),
-      ]);
+      await db.run(
+        "INSERT INTO properties VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+        [
+          p.id,
+          p.coordinates?.lat ?? null,
+          p.coordinates?.lng ?? null,
+          p.roof.ageYears,
+          confidence[p.roof.confidence],
+          JSON.stringify(p),
+          latestReportedSale(p),
+          hasMinimumVerifiedTenure(p, 0)
+            ? p.ownership.uninterruptedTenure!.unchangedSince
+            : null,
+          hasMinimumVerifiedTenure(p, 0)
+            ? p.ownership.transferHistoryCoverage!.from
+            : null,
+          hasMinimumVerifiedTenure(p, 0)
+            ? p.ownership.transferHistoryCoverage!.through
+            : null,
+        ],
+      );
       for (const permit of p.permits)
-        await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4)", [
+        await db.run("INSERT INTO permits VALUES ($1,$2,$3,$4,$5,$6)", [
           p.id,
           observedPermitStatus(permit),
           observedPermitOpenDays(permit, p.roof.asOf),
           permit.kind,
+          permit.contractor.verifiedCompanyId,
+          JSON.stringify(permit),
         ]);
     }
     return new DuckSnapshot(snapshotId, rows, db, instance);
@@ -68,6 +88,7 @@ export class DuckSnapshot {
         "Search parameters outside contract",
       );
     const query = q.data;
+    const placeResolution = resolveQueryPlace(query);
     if (query.snapshotId !== this.snapshotId)
       throw new DomainError(
         "SNAPSHOT_UNAVAILABLE",
@@ -98,7 +119,28 @@ export class DuckSnapshot {
         );
       }
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
-    const sql = `WITH matches AS (SELECT id,payload,${distanceSql} AS distance,(SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL)) AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner) AND ($years IS NULL OR try_cast(json_extract_string(payload,'$.ownership.lastTransferDate') AS DATE) + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)) AND ($reportedSaleAge IS NULL OR (reported_sale IS NOT NULL AND reported_sale <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) AND reported_sale < CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL '1 year')) AND (($status='any' AND $days=0) OR EXISTS (SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other' AND ($status='any' OR x.status=$status) AND ($days=0 OR (x.status='open' AND x.open_days >= $days))))) SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius ORDER BY CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset`;
+    const sql = `WITH matches AS (
+      SELECT id,payload,age,${distanceSql} AS distance,
+      (SELECT max(open_days) FROM permits pm WHERE pm.property_id=p.id AND pm.status='open' AND pm.kind!='other') AS priority
+      FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence
+      AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL))
+      AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner)
+      AND ($years IS NULL OR (tenure_since IS NOT NULL
+        AND tenure_since + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)
+        AND tenure_from + CAST($years AS INTEGER)*INTERVAL '1 year' <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)
+        AND tenure_through >= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)))
+      AND ($reportedSaleAge IS NULL OR (reported_sale IS NOT NULL
+        AND reported_sale <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)
+        AND reported_sale < CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL '1 year'))
+      AND (($status='any' AND $days=0 AND NOT $evidenceRequired)
+        OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND x.kind!='other'
+          AND ($status='any' OR x.status=$status)
+          AND ($days=0 OR (x.status='open' AND x.open_days >= $days))
+          ${PERMIT_EVIDENCE_SQL})))
+      SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius
+      ORDER BY CASE WHEN $sortRoof THEN age ELSE NULL END DESC NULLS LAST,
+        CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id
+      LIMIT $limit OFFSET $offset`;
     const result = await this.connection.run(sql, {
       lat: query.lat,
       lng: query.lng,
@@ -111,7 +153,15 @@ export class DuckSnapshot {
       years: query.minOwnershipYears ?? null,
       reportedSaleAge: query.minReportedSaleAgeYears ?? null,
       radius: query.radiusMeters,
-      prioritize: query.permitStatus === "open" || query.minOpenDays > 0,
+      prioritize:
+        query.sort === "permit_open_days_desc" ||
+        (!query.sort &&
+          (query.permitStatus === "open" || query.minOpenDays > 0)),
+      sortRoof: query.sort === "roof_age_desc",
+      evidenceRequired: needsPermitEvidence(query),
+      requiresContractor: Boolean(query.requiresContractor),
+      requiresVerifiedLicense: Boolean(query.requiresVerifiedLicense),
+      requiresBbbRating: Boolean(query.requiresBbbRating),
       limit: query.limit,
       offset,
     });
@@ -133,6 +183,7 @@ export class DuckSnapshot {
       contractVersion: CONTRACT_VERSION,
       snapshotId: this.snapshotId,
       queryHash,
+      placeResolution,
       rows,
       total,
       truncated: more,

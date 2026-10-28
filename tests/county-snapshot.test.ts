@@ -917,6 +917,19 @@ test("changed observation inputs cannot alias a prior snapshot; explicit no-chan
 test("leap-day ownership anniversary is clamped consistently to the calendar month end", async () => {
   const row = syntheticProperties()[0]!;
   row.ownership.lastTransferDate = "2020-02-29";
+  row.ownership.transferHistoryCoverage = {
+    state: "full",
+    from: "2020-02-29",
+    through: "2021-02-28",
+    provenance: row.provenance,
+    limitations: ["Synthetic complete history test fixture only"],
+  };
+  row.ownership.uninterruptedTenure = {
+    state: "supported",
+    unchangedSince: "2020-02-29",
+    asOf: "2021-02-28",
+    provenance: row.provenance,
+  };
   row.roof.asOf = "2021-02-28";
   row.coordinates = { lat: 42.66, lng: -83.29 };
   const reader = new SnapshotReader(SNAPSHOT_ID, [row]),

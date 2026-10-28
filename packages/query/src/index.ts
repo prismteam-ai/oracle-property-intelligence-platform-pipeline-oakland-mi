@@ -1,3 +1,9 @@
+import { resolveQueryPlace } from "../../places/src/index.ts";
+import {
+  permitEvidenceMatches,
+  needsPermitEvidence,
+  hasMinimumVerifiedTenure,
+} from "./predicates.ts";
 import { createHash } from "node:crypto";
 import {
   CONTRACT_VERSION,
@@ -5,93 +11,22 @@ import {
   QuerySchema,
   SearchResponseSchema,
   type Property,
-  type Permit,
   type SearchResponse,
 } from "../../contracts/src/index.ts";
-const EARTH_RADIUS_METERS = 6371008.8;
-export function distanceMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
-  const r = Math.PI / 180,
-    a = (lat2 - lat1) * r,
-    b = (lng2 - lng1) * r;
-  const h =
-    Math.sin(a / 2) ** 2 +
-    Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(b / 2) ** 2;
-  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(Math.min(1, h)));
-}
-export function openDays(openedAt: string | null, asOf: string): number | null {
-  if (!openedAt || openedAt > asOf) return null;
-  const start = Date.parse(openedAt),
-    end = Date.parse(asOf);
-  if (
-    !Number.isFinite(start) ||
-    !Number.isFinite(end) ||
-    new Date(start).toISOString().slice(0, 10) !== openedAt
-  )
-    return null;
-  return Math.floor((end - start) / 86400000);
-}
-export function observedPermitStatus(permit: Permit): Permit["status"] {
-  if (permit.status === "open" && permit.closedAt !== null) return "unknown";
-  if (permit.statusBasis === "issued_only" || permit.statusBasis === "unknown")
-    return "unknown";
-  if (permit.statusBasis === "explicit_closed" && permit.status !== "closed")
-    return "unknown";
-  if (
-    permit.statusBasis === "explicit_open" &&
-    (permit.status !== "open" || permit.closedAt !== null)
-  )
-    return "unknown";
-  return permit.status;
-}
-/** Explicit observations are frozen at statusObservedAt; legacy fixtures retain their supplied asOf. */
-export function observedPermitOpenDays(
-  permit: Permit,
-  asOf: string,
-): number | null {
-  if (
-    observedPermitStatus(permit) !== "open" ||
-    permit.kind === "other" ||
-    permit.closedAt !== null
-  )
-    return null;
-  const date =
-    permit.statusBasis === "explicit_open"
-      ? permit.statusObservedAt?.slice(0, 10)
-      : asOf;
-  return date ? openDays(permit.openedAt, date) : null;
-}
-/** A reported sale is a partial observation; a transfer/tenure date is never substituted. */
-export function latestReportedSale(property: Property): string | null {
-  const dates = (property.ownership.events ?? [])
-    .filter((e) => e.kind === "reported_sale")
-    .map((e) => e.date)
-    .sort();
-  return dates.at(-1) ?? null;
-}
-export function reportedSaleOlderThan(
-  property: Property,
-  years: number,
-): boolean {
-  const sale = latestReportedSale(property),
-    cutoff = new Date(property.roof.asOf);
-  if (!sale || !Number.isFinite(cutoff.valueOf()) || sale > property.roof.asOf)
-    return false;
-  const month = cutoff.getUTCMonth(),
-    day = cutoff.getUTCDate(),
-    year = cutoff.getUTCFullYear() - years;
-  cutoff.setUTCDate(1);
-  cutoff.setUTCFullYear(year);
-  cutoff.setUTCMonth(month);
-  cutoff.setUTCDate(
-    Math.min(day, new Date(Date.UTC(year, month + 1, 0)).getUTCDate()),
-  );
-  return sale < cutoff.toISOString().slice(0, 10);
-}
+import {
+  distanceMeters,
+  observedPermitStatus,
+  observedPermitOpenDays,
+  reportedSaleOlderThan,
+} from "../../contracts/src/query-predicates.ts";
+export {
+  distanceMeters,
+  openDays,
+  observedPermitStatus,
+  observedPermitOpenDays,
+  latestReportedSale,
+  reportedSaleOlderThan,
+} from "../../contracts/src/query-predicates.ts";
 export class SnapshotReader {
   constructor(
     readonly snapshotId: string,
@@ -115,6 +50,7 @@ export class SnapshotReader {
         "Search parameters are outside the contract",
       );
     const q = parsed.data;
+    const placeResolution = resolveQueryPlace(q);
     if (q.snapshotId !== this.snapshotId)
       throw new DomainError(
         "SNAPSHOT_UNAVAILABLE",
@@ -162,22 +98,11 @@ export class SnapshotReader {
           p.ownership.ownerRegion !== q.ownerRegion
         )
           return [];
-        if (q.minOwnershipYears !== undefined) {
-          const transfer = p.ownership.lastTransferDate;
-          if (!transfer || transfer > p.roof.asOf) return [];
-          const anniversary = new Date(transfer);
-          if (!Number.isFinite(anniversary.valueOf())) return [];
-          const month = anniversary.getUTCMonth(),
-            day = anniversary.getUTCDate(),
-            year = anniversary.getUTCFullYear() + q.minOwnershipYears;
-          anniversary.setUTCDate(1);
-          anniversary.setUTCFullYear(year);
-          anniversary.setUTCMonth(month);
-          anniversary.setUTCDate(
-            Math.min(day, new Date(Date.UTC(year, month + 1, 0)).getUTCDate()),
-          );
-          if (anniversary.toISOString().slice(0, 10) > p.roof.asOf) return [];
-        }
+        if (
+          q.minOwnershipYears !== undefined &&
+          !hasMinimumVerifiedTenure(p, q.minOwnershipYears)
+        )
+          return [];
         if (
           q.minReportedSaleAgeYears !== undefined &&
           !reportedSaleOlderThan(p, q.minReportedSaleAgeYears)
@@ -195,10 +120,15 @@ export class SnapshotReader {
           confidence[p.roof.confidence] < confidence[q.minConfidence]
         )
           return [];
-        if (q.permitStatus !== "any" || q.minOpenDays > 0) {
+        if (
+          q.permitStatus !== "any" ||
+          q.minOpenDays > 0 ||
+          needsPermitEvidence(q)
+        ) {
           const permit = p.permits.some(
             (x) =>
               x.kind !== "other" &&
+              permitEvidenceMatches(x, q) &&
               (q.permitStatus === "any" ||
                 observedPermitStatus(x) === q.permitStatus) &&
               (q.minOpenDays === 0 ||
@@ -218,9 +148,12 @@ export class SnapshotReader {
             ),
           );
         return (
-          (q.permitStatus === "open" || q.minOpenDays > 0
-            ? priority(b) - priority(a)
-            : 0) ||
+          (q.sort === "roof_age_desc"
+            ? (b.roof.ageYears ?? -1) - (a.roof.ageYears ?? -1)
+            : q.sort === "permit_open_days_desc" ||
+                (!q.sort && (q.permitStatus === "open" || q.minOpenDays > 0))
+              ? priority(b) - priority(a)
+              : 0) ||
           a.distanceMeters - b.distanceMeters ||
           a.id.localeCompare(b.id)
         );
@@ -231,6 +164,7 @@ export class SnapshotReader {
       contractVersion: CONTRACT_VERSION,
       snapshotId: this.snapshotId,
       queryHash,
+      placeResolution,
       rows,
       total: selected.length,
       truncated: more,

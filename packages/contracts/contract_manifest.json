@@ -6,5 +6,6 @@
   "frozen_utc": "2026-10-28T05:48:24.487808+00:00",
   "prior_version": "0.3.0",
   "prior_sha256": "2070cc30ea9d26c2a121a8f292648cafcdf6abc01d88b9d131e66d1110bf6ad5",
-  "revision_reason": "Authoritative municipal-place references, explicit unknown permit status, evidence-presence predicates and typed sorting; no inference of contractor role, active license or unchanged tenure."
+  "revision_reason": "Authoritative municipal-place references, explicit unknown permit status, evidence-presence predicates and typed sorting; no inference of contractor role, active license or unchanged tenure.",
+  "queryPredicateSha256": "3640eae9d7c4c9a116c8c7aa2e049136a383bf3a1e2b47e0a7b9d83cdf3d8023"
 }
