@@ -268,7 +268,7 @@ export function permitMatchesQuery(
     minOpenDays: input.minOpenDays ?? 0,
   } as Query;
   return (
-    permit.kind !== "other" &&
+    roofingCandidateMatches(permit, input) &&
     permitEvidenceMatches(permit, query) &&
     permitSourceObservationMatches(permit, query) &&
     (query.permitStatus === "any" ||
@@ -336,5 +336,22 @@ export function permitSourceObservationMatches(
       ((input.minOpenDays ?? 0) === 0 ||
         (row.activityClaim === "native_reported_open" &&
           (row.continuousOpenDays ?? -1) >= input.minOpenDays!)),
+  );
+}
+
+/** Provider roofing classification is a separate candidate basis; native duration/activity constraints retain native roofing scope. */
+export function roofingCandidateMatches(
+  permit: Permit,
+  input: QueryInput,
+): boolean {
+  return (
+    permit.kind !== "other" ||
+    ((input.minOpenDays ?? 0) === 0 &&
+      input.permitActivityClaim !== "native_reported_open" &&
+      (permit.sourceObservations ?? []).some(
+        (row) =>
+          row.category === "ROOFING" &&
+          row.categoryBasis === "provider_classification",
+      ))
   );
 }

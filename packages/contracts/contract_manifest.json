@@ -3,11 +3,11 @@
   "sha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
   "sha256Meaning": "compatibility_entry_file_sha256",
   "entryFile": "src/index.ts",
-  "moduleGraphSha256": "e552ef7a86d13fd5cc12a2f24294d3130e84274f64d942e3831794fde9b4256b",
+  "moduleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612",
   "moduleGraphAlgorithm": "sha256(UTF-8 JSON.stringify of filename-to-sha256 object, filename keys sorted ascending; no whitespace)",
   "files": {
     "index.ts": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
-    "query-predicates.ts": "3c0924292ef01fb2e21f94ce76a9a50e544ab213e2a6e2e58c24e163f395bf90",
+    "query-predicates.ts": "40fb1e0d2856357412c190440470f52bdd54ca5fcf3bcce22268ef0bb0b340aa",
     "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
   },
   "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts",
@@ -15,5 +15,5 @@
   "frozen_utc": "2026-10-28T21:13:28.085579+00:00",
   "prior_version": "0.4.0",
   "prior_entry_sha256": "4d8d8016dd7af34c799375711bd7d6770c010fcc3ac74e540b0afdfebebed28e",
-  "revision_reason": "Single P6 API/private bump distinguishes protected provider-normalized permit observations, native status/continuous-history evidence, and bounded current-PIN official deed-index gaps. Original municipal and public immutable artifact facts remain retained. Entry hash is a compatibility field; the full module inventory and graph digest bind all canonical source modules."
+  "revision_reason": "Single P6 API/private bump distinguishes protected provider-normalized permit observations, native status/continuous-history evidence, and bounded current-PIN official deed-index gaps. Original municipal and public immutable artifact facts remain retained. Entry hash is a compatibility field; the full module inventory and graph digest bind all canonical source modules. Provider-qualified ROOFING candidate predicates preserve conflicting municipal other classifications and retain independent native duration/activity scope."
 }
