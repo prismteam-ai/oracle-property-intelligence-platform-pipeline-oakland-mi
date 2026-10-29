@@ -1,4 +1,5 @@
 import { assessmentResourceNames } from "./resource-names.ts";
+import { validMapKeyExpiration } from "./map-key-expiration.ts";
 import { loadConcurrencyProof } from "../../packages/hosted-runtime/src/concurrency-file.ts";
 import path from "node:path";
 import { buildConcurrencyPolicy } from "../../packages/hosted-runtime/src/concurrency.ts";
@@ -366,12 +367,10 @@ if (enableMap) {
     expires = String(app.node.tryGetContext("mapKeyExpiresAt") ?? "");
   if (
     !/^https:\/\/d[a-z0-9]+\.cloudfront\.net$/.test(origin) ||
-    !Number.isFinite(Date.parse(expires)) ||
-    Date.parse(expires) <= Date.now() ||
-    Date.parse(expires) > Date.now() + 14 * 86400000
+    !validMapKeyExpiration(expires)
   )
     throw new Error(
-      "Map key requires the exact CRM CloudFront origin and finite <=14-day expiry",
+      "Map key requires the exact CRM CloudFront origin and finite <=14-day plus4-hour verification expiry",
     );
   const key = new CfnAPIKey(stack, "ReviewLocationBrowserKey", {
     keyName: "prism-review-map",
