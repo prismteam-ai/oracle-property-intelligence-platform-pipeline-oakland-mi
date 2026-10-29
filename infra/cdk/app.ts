@@ -377,6 +377,9 @@ if (enableMap) {
     description:
       "Restricted assessment Standard map browser key; value stays private",
     expireTime: expires,
+    // Location requires acknowledgement when extending a recently used key.
+    // Keep the same key and the restrictive allowlists below.
+    forceUpdate: true,
     restrictions: {
       allowActions: ["geo-maps:GetTile"],
       allowResources: [

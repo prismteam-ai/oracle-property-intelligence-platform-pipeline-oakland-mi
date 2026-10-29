@@ -290,6 +290,9 @@ const optional = JSON.parse(
 const optionalResources = Object.values(optional.Resources),
   key = optionalResources.find((r) => r.Type === "AWS::Location::APIKey")!;
 assert(key);
+assert.equal(key.Properties!.ForceUpdate, true);
+assert(!key.Properties!.ForceDelete);
+assert(!key.Properties!.NoExpiry);
 assert.deepEqual(
   (key.Properties!.Restrictions as { AllowActions: string[] }).AllowActions,
   ["geo-maps:GetTile"],
