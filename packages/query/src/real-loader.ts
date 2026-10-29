@@ -4,7 +4,7 @@ import path from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import {
   sha256,
-  PROPERTY_VIEW_SQL,
+  PROPERTY_TABLE_SQL,
   OWNER_DERIVATION_VERSION,
 } from "../../county/src/model.ts";
 import {
@@ -126,7 +126,8 @@ export async function loadRealSnapshot<T>(
       await db.run(
         `CREATE TABLE ${table} AS SELECT * FROM read_parquet(${quote(path.join(root, file))})`,
       );
-    await db.run(PROPERTY_VIEW_SQL);
+    await db.run(PROPERTY_TABLE_SQL);
+    await db.run("CREATE INDEX property_identity ON properties(id)");
     await db.run("ALTER TABLE permits ADD COLUMN canonical_json VARCHAR");
     if (options.protectedDerivativeFile) {
       await checkPrivate(

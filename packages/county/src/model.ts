@@ -160,4 +160,8 @@ export const COUNTY_LIMITATIONS = [
   "Public artifacts contain no owner names or postal/contact values. Optional owner-location derivatives belong only to protected operational storage.",
   "A source revision timestamp is not an ownership-transfer or roof-installation date.",
 ];
-export const PROPERTY_VIEW_SQL = `CREATE VIEW properties AS SELECT id,source_id,native_id,pin,keypin,revision_date,jurisdiction_code,jurisdiction_name,class_code,address,city,state,postal_code,content_hash,observed_at FROM parcels UNION ALL SELECT 'oakland-address-'||a.native_id AS id,a.source_id,a.native_id,a.pin,NULL AS keypin,NULL AS revision_date,NULL AS jurisdiction_code,NULL AS jurisdiction_name,NULL AS class_code,a.address,a.city,a.state,a.postal_code,a.content_hash,a.observed_at FROM site_addresses a WHERE NOT EXISTS(SELECT 1 FROM parcels p WHERE p.pin IS NOT NULL AND p.pin=a.pin)`;
+export const PROPERTY_RELATION_SELECT_SQL = `SELECT id,source_id,native_id,pin,keypin,revision_date,jurisdiction_code,jurisdiction_name,class_code,address,city,state,postal_code,content_hash,observed_at FROM parcels UNION ALL SELECT 'oakland-address-'||a.native_id AS id,a.source_id,a.native_id,a.pin,NULL AS keypin,NULL AS revision_date,NULL AS jurisdiction_code,NULL AS jurisdiction_name,NULL AS class_code,a.address,a.city,a.state,a.postal_code,a.content_hash,a.observed_at FROM site_addresses a WHERE NOT EXISTS(SELECT 1 FROM parcels p WHERE p.pin IS NOT NULL AND p.pin=a.pin)`;
+export const PROPERTY_VIEW_SQL =
+  "CREATE VIEW properties AS " + PROPERTY_RELATION_SELECT_SQL;
+export const PROPERTY_TABLE_SQL =
+  "CREATE TABLE properties AS " + PROPERTY_RELATION_SELECT_SQL;

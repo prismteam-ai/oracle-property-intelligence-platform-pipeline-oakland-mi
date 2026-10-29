@@ -1,4 +1,8 @@
 import {
+  loadPropertyEvidence,
+  type PropertyEvidence,
+} from "./property-evidence.ts";
+import {
   EFFECTIVE_PERMIT_STATUS_SQL,
   EFFECTIVE_OPEN_DAYS_SQL,
   SOURCE_OBSERVATION_FILTER_SQL,
@@ -20,7 +24,6 @@ import {
 } from "../../contracts/src/index.ts";
 import { sha256, COUNTY_LIMITATIONS } from "../../county/src/model.ts";
 import type { ArtifactManifest } from "../../county/src/build.ts";
-import { PRIVATE_PERMIT_LIMIT } from "../../county/src/private-permits.ts";
 import { TROY_SOURCE_FIELDS } from "../../county/src/private-source-intake.ts";
 import {
   FULL_SOURCE_DEFINITIONS,
@@ -289,23 +292,23 @@ export class RealSnapshot {
       rawRowsReturned: false,
     };
   }
-  private async property(
+  private property(
     row: Row,
+    evidence: PropertyEvidence,
     nearest?: { lat: number; lng: number },
-  ): Promise<Property> {
+  ): Property {
+    const {
+      addresses,
+      count,
+      owner,
+      reportedOwners,
+      locationProvenance,
+      enrichment,
+      assessmentCaveats,
+      permits,
+      deedObservations,
+    } = evidence;
     const id = String(row.id);
-    const addresses = await (
-      await this.connection.run(
-        "SELECT a.* FROM parcel_address_links l JOIN site_addresses a ON a.id=l.address_id WHERE l.property_id=$id ORDER BY a.id LIMIT 25",
-        { id },
-      )
-    ).getRowObjectsJson();
-    const count = await (
-      await this.connection.run(
-        "SELECT count(*) AS n FROM parcel_address_links WHERE property_id=$id",
-        { id },
-      )
-    ).getRowObjectsJson();
     const provenance = (r: Row) => [
       {
         sourceId: String(r.source_id),
@@ -330,31 +333,7 @@ export class RealSnapshot {
     }));
     const representative =
       siteAddresses.find((a) => a.coordinates)?.coordinates ?? null;
-    const owner = await (
-      await this.connection.run(
-        "SELECT * FROM owner_derivatives WHERE property_id=$id",
-        { id },
-      )
-    ).getRowObjectsJson();
     const o = owner[0];
-    const reportedOwners = await (
-      await this.connection.run(
-        "SELECT canonical_json FROM private_reported_owner_observations WHERE property_id=$id ORDER BY source_id,native_id",
-        { id },
-      )
-    ).getRowObjectsJson();
-    const locationProvenance = await (
-      await this.connection.run(
-        "SELECT canonical_json FROM private_owner_location_provenance WHERE property_id=$id",
-        { id },
-      )
-    ).getRowObjectsJson();
-    const enrichment = await (
-      await this.connection.run(
-        "SELECT * FROM protected_enrichment WHERE property_id=$id ORDER BY source_id,native_id LIMIT 50",
-        { id },
-      )
-    ).getRowObjectsJson();
     const builtYears = [
       ...new Set(
         enrichment
@@ -378,24 +357,6 @@ export class RealSnapshot {
       digest: String(e.record_digest),
       kind: "real-minimized" as const,
     });
-    const assessmentCaveats = await (
-      await this.connection.run(
-        "SELECT caveat FROM private_assessment_match WHERE property_id=$id",
-        { id },
-      )
-    ).getRowObjectsJson();
-    const permits = await (
-      await this.connection.run(
-        "SELECT * FROM permits WHERE property_id=$id ORDER BY id LIMIT $bound",
-        { id, bound: PRIVATE_PERMIT_LIMIT },
-      )
-    ).getRowObjectsJson();
-    const deedObservations = await (
-      await this.connection.run(
-        "SELECT canonical_json FROM private_transfer_observations WHERE property_id=$id",
-        { id },
-      )
-    ).getRowObjectsJson();
     return PropertySchema.parse({
       id,
       nativeId: String(row.native_id),
@@ -547,7 +508,8 @@ export class RealSnapshot {
       await this.connection.run("SELECT * FROM properties WHERE id=$id", { id })
     ).getRowObjectsJson();
     if (!rows[0]) throw new DomainError("INVALID_INPUT", "Property not found");
-    return this.property(rows[0]);
+    const evidence = await loadPropertyEvidence(this.connection, [id]);
+    return this.property(rows[0], evidence.get(id)!);
   }
   async search(input: unknown): Promise<SearchResponse> {
     const parsed = QuerySchema.safeParse(input);
@@ -683,13 +645,17 @@ export class RealSnapshot {
         )[0]!.total,
       );
     }
+    const evidence = await loadPropertyEvidence(
+      this.connection,
+      native.map((row) => String(row.id)),
+    );
     const rows: SearchResponse["rows"] = [];
     for (const r of native)
       rows.push({
-        ...(await this.property(r, {
+        ...this.property(r, evidence.get(String(r.id))!, {
           lat: Number(r.matched_lat),
           lng: Number(r.matched_lng),
-        })),
+        }),
         distanceMeters: Number(r.distance),
       });
     const more = offset + rows.length < total;
