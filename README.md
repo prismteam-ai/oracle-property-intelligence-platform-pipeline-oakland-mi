@@ -1,12 +1,14 @@
-# Oracle property intelligence
+# Oakland County property intelligence
 
-The controlled producer ingests and reconciles Oakland County sources into immutable DuckDB/Parquet/CID artifacts. The authenticated assessment read plane serves the pipeline UI, bounded queries and MCP to the Roofing CRM. It separates approved public artifacts, minimized protected evidence and private working intake.
+Oracle turns Oakland County parcel and address sources into portable, source-backed property intelligence. Its hosted workspace shows coverage, run history, query results and provenance; the Roofing CRM uses the same read model for map discovery, leads and grounded agent answers.
 
-The [frozen assignment](docs/history/ASSIGNMENT_README.md) remains the original contract. Current implementation details and limitations are in [IMPLEMENTATION.md](IMPLEMENTATION.md), [coverage](docs/DATA_COVERAGE.md) and the [documentation index](docs/README.md).
+Open the [Oracle workspace](https://dknck94i8grek.cloudfront.net) with the low-privilege review capability delivered separately. No AWS account or local installation is needed. The [evaluator guide](docs/EVALUATOR_GUIDE.md) gives the short walkthrough, access window, quotas and recovery steps. [Known limitations](docs/KNOWN_LIMITATIONS.md) explains the completed free-source outcome, including the unavailable current-active/long-open permit cohort. No paid source is required to reproduce the admitted runtime.
 
-## Local review
+The [original employer assignment](docs/history/ASSIGNMENT_README.md) remains the contract. [Implementation](IMPLEMENTATION.md), [architecture](docs/ARCHITECTURE.md) and the [documentation index](docs/README.md) describe the delivered system without replacing it.
 
-Use Node 24 and pnpm 11.25.0. On Linux x64:
+## Run locally
+
+Use Node 24, pnpm 11.25.0 and Linux x64 for the pinned native tooling:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -15,12 +17,10 @@ pnpm exec playwright install chromium
 PRISM_DATA_MODE=synthetic PRISM_ACCESS_MODE=local pnpm api
 ```
 
-In a second terminal run `pnpm dev` and open http://127.0.0.1:4173. These explicit flags select synthetic fixtures; they do not impersonate real county data. Real data requires a hash-verified snapshot and approved protected sidecars supplied separately. See [local development](docs/LOCAL_DEVELOPMENT.md).
+In a second terminal run `pnpm dev`, then open http://127.0.0.1:4173. These explicit flags select labeled fixtures. Real inputs require separately verified public artifacts and approved protected sidecars. See [local development](docs/LOCAL_DEVELOPMENT.md).
 
-## Verification and deployment
+## Verify a release
 
-`pnpm ci:verify` runs the canonical local equivalent of the pinned pull-request workflow. It requires the pinned Docker runtime image and Chromium. No GitHub-hosted run has occurred before a remote push. See [release gates](docs/RELEASE_CHECKLIST.md).
+`pnpm ci:verify` runs the canonical local verification sequence with Chromium and the pinned Docker runtime image. Exact local results, hosted acceptance and remote GitHub Actions are separate evidence. [Testing](docs/TESTING.md) and the [release checklist](docs/RELEASE_CHECKLIST.md) define the gates.
 
-The inherited accepted hosted baseline is Oracle `3e093a6` / CRM `6500641` in neutral `review`, `us-east-2`. Read the current runtime health and immutable release packet for the deployed source/build/snapshot and its dated acceptance evidence; [release status](docs/RELEASE_STATUS.json) explains that authority. Standard task-qualified CDK manages deployment; historical stacks remain rollback resources. See [deployment](docs/DEPLOYMENT.md) and [evaluator access](docs/EVALUATOR_GUIDE.md).
-
-Hosted review entry point: [Oracle workspace](https://dknck94i8grek.cloudfront.net). The evaluator needs only a browser and the separately delivered low-privilege review capability; verify the dated first-use receipt for the current deployed identity.
+For the deployed identity, match authenticated `/api/health` and served frontend identity to the dated external release receipt. [Release status](docs/RELEASE_STATUS.json) preserves the exact previously accepted identities and this binding rule; a documentation commit alone cannot certify deployment. [Deployment](docs/DEPLOYMENT.md) describes guarded updates to the existing review stack.

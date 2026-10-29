@@ -1,9 +1,29 @@
 # Release checklist
 
-Before local release promotion, reconstruct the exact sources, use Node24/pnpm11.25.0, install the frozen lockfile, run `pnpm ci:verify`, repeat the measured package build, verify native real/protected runtime behavior and compare exact contract/source/archive/snapshot identities. Run independent code and privacy review; repair all material findings.
+Use this sequence with the current explicit operator contract. Architecture, admitted data, contract 0.5.0, original 114-row assessments and the accepted [free-source limitation](KNOWN_LIMITATIONS.md) stay frozen. Local preparation does not grant external effects.
 
-Before hosted promotion, validate exact account/region/qualifier/budget and source rights, preserve the historical rollback stacks, deploy Oracle before CRM through CDK, and run the complete clean-browser/direct API/MCP/model/session/lead/concurrency/error campaign. Inspect actual tags, active X-Ray, 90-day logs, low-cardinality metrics, alarms and any live PagerDuty receipt. Source outcomes and partial/unknown evidence remain explicit.
+## Source and package
 
-Before return, close/revoke temporary deployment access, preserve existing review stacks and the current private access guide, verify documentation/114-row traceability, scan all source/package/image boundaries, and create one compact reconstruction-grade bundle. Do not ship bulk private/provider data or redundant historical handoff archives.
+- Reconstruct exact sources and verify clean head/tree, ancestry, locks and every contract module.
+- Use Node 24 / pnpm 11.25.0, frozen installation and the pinned tooling/runtime image; run `pnpm ci:verify` from a fresh clone.
+- Build intended review-mode frontend and Lambda packages twice; compare exact ZIP and asset digests. Run native real/protected fidelity separately from synthetic behavior.
+- Preserve failed attempts. Obtain independent review; label any unavailable native BugBot and the fallback honestly.
 
-Before media or GitHub work, obtain the operator and independent lead greenlights against the original objectives. No checklist item alone authorizes a PR, push, recording, upload, Ready-for-review transition, employer message or submission.
+## Existing hosted release
+
+- Check finite least-privilege identity, account/region/qualifier, cost limits and exact approved inputs. Preserve rollback stacks and shared assets.
+- Update Oracle before CRM through guarded CDK. Bind source/tree/build/archive/assets/contract/snapshot to runtime health and the external dated receipt; never infer deployment from this checkout.
+- Verify actual map-key expiry/value hash/restrictions, access rotation, owner retention and remaining shared quotas.
+- Rehearse three fresh desktop profiles, one mobile profile and a direct API/MCP client; include cold/warm behavior, map/GPS/pin/radius/detail/lead/agent, correct signed expiry, logout/revocation, refusal/error paths and cleanup.
+- Inspect actual tags, X-Ray, 90-day logs, metrics/alarms and any claimed live alert delivery. A local mock is not a live service result.
+
+## Local package and media
+
+- Verify documentation links/commands, exact 114-row history, measured usage and budget/credit/forecast separation.
+- Close/revoke temporary deployment authority while retaining the agreed review runtime. Complete scoped local credential census/sanitation, owner/source adjudication and exact payload/package/privacy review.
+- Under explicit current operator and Lead media authorization, record only the exact accepted hosted release. Review captures, captions, transcript and metadata for source truth and private values. Keep artifacts local; a technical pass alone is not media permission.
+- Produce a compact reconstruction-grade packet with safe evidence, source bundles/patches, local PR bodies, separately delivered access capability and exact later-effect plan. Verify final controls, source reconstruction and outer ZIP; dispose comparison material only according to the approved closeout sequence.
+
+## External effects
+
+Git push, remote branches, PR creation/comments, Ready transition, video upload, employer message, official submission and new public IPFS/Atlas/IPNS/registry effects require their own authorization. An approved local release/media package does not perform them. No subscription, add-on or paid plan is introduced.

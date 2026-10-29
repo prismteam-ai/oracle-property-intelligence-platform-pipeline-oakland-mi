@@ -1,28 +1,25 @@
-# Documentation index and authority
+# Documentation guide
 
-The [frozen employer README](history/ASSIGNMENT_README.md) defines the original assessment; it is not replaced by this implementation guide. Current public engineering references are pinned in the operator evidence. Moving-reference expectations are distinguished from original requirements and unavailable organization services.
+Start with the [evaluator guide](EVALUATOR_GUIDE.md) to use the hosted workspace. For implementation review, read [architecture](ARCHITECTURE.md), [coverage](DATA_COVERAGE.md) and [known limitations](KNOWN_LIMITATIONS.md). The [original employer assignment](history/ASSIGNMENT_README.md) remains the assessment contract.
 
-- [Architecture](ARCHITECTURE.md)
-- [Data coverage](DATA_COVERAGE.md)
-- [Public reference snapshot](PUBLIC_REFERENCE_PINS.json)
-- [Guidance interpretations](GUIDANCE_AND_LIMITATIONS.md)
-- [Conditional media readiness](MEDIA_READINESS.md)
-- [Testing and evidence scope](TESTING.md)
-- [Agent and MCP](AGENT_AND_MCP.md)
-- [IPFS publication](IPFS_PUBLICATION.md)
-- [Fresh bounded local publication receipt](LOCAL_PUBLICATION_CHECK.json)
-- [Cost, retention and teardown](COST_MODEL.md)
-- [Parameterized cost estimate](COST_ESTIMATE.json)
-- [Release identity and acceptance state](RELEASE_STATUS.json)
+## Current guides
+
+- [Architecture and decisions](ARCHITECTURE.md)
+- [Data coverage and source semantics](DATA_COVERAGE.md)
 - [Local development](LOCAL_DEVELOPMENT.md)
+- [Testing and evidence scope](TESTING.md)
 - [Deployment and rollback](DEPLOYMENT.md)
+- [Evaluator access and walkthrough](EVALUATOR_GUIDE.md)
+- [Agent and MCP](AGENT_AND_MCP.md)
+- [IPFS and local CLI/Atlas compatibility](IPFS_PUBLICATION.md)
+- [Costs, retention and teardown](COST_MODEL.md)
 - [Security and privacy](SECURITY_PRIVACY.md)
-- [Observability](OBSERVABILITY.md)
-- [Evaluator guide](EVALUATOR_GUIDE.md)
 - [Known limitations](KNOWN_LIMITATIONS.md)
+- [Release identity authority](RELEASE_STATUS.json)
 - [Release checklist](RELEASE_CHECKLIST.md)
-- [Current decision records](decisions/README.md)
-- [Immutable reference pins](reference-pins.json)
-- [Historical authority and decisions](history/README.md)
 
-Files explicitly marked historical describe their recorded revision. They are retained for provenance, not current commands or deployment identity. Current commands are validated through `pnpm docs:check` and the full operator campaign; cloud mutations require private pinned inputs and explicit execution acknowledgment.
+## Supporting records
+
+[Public reference pins](PUBLIC_REFERENCE_PINS.json), [immutable reference pins](reference-pins.json), [local publication receipt](LOCAL_PUBLICATION_CHECK.json), [parameterized cost estimate](COST_ESTIMATE.json), [observability](OBSERVABILITY.md) and [decision records](decisions/README.md) retain their stated dates and scopes. [Historical authority](history/README.md) and Git history preserve earlier requirements, designs and evidence. A dated observation is not a promise that a later release repeated it.
+
+Package scripts are the command authority. Active links are checked by `pnpm docs:check`; the external release receipt records which exact source passed full verification and hosted rehearsal. Runtime health and served frontend identity, rather than a self-referential Git hash in these guides, identify the deployed release. Moving engineering references do not rewrite the original assignment.

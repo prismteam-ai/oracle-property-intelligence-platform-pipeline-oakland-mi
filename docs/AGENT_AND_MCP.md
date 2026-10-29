@@ -1,9 +1,23 @@
-# Agent and MCP access
+# Grounded agent and MCP
 
-Oracle is the producer and read authority. The CRM consumes its versioned contract; it never re-ingests county/provider data. The hosted `/api/mcp` route is authenticated, read-only and bound to the loaded snapshot. Official SDK tools expose bounded property search, property evidence and snapshot status. Arbitrary SQL, filesystem, source acquisition, model execution, publication and administrative mutations are not exposed. `pnpm run mcp:stdio` is Oracle's local stdio adapter; CRM has no independent ingestion MCP service.
+Oracle owns the prepared source read model; CRM consumes its versioned contract and never re-ingests county/provider data. The authenticated hosted `/api/mcp` endpoint uses the official MCP SDK and the loaded snapshot. Its read-only tools are `search_properties` (maximum 50 returned), `property_evidence` and `snapshot_status`. It exposes no arbitrary SQL, filesystem, acquisition, model execution, publication or administrative mutation.
 
-CRM intent handling applies, refuses or surfaces each material constraint before a model call. One preflight can establish eligibility or empty evidence. A nonempty accepted turn permits one Vercel AI SDK/Bedrock attempt and a strict typed `retrieveProperties` tool; at most two bounded Oracle reads bind the same approved query. The deterministic server validates arguments, digests and citations and renders authoritative facts. Model prose cannot supply missing permit status, date, property IDs, counts, contractor identity or BBB ratings.
+For a fixture-only local client, after the [local installation](LOCAL_DEVELOPMENT.md), use:
 
-Building-year proxy, provider activity, native status, time since issue and documented continuous-open duration are separate predicates. No current-active or long-open source result is inferred from `ISSUED`, a missing final date or an old date. Recorded-index gaps do not prove legal ownership continuity. Missing BBB remains unavailable. Unsupported actions and stronger unsupported claims are refused visibly.
+```sh
+PRISM_DATA_MODE=synthetic pnpm mcp:stdio
+```
 
-The current Elephant public MCP repository was unavailable to unauthenticated read at 2026-10-29T03:35:51Z (`Repository not found`). This is an access/availability observation, not proof the service does not exist. Local assessment MCP compatibility does not establish shared MCP 2.0 synchronization, internal registry writes, Atlas registration or global discovery. Those later stages remain unperformed unless separately authorized and independently verified. See [IPFS publication](IPFS_PUBLICATION.md) and [testing](TESTING.md).
+For real stdio use, select separately verified real inputs through the private operator configuration. Hosted direct clients use the supplied low-privilege session flow and `/api/mcp`; no privileged AWS credential belongs in a client example. Initialization, tool listing, bounded calls and malformed/refused paths form part of exact-release [acceptance](TESTING.md).
+
+## How grounded retrieval works
+
+CRM applies, refuses or surfaces every material constraint before a model call. A preflight can establish empty evidence without inference. A nonempty accepted turn permits one Vercel AI SDK/Bedrock attempt with a typed `retrieveProperties` tool and at most two bounded Oracle reads against the same approved query. Deterministic server code validates arguments, digests and citations and renders authoritative facts. Model prose cannot invent property identities, permit status/dates, counts, contractors or BBB ratings.
+
+Source predicates keep building-year proxy, native status, provider activity, issue age and documented continuous-open duration distinct. Stronger unsupported claims and actions are refused visibly. The accepted Novi example uses `roofMinAgeYears=15`, unknown excluded and age greater than 15; missing positive permit evidence remains the [documented source limitation](KNOWN_LIMITATIONS.md).
+
+Model calls share the durable limits and dated headroom in the [evaluator guide](EVALUATOR_GUIDE.md). Empty/refused cases are not grounded model successes; retries and new sessions do not reset reservations.
+
+## External discovery boundary
+
+The public Elephant MCP repository returned `Repository not found` during the dated 2026-10-29 reference check. This records access/availability, not proof the service does not exist. Local MCP compatibility does not establish shared MCP synchronization, internal registry writes, Atlas registration or global discovery. [Publication](IPFS_PUBLICATION.md) separates local compatibility from those unperformed external effects.

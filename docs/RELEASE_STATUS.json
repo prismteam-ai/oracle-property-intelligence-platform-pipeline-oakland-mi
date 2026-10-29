@@ -1,45 +1,92 @@
 {
-  "schemaVersion": 2,
-  "purpose": "Deployment identity and evidence authority; a source checkout alone does not certify a hosted release",
+  "schemaVersion": 3,
+  "purpose": "Source-independent release identity authority; a checkout does not certify deployment",
   "currentRuntime": {
     "siteUrl": "https://dknck94i8grek.cloudfront.net",
     "healthPath": "/api/health",
-    "identityRule": "Read authenticated runtime health and deployed frontend identity; match source head/tree, build/archive, contract and snapshot to the immutable release evidence packet.",
-    "acceptanceRule": "Use the dated clean-browser/API/MCP/model/map/lead/access and privacy receipts for that exact runtime identity. A successful health response alone is not full acceptance.",
-    "sourceCheckoutRule": "Documentation-only revisions do not certify a new deployment. The final return records source documentation heads separately from deployed code/package identities where applicable."
+    "identityRule": "Read authenticated runtime health and served frontend identity; match clean source head/tree, build/archive/assets, contract and public/protected snapshot to the dated immutable external release receipt.",
+    "acceptanceRule": "The receipt must identify actual clean-browser/API/MCP/model/map/lead/access, telemetry and payload/privacy evidence for that same identity. Health alone is not complete acceptance.",
+    "sourceCheckoutRule": "Resolve this checkout with Git. Its own final commit/build cannot be embedded self-referentially here. The external receipt binds the final source revision after build and deployment; the prior accepted identity is not silently promoted.",
+    "retentionRule": "Use the dated access sheet and actual configured-expiry readback for current retention, capability rotation and quota headroom. This file does not extend credentials, map expiry or service availability."
   },
-  "inheritedAcceptedBaseline": {
-    "sourceHead": "3e093a6fc5adc5f1f7387a590bc2a12eb44b93aa",
-    "evidenceAt": "2026-10-29T02:43:52.023644+00:00",
-    "meaning": "Dated P6 accepted hosted baseline; retained history, not a statement of which source is currently deployed"
+  "acceptedTechnicalBaseline": {
+    "acceptedAt": "2026-10-29T06:44:22.094594+00:00",
+    "receiptName": "evidence/runtime/p7-final-runtime-acceptance.json",
+    "receiptLocation": "Accepted immutable release packet; not a file supplied by this source checkout",
+    "receiptSha256": "359e24ea8fcbd1a2ea88dd85a39d1f99948662a6018728c3ac15208ab22c9c74",
+    "status": "PASS_SCOPED_FINAL_RUNTIME_AND_NORMAL_REVIEW_ACCESS",
+    "oracle": {
+      "head": "6d14d60d15ace1a5722aada4e0bb6dc6b2114753",
+      "tree": "228b8086197fc76b6c82ad829735fef97c789583",
+      "buildId": "795193df1502b4eacc3b2e8ef04ac0ceb7f0d66b52d174e293f2b25a8a6c2ef3",
+      "archiveSha256": "62d14ccbad8f3a271f236bf0ccb006a7ad9fcd324cc8dcf087f252cea93ec865",
+      "frontendManifestSha256": "81f10e2ef42975d8ee888b40020f034176c6e260d124dc3867cacf5c0d3904fe"
+    },
+    "crm": {
+      "head": "f40b75a1d8be8e5c064c3b308312711060fddaf0",
+      "tree": "a4c3386c368ccf9f3f041051810f01eb7c88dfba",
+      "buildId": "47428e78a80729177b13f093aee890072d0e9036883d0fe328343850eaf3e26e",
+      "archiveSha256": "6bbf7c9436f3a4dc8c305506273630340c08efff67ec0b2a8f29a9171a3bfa10",
+      "frontendManifestSha256": "ae35116f6d78c80b0e7c2beb9e7f4680aa115a95b967212ca61f162ae0e0a986"
+    },
+    "meaning": "Dated accepted technical history; any later documentation/source/deployment identity requires its own external receipt. Full source outcomes, media and official submission are separate."
   },
   "contractVersion": "0.5.0",
   "contractModuleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612",
   "dataProfile": {
-    "protectedProfile": "Reviewed v8 source companion",
+    "protectedProfile": "Unchanged reviewed v8 source companion",
     "sourceManifestSha256": "5d835ee72a5893b0e441c4fbe22d03ae564a3bfd5cfb248b0d88263f4404a044",
-    "publicProfile": "Retained immutable public run04",
-    "meaning": "Exact loaded identities must be read from current runtime and release receipts; a redeploy is not source refresh.",
-    "freeSourceClosure": "Completed finite lawful free-source route; no new qualified current-active/long-open cohort admitted; reviewed v8/0.5.0 unchanged. Unsearched paid full history remains unknown and is not a completion prerequisite."
+    "publicProfile": "Retained immutable public run04; public schema metadata 0.4.0",
+    "publicCarSha256": "15fdf09f9ef09a1ff3b891d314292b0a0e16646e3e0545743269ba8f7cd2bbe2",
+    "meaning": "Read exact loaded public/protected identities from runtime and external release evidence; redeployment is not source refresh.",
+    "sourceOutcomeAuthority": "docs/KNOWN_LIMITATIONS.md",
+    "newRuntimeSourceAdmissions": 0,
+    "paidSourceRequiredPurchasedOrNeeded": false
   },
-  "currentAccountObservation": {
-    "at": "2026-10-29T03:45:27.196686+00:00",
+  "recordedAccess": {
+    "atAcceptedBaseline": true,
+    "mapExpiresAt": "2026-11-12T08:17:25Z",
+    "sessionTtlSeconds": 3600,
+    "capabilityLifetime": "Until rotation; value delivered separately, never embedded here",
+    "converseCaps": {
+      "total": 120,
+      "perUtcDay": 80,
+      "perSessionHour": 40
+    },
+    "validatedRequestCaps": {
+      "total": 200,
+      "perUtcDay": 160,
+      "perSessionHour": 40
+    },
+    "endpointRequestsPerUtcDay": 240,
+    "recorded2026_10_29Usage": {
+      "converseTotal": 77,
+      "converseUtcDay": 76,
+      "remainingTotal": 43,
+      "remainingThatUtcDay": 4,
+      "validatedRequestsTotal": 110,
+      "validatedRequestsUtcDay": 108
+    },
+    "meaning": "Historical actual snapshot only; operator/media/evaluator usage shares counters, no reset. Latest external quota/expiry receipt controls current headroom and retention."
+  },
+  "recordedAccountObservation": {
+    "at": "2026-10-29T06:17:02.717965+00:00",
     "plan": "FREE",
     "status": "ACTIVE",
     "remainingCreditsUsd": 140,
-    "mutations": 0,
-    "meaning": "Read-only dated observation, not final billing or permanent availability"
+    "meaning": "Dated read-only observation, not an invoice, zero-gross proof or permanent availability promise"
   },
   "strictAgeExample": {
     "municipality": "City of Novi, Michigan",
     "radiusMeters": 8046.72,
     "roofMinAgeYears": 15,
     "includeUnknown": false,
-    "acceptedBaselineMatches": 648,
-    "acceptedBaselinePageResults": 50,
-    "basis": "Explicitly labeled building-year proxy",
-    "meaning": "Historical accepted strict positive. Compare the final current-runtime rehearsal receipt; do not convert unknown-age matches into strict age positives."
+    "sourcePredicate": "ageYears > 15",
+    "acceptedMatches": 648,
+    "acceptedPageResults": 50,
+    "basis": "Disclosed building-year proxy, not roof installation",
+    "meaning": "Dated accepted native/hosted result; compare the actual deployed snapshot and later rehearsal receipt"
   },
-  "publicationBoundary": "Historical CID1/CID2 public identity; current retained run04 and bounded CLI/Atlas outputs local-only. New public/Atlas/IPNS/on-chain/registry effects require separate authorization and verified receipts.",
-  "submissionBoundary": "Qualifying PR, playable media and Ready transition are separate externally authorized gates; a source checkout or test pass is not official submission."
+  "publicationBoundary": "Historical CID1/CID2 public identities; retained run04 and current CLI/Atlas outputs local-only. New upload/Atlas/IPNS/on-chain/registry/shared-MCP effects remain unperformed and separately gated.",
+  "submissionBoundary": "Current explicit operator/Lead authority may cover local media preparation. GitHub writes, public sharing, employer communication, Ready transition and official submission remain distinct unperformed effects."
 }

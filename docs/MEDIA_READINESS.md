@@ -1,3 +1,9 @@
+# Historical media-readiness record
+
+This checklist was recorded before the accepted technical release and is preserved unchanged below. Current local media preparation follows the explicit operator/Lead release contract and the [release checklist](RELEASE_CHECKLIST.md); the [evaluator guide](EVALUATOR_GUIDE.md) and external dated receipt govern the actual hosted identity. The old conditional wording does not reopen an already recorded approval or authorize uploads, GitHub writes or submission.
+
+---
+
 # Conditional media readiness
 
 No recording, audio, narration, subtitle file, caption script, shot list or production media is created by this phase. The direct user gate requires both operator and external Lead greenlights before media work. The later packet's suggestion to prepare a script does not replace that gate. This is an evidence-readiness checklist only.
