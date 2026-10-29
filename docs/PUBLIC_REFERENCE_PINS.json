@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-29T03:35:51.551750+00:00",
+  "scope": "Moving public guidance; original assignment and 114 rows remain controlling",
+  "references": [
+    {
+      "name": "team-kit",
+      "url": "https://github.com/soofi-xyz/soofi-xyz-team-kit",
+      "startedAt": "2026-10-29T03:35:51.022811+00:00",
+      "finishedAt": "2026-10-29T03:35:51.436554+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/soofi-xyz/soofi-xyz-team-kit",
+        "HEAD"
+      ],
+      "exitCode": 0,
+      "head": "c652e0019a1be0128dbff42a55f453d18caa427b",
+      "stderr": "",
+      "effect": "public read only; no account credentials; no repository writes"
+    },
+    {
+      "name": "elephant-cli",
+      "url": "https://github.com/elephant-xyz/elephant-cli",
+      "startedAt": "2026-10-29T03:35:51.022957+00:00",
+      "finishedAt": "2026-10-29T03:35:51.551381+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/elephant-xyz/elephant-cli",
+        "HEAD"
+      ],
+      "exitCode": 0,
+      "head": "44bb182b9f7f904662e9b33e1fde70bdeab62322",
+      "stderr": "",
+      "effect": "public read only; no account credentials; no repository writes"
+    },
+    {
+      "name": "lexicon",
+      "url": "https://github.com/elephant-xyz/lexicon",
+      "startedAt": "2026-10-29T03:35:51.023107+00:00",
+      "finishedAt": "2026-10-29T03:35:51.456301+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/elephant-xyz/lexicon",
+        "HEAD"
+      ],
+      "exitCode": 0,
+      "head": "7938f10560d26b7773a33939d3f2fb13ef361518",
+      "stderr": "",
+      "effect": "public read only; no account credentials; no repository writes"
+    },
+    {
+      "name": "atlas",
+      "url": "https://github.com/elephant-xyz/atlas",
+      "startedAt": "2026-10-29T03:35:51.026035+00:00",
+      "finishedAt": "2026-10-29T03:35:51.429444+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/elephant-xyz/atlas",
+        "HEAD"
+      ],
+      "exitCode": 0,
+      "head": "27e2be080d856b352ebd841a921cc35d7a5ef95f",
+      "stderr": "",
+      "effect": "public read only; no account credentials; no repository writes"
+    },
+    {
+      "name": "skills",
+      "url": "https://github.com/elephant-xyz/skills",
+      "startedAt": "2026-10-29T03:35:51.027143+00:00",
+      "finishedAt": "2026-10-29T03:35:51.407431+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/elephant-xyz/skills",
+        "HEAD"
+      ],
+      "exitCode": 0,
+      "head": "e2c30b3ab89b5cbf776a8e106fcb6dcd86c21f89",
+      "stderr": "",
+      "effect": "public read only; no account credentials; no repository writes"
+    },
+    {
+      "name": "mcp",
+      "url": "https://github.com/elephant-xyz/mcp",
+      "startedAt": "2026-10-29T03:35:51.027236+00:00",
+      "finishedAt": "2026-10-29T03:35:51.499469+00:00",
+      "command": [
+        "git",
+        "ls-remote",
+        "https://github.com/elephant-xyz/mcp",
+        "HEAD"
+      ],
+      "exitCode": 128,
+      "head": null,
+      "stderr": "remote: Repository not found.\nfatal: repository 'https://github.com/elephant-xyz/mcp/' not found",
+      "effect": "public read only; no account credentials; no repository writes"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 Public artifacts contain only approved county-safe projections. Protected runtime data is a minimized rights-compatible projection. Raw owner/contact/provider records remain in the private working tier and never enter Git, logs, CI artifacts, screenshots or public publication. No source field is fabricated to close a business outcome.
 
-Authenticated review access uses a private secret, expiring signed session cookies and server-side revocation. Requests retain payload limits, read quotas, origin checks, snapshot binding and deterministic factual validation. The operator supplies access details privately; credentials and live tokens must not appear in this repository.
+Authenticated review access uses a private secret, expiring signed session cookies and server-side revocation. Requests retain payload limits, read quotas, origin checks, snapshot binding and deterministic factual validation. The operator supplies a dedicated low-privilege review capability. A later PR may intentionally expose that capability to permit evaluator access; treat it as public and enforce isolation, quotas, expiry and no administrative power. Privileged credentials and live session tokens never enter the repository.
 
 Powertools receives bounded operation/status/latency values only. Request/response bodies, cookies, query inputs, source rows and raw exceptions are excluded from logs and trace metadata. Custom metrics use only service dimensions to limit both privacy exposure and billing cardinality. Alerts transmit a fixed operational summary and hashed alarm correlation key; no raw alarm reason or account identifier is sent to PagerDuty.
 

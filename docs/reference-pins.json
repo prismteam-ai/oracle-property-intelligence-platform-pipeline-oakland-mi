@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "asOf": "2026-10-28",
+  "asOf": "2026-10-29",
   "originalAssignmentBaseline": "e3a7f869eb6bca40db8fc22ad0e25874aa3aab60",
   "currentTeamKit": {
     "repository": "https://github.com/soofi-xyz/soofi-xyz-team-kit",
-    "commit": "d68d6aac36b51c8ed006218cd43ef4227f3fb753",
-    "classification": "moving-current-engineering-guidance-not-rewritten-original-assignment"
+    "commit": "c652e0019a1be0128dbff42a55f453d18caa427b",
+    "classification": "moving-current-engineering-guidance-not-rewritten-original-assignment",
+    "previousObservedCommit": "d68d6aac36b51c8ed006218cd43ef4227f3fb753"
   },
   "runtime": {
     "node": "24",
@@ -31,5 +32,6 @@
     "emitterMissingLicenseGitHead": "7586fba839cf87774d5df224ce479c3b7e2b9964",
     "emitterSpdxTemplateSha256": "f32fb3b417a194167cfad068223fc975ba96c5960513a10f66a3c28720aec1df",
     "emitterLimitation": "Publisher-supplied license file/copyright absent; exact SPDX standard template and author metadata disclosed, not fabricated upstream notice."
-  }
+  },
+  "publicReferenceRefresh": "PUBLIC_REFERENCE_PINS.json"
 }

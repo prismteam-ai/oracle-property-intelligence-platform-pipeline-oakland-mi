@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "status": "HYPOTHETICAL_ACTIVITY_WITH_ACTUAL_RESOURCE_COUNTS__NOT_MEASURED_BILL",
+  "inventoryAt": "2026-10-29T03:53:04.732724+00:00",
+  "inventorySha256": "26b715da81d0982d962bf418dc3e3a89da7ceb772f55a0ebecf463af6d84ac99",
+  "ratesSha256": "e56c13e14ce2253f4ed488bb779aa3124f2daef5807708c5b6ac6da871753031",
+  "actualResourceCounts": {
+    "customMetricSeries": 34,
+    "standardAlarmMetrics": 12,
+    "dashboards": 2,
+    "secrets": 4
+  },
+  "assumptions": {
+    "scenario": "HYPOTHETICAL_ACTIVITY_ACTUAL_RESOURCE_COUNTS",
+    "api_requests_per_day": 1000,
+    "oracle_share": 0.75,
+    "oracle_memory_gib": 3.0,
+    "oracle_mean_seconds": 10,
+    "crm_memory_gib": 0.5,
+    "crm_mean_seconds": 2,
+    "notifier_invocations_per_day": 10,
+    "notifier_memory_gib": 0.125,
+    "notifier_mean_seconds": 1,
+    "map_views_per_day": 10,
+    "tiles_per_map_view": 100,
+    "ddb_reads_per_day": 20000,
+    "ddb_writes_per_day": 5000,
+    "ddb_storage_gb": 1,
+    "ddb_pitr_gb": 0,
+    "s3_storage_gb": 10,
+    "s3_get_per_day": 1000,
+    "s3_put_list_per_day": 100,
+    "cloudfront_https_per_day": 5000,
+    "cloudfront_egress_gb_per_day": 0.1,
+    "cloudfront_function_executions_per_day": 1000,
+    "log_ingest_gb_per_day": 0.01,
+    "log_stored_gb": 1,
+    "logs_scan_gb_per_day": 0.01,
+    "xray_recorded_per_day": 1000,
+    "xray_accessed_per_day": 1000,
+    "model_turns_per_day": 20,
+    "input_tokens_per_turn": 2000,
+    "output_tokens_per_turn": 300,
+    "secret_api_requests_per_day": 2000,
+    "contingency_usd_per_day": 0.05,
+    "planning_month_days": 30
+  },
+  "grossBeforeAllowancesAndCredits": [
+    {
+      "days": 1,
+      "usd": 1.163639
+    },
+    {
+      "days": 7,
+      "usd": 8.14547
+    },
+    {
+      "days": 14,
+      "usd": 16.29094
+    },
+    {
+      "days": 30,
+      "usd": 34.909158
+    }
+  ],
+  "optionalOnlyIfAllAccountAllowancesEligibleAndUnused": [
+    {
+      "days": 1,
+      "usd": 0.417432
+    },
+    {
+      "days": 7,
+      "usd": 2.922022
+    },
+    {
+      "days": 14,
+      "usd": 5.844043
+    },
+    {
+      "days": 30,
+      "usd": 17.231918
+    }
+  ],
+  "remainingCreditsObservation": {
+    "at": "2026-10-29T03:45:27.196686+00:00",
+    "usd": 140,
+    "subtractedFromGross": false
+  },
+  "dashboardGrossUnit": {
+    "usdPerDashboardMonth": 3,
+    "verification": "VERIFIED_OFFICIAL_GLOBAL_CLOUDWATCH_PRICE_LIST",
+    "authoritativeReceiptSha256": "86dad7462d87132ddace289e4a96ebfbb9b9336b966c47a3d09558df599e5265",
+    "qualification": "Global DashboardUsage product; regional price lists legitimately omit it. Up to three eligible unused account dashboards with at most 50 metrics are conditional allowances."
+  },
+  "reserveQualification": "Prior USD23 conservative reserve included inherited13 plus review10. Arithmetic comparison is not proof the whole reserve is unused; reconcile prior pending consumption and review forecast without double counting.",
+  "limitations": [
+    "Actual traffic/storage size/billed active metric hours may differ from explicit scenario",
+    "Cost Explorer unavailable is not zero gross consumption",
+    "Published allowance sensitivity is not a cash forecast",
+    "No model-call, purchase, paid upgrade or resource-mutation authority is granted by the scenario",
+    "Final measured bill and later-arriving usage remain separate"
+  ],
+  "modelSha256": "20f331fd842f9e574661f0018abb5decb07a76411bcd7ab8e1c1dddaada8c1e5"
+}

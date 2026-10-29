@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "sourceHead": "3e093a6fc5adc5f1f7387a590bc2a12eb44b93aa",
+  "meaning": "Immutable P6 source documentation; recover exact content with git show <sourceHead>:<path>. Current docs index controls operation.",
+  "files": [
+    {
+      "path": "IMPLEMENTATION.md",
+      "bytes": 1663,
+      "sha256": "bd6bf64c1958df2d18e1eceeb5dd46510459a81d326b7751f3ac1bd6615e0ce7"
+    },
+    {
+      "path": "QUICKSTART.md",
+      "bytes": 645,
+      "sha256": "db77e4f93581bb2073dfda5d2b085c1dfed78f7a1bfc4d9577302948d1e44de7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1762,
+      "sha256": "df2d59efce8bd2eb066de369c3b6b365b2079f589baf8de5c1a1480e5607b62b"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 2668,
+      "sha256": "c79adcf7ee8f40cf5cf2bfd0289f5e8a09805fceb0882a7bed7a9aa5b79cc51c"
+    },
+    {
+      "path": "docs/DATA_COVERAGE.md",
+      "bytes": 3665,
+      "sha256": "1a7fa06c09ef7d5ddadf939698a96e0f3a2d946a90b82101ff20a24cbac9ba5e"
+    },
+    {
+      "path": "docs/DEPLOYMENT.md",
+      "bytes": 2799,
+      "sha256": "785a5ca9ad83390dc5db1a50e23980f96ea94c6412ace22860c5e170a5bb7340"
+    },
+    {
+      "path": "docs/EVALUATOR_GUIDE.md",
+      "bytes": 1935,
+      "sha256": "895b386a17b59d159e9909d771be179a080c1363ca67fa3b744a1739649bb37c"
+    },
+    {
+      "path": "docs/KNOWN_LIMITATIONS.md",
+      "bytes": 1311,
+      "sha256": "98ad7ecc186de5f2a7f0c124dbfd3e96804e88123803dc8cc2905aa588da4b9c"
+    },
+    {
+      "path": "docs/LOCAL_DEMO.md",
+      "bytes": 2105,
+      "sha256": "2149fa5caa3be6e153d55e564dd66c473f623d0e6eea226979a1fa1560ad08e9"
+    },
+    {
+      "path": "docs/LOCAL_DEVELOPMENT.md",
+      "bytes": 1855,
+      "sha256": "d8c0c23a8ad0191773b16f9aa844a8361ad3b476fe578c163394e6c99e1dfadc"
+    },
+    {
+      "path": "docs/OBSERVABILITY.md",
+      "bytes": 2314,
+      "sha256": "0eefb8a717e8ddce7cc851840be53e0aff4a36d1a486e6e554f0f176310339ba"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 1216,
+      "sha256": "cb57af28b2d355d76dd25781f6d82d94ceb2964a108de53c33a0ff4ee4597ed0"
+    },
+    {
+      "path": "docs/RELEASE_CHECKLIST.md",
+      "bytes": 1405,
+      "sha256": "75fed41b95675e61a3a2285c925ab6fe26d12bd7731b4fb723ab290f4d8e3da1"
+    },
+    {
+      "path": "docs/SECURITY_PRIVACY.md",
+      "bytes": 1714,
+      "sha256": "943172f48e099ec04c53614cd4f5fa1fec9b0037de115255bd01cd1a44453e8c"
+    },
+    {
+      "path": "docs/architecture/BOUNDARY.md",
+      "bytes": 743,
+      "sha256": "b44c719429a16218896b9372850c316b1619759a09d4bd2d9f0f76ea08f013ad"
+    },
+    {
+      "path": "docs/architecture/CONTRACT_0_2_MIGRATION.md",
+      "bytes": 2065,
+      "sha256": "0be0690aa8ca9a896838c38ab37ba2da9daea05cfda2f1c919ff9901874d4674"
+    },
+    {
+      "path": "docs/architecture/P2_HOSTED_RUNTIME.md",
+      "bytes": 9483,
+      "sha256": "dc83f51c0094869966aa38b19f560c2b6f1b289183539333ada3f4144d7578ef"
+    },
+    {
+      "path": "docs/architecture/P3_EXISTING_ACCOUNT_SHARED.md",
+      "bytes": 5511,
+      "sha256": "80b106aed7d7052ec21e31adece6bd99cf69423616ae45a20b8d88d22138430a"
+    },
+    {
+      "path": "docs/architecture/P3_STAGING.md",
+      "bytes": 9842,
+      "sha256": "718095a5aba0f92d9fc5e63b96bc355273bb855ce728274b3d0db15d763af54f"
+    },
+    {
+      "path": "docs/architecture/RUN_HISTORY_PUBLICATION.md",
+      "bytes": 1750,
+      "sha256": "609175aee60e0fe41d02ed583b4cd3f112acb98be2f699534d229aadbd84465f"
+    },
+    {
+      "path": "docs/architecture/elephant-compatibility.md",
+      "bytes": 8794,
+      "sha256": "d2ea328d4b1d393196066aa2e251c4229c5f10be5edb29651fc25d63f2574068"
+    },
+    {
+      "path": "docs/decisions/001-producer-read-plane.md",
+      "bytes": 486,
+      "sha256": "809eef27823ce2a54182d0df1861be2aeb10a7f3f17708df18b2978ac72e9465"
+    },
+    {
+      "path": "docs/decisions/002-data-tiers.md",
+      "bytes": 513,
+      "sha256": "b0d4eb06122d772c9a012190df12925c8395c868c6205296e82900b9fe7a2795"
+    },
+    {
+      "path": "docs/decisions/003-agent-retrieval.md",
+      "bytes": 558,
+      "sha256": "5fa8f5415774eb00b5c51d65a2c7423a2926e363f6ea20412416133ef12c89f1"
+    },
+    {
+      "path": "docs/decisions/004-provider-rights.md",
+      "bytes": 653,
+      "sha256": "ea152a4b5102d380ee98a542f35d9b817df24f7cb3f6c61ca77cc81668b1aae6"
+    },
+    {
+      "path": "docs/decisions/005-transfer-evidence.md",
+      "bytes": 1196,
+      "sha256": "a95a6cce64ae33f23131f40e09dd3fa2b7f4fe1827de1ec4ad4601fd41495113"
+    },
+    {
+      "path": "docs/decisions/006-region-migration.md",
+      "bytes": 484,
+      "sha256": "e63653987f5574a20fc1fc4180279842e5cd79cc27f35234b32c55c42404b06b"
+    },
+    {
+      "path": "docs/decisions/007-moving-guidance.md",
+      "bytes": 583,
+      "sha256": "dd0454d21b5c0abd544044f2b3f6d031558cbd68f35642cd7e5febfd97125399"
+    },
+    {
+      "path": "docs/decisions/008-publication-status.md",
+      "bytes": 537,
+      "sha256": "c3e9ee44920e4cc871e8f1c49523e00f0f4c80cdee09bfeb731bde22853223e4"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "bytes": 608,
+      "sha256": "389720a19eedcab9f8284545789d24b199a4555f13cb619bfd1715c2a385aec6"
+    },
+    {
+      "path": "docs/history/ASSIGNMENT_README.md",
+      "bytes": 11898,
+      "sha256": "c4514cdb4b75ff4e3b8184d2e68b7c240c9f58447946c09df57f0eb096b55571"
+    },
+    {
+      "path": "docs/history/README.md",
+      "bytes": 1168,
+      "sha256": "483c8dcd5577c0b62cbfa4ffe22a06db227eab54fcc579388ec955e77649406f"
+    },
+    {
+      "path": "docs/metrics-registration.json",
+      "bytes": 1478,
+      "sha256": "8f7270a37d34f59f9ba8b9e5a40e410d7e2ddbc62234678f7c726f4442d5db2e"
+    },
+    {
+      "path": "docs/private-full-county-source.md",
+      "bytes": 5344,
+      "sha256": "a121ad5b8fc283abfb333f1f2b636c52b4a3d3f75678724bffae9af69f255b7e"
+    },
+    {
+      "path": "docs/private-source-intake.md",
+      "bytes": 4408,
+      "sha256": "3528287d2b00f89765331b7501b12542a8f941bc1a7b363f2d119f37cc8053dd"
+    },
+    {
+      "path": "docs/reference-pins.json",
+      "bytes": 1583,
+      "sha256": "81b8748756660ec261b8f6757e5ad9618583e2307936f7190b43ece5b34e6f97"
+    }
+  ]
+}

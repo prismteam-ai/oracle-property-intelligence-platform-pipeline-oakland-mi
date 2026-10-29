@@ -1,6 +1,6 @@
 # Evaluator guide
 
-The operator provides the exact release URLs and private review code separately after hosted acceptance. This source tree does not embed an access code or claim the not-yet-verified release is live.
+Open the retained [Oracle workspace](https://dknck94i8grek.cloudfront.net). P6 exact-source hosted acceptance is dated baseline evidence. Read current authenticated health and deployed frontend identity, then compare the immutable release packet as described in [release status](RELEASE_STATUS.json). The operator supplies the dedicated low-privilege review capability separately; no AWS account, clone, installation, Docker or local server is needed by the evaluator.
 
 Open the pipeline workspace, sign in, inspect the run summary and source coverage, then use Query lab to choose a center/radius and evidence predicates. Inspect a returned record to see its roof basis, native permit status/dates, contractor-role limitations, recorded/reported transfer distinction and provenance. Source semantics remain visible when a positive result is unavailable.
 
@@ -9,3 +9,13 @@ Artifacts & lineage shows the exact runtime identity and recorded historical pub
 Repeat the original age and open/long-open prompts through the CRM agent and compare applied constraints and cited source facts. A safe empty result is not relabeled as a positive source demonstration. The final operator report distinguishes technical checks from original positive outcomes, organization dependencies and later submission/media gates.
 
 For the bounded P6 sources, compare the provider-status/activity/age-since-issue controls with Minimum open days: the latter requires documented native continuous history. An old `ISSUED` observation cannot satisfy current-open or continuous-duration filters. The no-observed-recorded-deed gap control uses each qualified current-PIN observation's verified cutoff and calendar window. It does not substitute for legal ownership tenure. Inspect protected details for source dates, provider/native distinctions, window, witness timing, provenance and explicit limitations. The private run journal adds a bounded source refresh while preserving the four immutable public GIS run receipts.
+
+## First use, access expiry and recovery
+
+Use a fresh browser profile, open the URL over HTTPS, enter the review capability and confirm the displayed snapshot/source identity. This capability permits bounded review of protected projections and isolated lead workflows; it grants no administration, source acquisition, public publication or outreach. Ordinary quotas and expiration remain enforced. Sign out when finished. Expired/revoked access must deny protected requests. The final access package must state the actual rotation/expiry and retained-through date and be rehearsed from three desktop contexts, one mobile context and a direct API client. Until that receipt exists, do not treat this checklist as a P7 pass.
+
+A connection/DNS/TLS failure and an application failure are different evidence. Record the failing step/time without credentials or protected rows. The final release cannot depend on the evaluator contacting the candidate to debug ordinary first use. Media and official submission remain separate gates.
+
+The original age/agent examples use a city placeholder and a sample Oakland radius; they do not mandate Troy. Real Oakland age-filter positives already exist using the explicitly labeled building-year proxy. The historical evidence-empty Troy case remains a test result, not a missing mandatory named-city criterion. The current release rehearsal must identify its actual lawful Oakland location, query/snapshot and proxy basis. The current-active and long-open permit evidence gaps remain distinct and material.
+
+The accepted strict age example is City of Novi, Michigan, within five miles (8046.72 meters), minimum proxy age fifteen years, unknown ages excluded. Its accepted grounded baseline had 648 matches and returned 50 on the page. This is historical accepted evidence; compare the current deployment's dated rehearsal receipt. A separate query that included unknown ages is not used as proof of a strict aged-roof positive. The result describes a labeled proxy, not a verified roof-installation date.

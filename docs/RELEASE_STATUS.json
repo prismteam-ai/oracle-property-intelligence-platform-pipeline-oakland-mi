@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "purpose": "Deployment identity and evidence authority; a source checkout alone does not certify a hosted release",
+  "currentRuntime": {
+    "siteUrl": "https://dknck94i8grek.cloudfront.net",
+    "healthPath": "/api/health",
+    "identityRule": "Read authenticated runtime health and deployed frontend identity; match source head/tree, build/archive, contract and snapshot to the immutable release evidence packet.",
+    "acceptanceRule": "Use the dated clean-browser/API/MCP/model/map/lead/access and privacy receipts for that exact runtime identity. A successful health response alone is not full acceptance.",
+    "sourceCheckoutRule": "Documentation-only revisions do not certify a new deployment. The final return records source documentation heads separately from deployed code/package identities where applicable."
+  },
+  "inheritedAcceptedBaseline": {
+    "sourceHead": "3e093a6fc5adc5f1f7387a590bc2a12eb44b93aa",
+    "evidenceAt": "2026-10-29T02:43:52.023644+00:00",
+    "meaning": "Dated P6 accepted hosted baseline; retained history, not a statement of which source is currently deployed"
+  },
+  "contractVersion": "0.5.0",
+  "contractModuleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612",
+  "dataProfile": {
+    "protectedProfile": "Reviewed v8 source companion",
+    "sourceManifestSha256": "5d835ee72a5893b0e441c4fbe22d03ae564a3bfd5cfb248b0d88263f4404a044",
+    "publicProfile": "Retained immutable public run04",
+    "meaning": "Exact loaded identities must be read from current runtime and release receipts; a redeploy is not source refresh.",
+    "freeSourceClosure": "Completed finite lawful free-source route; no new qualified current-active/long-open cohort admitted; reviewed v8/0.5.0 unchanged. Unsearched paid full history remains unknown and is not a completion prerequisite."
+  },
+  "currentAccountObservation": {
+    "at": "2026-10-29T03:45:27.196686+00:00",
+    "plan": "FREE",
+    "status": "ACTIVE",
+    "remainingCreditsUsd": 140,
+    "mutations": 0,
+    "meaning": "Read-only dated observation, not final billing or permanent availability"
+  },
+  "strictAgeExample": {
+    "municipality": "City of Novi, Michigan",
+    "radiusMeters": 8046.72,
+    "roofMinAgeYears": 15,
+    "includeUnknown": false,
+    "acceptedBaselineMatches": 648,
+    "acceptedBaselinePageResults": 50,
+    "basis": "Explicitly labeled building-year proxy",
+    "meaning": "Historical accepted strict positive. Compare the final current-runtime rehearsal receipt; do not convert unknown-age matches into strict age positives."
+  },
+  "publicationBoundary": "Historical CID1/CID2 public identity; current retained run04 and bounded CLI/Atlas outputs local-only. New public/Atlas/IPNS/on-chain/registry effects require separate authorization and verified receipts.",
+  "submissionBoundary": "Qualifying PR, playable media and Ready transition are separate externally authorized gates; a source checkout or test pass is not official submission."
+}
