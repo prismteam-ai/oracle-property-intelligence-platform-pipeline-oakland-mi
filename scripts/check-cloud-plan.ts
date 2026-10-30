@@ -49,7 +49,7 @@ const lambda = lambdas.find(
   ([, r]) => r.Properties?.Handler === "index.handler",
 )![1].Properties!;
 const notifier = lambdas.find(
-  ([, r]) => r.Properties?.Handler === "index.alertHandler",
+  ([, r]) => r.Properties?.Handler === "alert.alertHandler",
 )![1].Properties!;
 assert.equal(lambda.Runtime, "nodejs24.x");
 assert.equal(lambda.ReservedConcurrentExecutions, 5);

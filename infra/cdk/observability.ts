@@ -53,7 +53,7 @@ export function assessmentObservability(input: {
   const notifier = new Function(stack, "AlertNotifier", {
     role: notifierRole,
     runtime: Runtime.NODEJS_24_X,
-    handler: "index.alertHandler",
+    handler: "alert.alertHandler",
     code: input.code,
     memorySize: 128,
     timeout: Duration.seconds(10),

@@ -5,7 +5,13 @@ import {
   validatedRegion,
 } from "../packages/hosted-runtime/src/release.ts";
 import { CONTRACT_VERSION } from "../packages/contracts/src/index.ts";
-import { build } from "esbuild";
+import { build, type Metafile } from "esbuild";
+import {
+  emittedBundleModules,
+  lambdaBundleOptions,
+  lambdaBundles,
+  lambdaEntrypointInventory,
+} from "./lambda-bundles.ts";
 import { createRequire } from "node:module";
 import {
   cp,
@@ -50,26 +56,16 @@ const identity = runtimeIdentity(
     process.env.AWS_DEFAULT_REGION,
   ]),
 );
-const result = await build({
-  entryPoints: [path.join(root, "apps/api/src/lambda.ts")],
-  outfile: path.join(out, "index.mjs"),
-  bundle: true,
-  platform: "node",
-  target: "node24",
-  format: "esm",
-  banner: {
-    js: "import { createRequire as _createRequire } from 'node:module';const require = _createRequire(import.meta.url);",
-  },
-  external: ["@duckdb/node-api"],
-  define: { __PRISM_BUILD_METADATA__: JSON.stringify(identity) },
-  minify: false,
-  sourcemap: false,
-  metafile: true,
-});
-await writeFile(
-  path.join(out, "bundle-metafile.json"),
-  JSON.stringify(result.metafile),
-);
+const metafiles: Metafile[] = [];
+for (const bundle of lambdaBundles) {
+  const result = await build(lambdaBundleOptions(root, out, identity, bundle));
+  if (!result.metafile) throw new Error("Lambda entry metafile missing");
+  metafiles.push(result.metafile);
+  await writeFile(
+    path.join(out, bundle.metafile),
+    JSON.stringify(result.metafile),
+  );
+}
 const copied = new Set<string>();
 const copiedPackageFiles: string[] = [];
 async function copyPackage(name: string, from: string) {
@@ -111,14 +107,7 @@ async function copyPackage(name: string, from: string) {
 await copyPackage("@duckdb/node-api", root);
 const notices = await collectThirdPartyNotices({
   root,
-  modules: [
-    ...Object.values(result.metafile!.outputs).flatMap((output) =>
-      Object.entries(output.inputs)
-        .filter(([, value]) => value.bytesInOutput > 0)
-        .map(([name]) => name),
-    ),
-    ...copiedPackageFiles,
-  ],
+  modules: [...emittedBundleModules(metafiles), ...copiedPackageFiles],
 });
 await writeFile(path.join(out, NOTICE_FILE), notices.notices);
 await writeFile(path.join(out, NOTICE_MANIFEST), notices.manifest);
@@ -151,7 +140,8 @@ async function inventory(
   return files;
 }
 const files = await inventory(out),
-  total = files.reduce((a, f) => a + f.bytes, 0);
+  total = files.reduce((a, f) => a + f.bytes, 0),
+  entrypoints = lambdaEntrypointInventory(files);
 if (total > 250 * 1024 * 1024)
   throw new Error("Lambda uncompressed package exceeds 250MiB limit");
 const zip = path.join(root, "oracle-lambda.zip");
@@ -171,6 +161,7 @@ execFileSync("zip", ["-X", "-q", zip, "-@"], {
 const zipped = await readFile(zip);
 const report = {
   runtime: "nodejs24.x",
+  entrypoints,
   identity,
   architecture: "x86_64",
   os: "Linux glibc; Amazon Linux 2023 verified separately by emulator",

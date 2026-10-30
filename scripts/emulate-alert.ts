@@ -57,7 +57,7 @@ try {
       "-e",
       "AWS_REGION=us-east-2",
       image,
-      "index.alertHandler",
+      "alert.alertHandler",
     ],
     { encoding: "utf8", stdio: "pipe" },
   ).trim();
