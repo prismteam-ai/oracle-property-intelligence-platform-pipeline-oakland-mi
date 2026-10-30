@@ -810,6 +810,14 @@ footer {
   .section-heading {
     gap: 10px;
   }
+  .query-panel .section-heading {
+    flex-wrap: wrap;
+  }
+  .query-panel .subtle-tag {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
   h2 {
     font-size: 19px;
   }

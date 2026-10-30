@@ -4,6 +4,14 @@ From the repository root, use Node 24 and pnpm 11.25.0, then follow [local devel
 
 The canonical sequence covers formatting, lint, types, unit/integration behavior, contract drift, source patterns, workflow validation, production build, Lambda packaging, CDK assertions, dependency audit, network-disabled runtime emulation and synthetic browser journeys. Explicit fixtures establish local behavior. Separate verified real public/protected inputs establish native data fidelity. Neither alone proves hosted first use or a missing source-positive outcome.
 
+## Responsive evidence-drawer regression
+
+`tests/browser/mobile-layout.spec.ts` exercises the actual React application at 390×844, 360×800 and 1440×1000. It checks document overflow, every rendered snapshot-identity fragment, ordinary pointer/native touch/Escape close, dialog removal and focus restoration, then material-filter stale clearing and a new query binding. The desktop identity remains on one line. No forced click, alternate close fallback, truncation or global overflow clipping is used.
+
+The API transport is explicitly synthetic: three fixture properties, two known-age matches at the strict Novi coordinates and one match after changing the age threshold. Those counts are not the admitted snapshot's 648 matches / 50 rows. The exact deployed source, real-data query and fresh mobile interaction require separate hosted evidence. The external evidence packet preserves the failing pre-repair React layouts and the repaired result; a local regression does not certify deployment.
+
+Run only this regression with `pnpm test:browser tests/browser/mobile-layout.spec.ts` after the documented browser prerequisites. It also runs in the full canonical browser suite. The test rejects external requests and unexpected HTTP, console or script errors.
+
 ## Dated accepted evidence
 
 The accepted technical release on 2026-10-29 passed Oracle 15/15 canonical steps at `6d14d60` and CRM 17/17 at `f40b75a`. CRM had 45 browser tests plus two controlled-map tests; actual AWS rendering was separately measured. Native Oracle checks reproduced 490,799 properties, 559,701 addresses, strict Novi 648 / 50 and source contexts 131 / 0 / 0 / 0 / 5. Earlier cold-adapter timing is explicitly unchanged-component reuse.
