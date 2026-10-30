@@ -24,7 +24,8 @@ export interface PrivateFile {
     | "troy-assessing-ui-source.parquet"
     | "provider-permit-observations.parquet"
     | "recorded-transfer-observations.parquet"
-    | "private-source-runs.json";
+    | "private-source-runs.json"
+    | "official-parcel-profile.json";
   role:
     | "owner"
     | "enrichment"
@@ -33,7 +34,8 @@ export interface PrivateFile {
     | FullSourceRole
     | "provider-permit-observations"
     | "recorded-transfer-observations"
-    | "private-source-runs";
+    | "private-source-runs"
+    | "official-parcel-profile";
   bytes: number;
   sha256: string;
   sourceSchemaSha256?: string;
@@ -42,7 +44,7 @@ export interface PrivateFile {
   sourceValidatedOffline?: true;
 }
 export interface PrivateManifest {
-  version: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8";
+  version: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
   publicSnapshotId: string;
   snapshotId: string;
   digest: string;
@@ -66,22 +68,24 @@ export function validatePrivateManifest(
           "files",
         ].includes(k),
     ) ||
-    !["1", "2", "3", "4", "5", "6", "7", "8"].includes(m.version) ||
+    !["1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(m.version) ||
     m.publicSnapshotId !== publicSnapshotId ||
     m.snapshotId !== publicSnapshotId ||
     !Array.isArray(m.files) ||
-    (m.version === "8"
-      ? m.files.length !== 12
-      : m.version === "7"
-        ? m.files.length !== 9
-        : m.version === "6"
-          ? m.files.length !== 8
-          : m.version === "5"
-            ? m.files.length !== 7
-            : m.version === "4"
-              ? m.files.length !== 6
-              : m.files.length !==
-                (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
+    (m.version === "9"
+      ? m.files.length !== 13
+      : m.version === "8"
+        ? m.files.length !== 12
+        : m.version === "7"
+          ? m.files.length !== 9
+          : m.version === "6"
+            ? m.files.length !== 8
+            : m.version === "5"
+              ? m.files.length !== 7
+              : m.version === "4"
+                ? m.files.length !== 6
+                : m.files.length !==
+                  (m.version === "3" ? 4 : m.version === "2" ? 3 : 2))
   )
     throw new Error("Protected manifest snapshot/shape rejected");
   const names = new Set<string>(),
@@ -100,7 +104,7 @@ export function validatePrivateManifest(
             "role",
             "bytes",
             "sha256",
-            ...(full && ["4", "5", "6", "7", "8"].includes(m.version)
+            ...(full && ["4", "5", "6", "7", "8", "9"].includes(m.version)
               ? [
                   "sourceSchemaSha256",
                   "sourceRecordCount",
@@ -115,12 +119,12 @@ export function validatePrivateManifest(
         : f.role === "enrichment"
           ? f.name !== "protected-enrichment.parquet"
           : f.role === "permits" &&
-              ["2", "3", "4", "5", "6", "7", "8"].includes(m.version)
+              ["2", "3", "4", "5", "6", "7", "8", "9"].includes(m.version)
             ? f.name !== "protected-permits.parquet"
             : f.role === "source-intake" &&
-                ["3", "4", "5", "6", "7", "8"].includes(m.version)
+                ["3", "4", "5", "6", "7", "8", "9"].includes(m.version)
               ? f.name !== "private-source-intake.parquet"
-              : m.version === "8" &&
+              : ["8", "9"].includes(m.version) &&
                   [
                     "provider-permit-observations",
                     "recorded-transfer-observations",
@@ -136,9 +140,11 @@ export function validatePrivateManifest(
                       "private-source-runs": "private-source-runs.json",
                     } as Record<string, string>
                   )[f.role]
-                : full && ["4", "5", "6", "7", "8"].includes(m.version)
-                  ? f.name !== full.name
-                  : true) ||
+                : m.version === "9" && f.role === "official-parcel-profile"
+                  ? f.name !== "official-parcel-profile.json"
+                  : full && ["4", "5", "6", "7", "8", "9"].includes(m.version)
+                    ? f.name !== full.name
+                    : true) ||
       names.has(f.name) ||
       roles.has(f.role) ||
       !Number.isSafeInteger(f.bytes) ||
@@ -158,23 +164,26 @@ export function validatePrivateManifest(
     roles.add(f.role);
   }
   if (
-    ["4", "5", "6", "7", "8"].includes(m.version) &&
+    ["4", "5", "6", "7", "8", "9"].includes(m.version) &&
     (!roles.has("owner") ||
       !roles.has("enrichment") ||
       !roles.has("permits") ||
       !roles.has("source-intake") ||
       !roles.has("county-parcels") ||
       !roles.has("county-addresses") ||
-      (["5", "6", "7", "8"].includes(m.version) &&
+      (["5", "6", "7", "8", "9"].includes(m.version) &&
         !roles.has("municipal-source")) ||
-      (["6", "7", "8"].includes(m.version) && !roles.has("rochester-source")) ||
-      (["7", "8"].includes(m.version) && !roles.has("assessment-source")) ||
-      (m.version === "8" &&
+      (["6", "7", "8", "9"].includes(m.version) &&
+        !roles.has("rochester-source")) ||
+      (["7", "8", "9"].includes(m.version) &&
+        !roles.has("assessment-source")) ||
+      (["8", "9"].includes(m.version) &&
         [
           "provider-permit-observations",
           "recorded-transfer-observations",
           "private-source-runs",
         ].some((role) => !roles.has(role))) ||
+      (m.version === "9" && !roles.has("official-parcel-profile")) ||
       m.files
         .filter((f) => ["county-parcels", "county-addresses"].includes(f.role))
         .reduce((n, f) => n + f.sourceRecordCount!, 0) > 1_200_000)
@@ -209,7 +218,12 @@ export async function loadPrivateCache(options: {
     enrichment = m.files.find((f) => f.role === "enrichment")!,
     permits = m.files.find((f) => f.role === "permits"),
     intake = m.files.find((f) => f.role === "source-intake");
+  const official = m.files.find((f) => f.role === "official-parcel-profile");
   return {
+    officialParcelProfileFile: official
+      ? path.join(directory, official.name)
+      : undefined,
+    officialParcelProfileSha256: official?.sha256,
     ownerFile: path.join(directory, owner.name),
     ownerSha256: owner.sha256,
     enrichmentFile: path.join(directory, enrichment.name),
@@ -301,6 +315,15 @@ export async function preparePrivateCache(publicSnapshotId: string) {
       delete process.env[variable];
       delete process.env[variable + "_SHA256"];
     }
+  }
+  if (prepared.officialParcelProfileFile) {
+    process.env.PRISM_OFFICIAL_PARCEL_PROFILE =
+      prepared.officialParcelProfileFile;
+    process.env.PRISM_OFFICIAL_PARCEL_PROFILE_SHA256 =
+      prepared.officialParcelProfileSha256;
+  } else {
+    delete process.env.PRISM_OFFICIAL_PARCEL_PROFILE;
+    delete process.env.PRISM_OFFICIAL_PARCEL_PROFILE_SHA256;
   }
   process.env.PRISM_PRIVATE_FULL_SOURCES = JSON.stringify(prepared.fullSources);
 }

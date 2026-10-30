@@ -5,7 +5,7 @@ export const BOOTSTRAP_QUALIFIER = "prismrvw" as const;
 export const APPROVED_PUBLIC_MANIFEST_SHA256 =
   "d3f82cc0b00eb8345f94c7e5ffb21e37fd928bc9c5af771d005e6f700d879bbb";
 export const APPROVED_PRIVATE_MANIFEST_SHA256 =
-  "5d835ee72a5893b0e441c4fbe22d03ae564a3bfd5cfb248b0d88263f4404a044";
+  "bb2d7da5cf8544fbf31832701ccf87536b80388856192d46758c9b0d9e5ee592";
 export interface SourceIdentity {
   head: string;
   tree: string;
@@ -71,7 +71,7 @@ export function validateReleasePins(p: ReleasePins): ReleasePins {
       p.privateManifestSha256 !== APPROVED_PRIVATE_MANIFEST_SHA256)
   )
     throw new Error(
-      "Only the exact reviewed current public/protected manifests are authorized",
+      "Only the exact reviewed current public/operational manifests are authorized",
     );
   if (
     p.assetBucket !==

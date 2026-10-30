@@ -1,28 +1,27 @@
 # Architecture and decisions
 
-Oracle is a controlled producer plus an authenticated read plane. It reconciles Oakland County sources into portable immutable artifacts; the separate Roofing CRM consumes one serialized versioned contract for map discovery, leads and grounded agent retrieval. Source acquisition remains outside the CRM.
+Oracle is a controlled producer plus a bounded authenticated read plane. It reconciles Oakland County sources into portable artifacts; the separate Roofing CRM consumes the versioned contract for map discovery, leads and grounded retrieval. Source acquisition remains outside the CRM.
 
-## Data flow and boundaries
+## Data flow and authority
 
-The producer validates receipt-backed acquisition, normalizes fields, reconciles canonical parcels and records run deltas. Approved public tables, manifests and CARs exclude protected/provider and operational records. Protected observations use separate hash-pinned sidecars; full source intake remains private.
+Receipt-backed acquisition → native/canonical identity reconciliation → source-specific observations and run deltas → hash-pinned DuckDB/Parquet → UI/API/MCP → CRM. The [sixteen-stage onboarding matrix](COUNTY_ONBOARDING_ALIGNMENT.md) maps the referenced Elephant workflow, outcomes and deliberate substitutions. The [field authority matrix](DATA_FIELD_AUTHORITY_MATRIX.md) separates source availability, terms, internal storage, runtime access, Git inclusion and irreversible publication.
 
-CloudFront and private S3 serve the UI and HTTP API. Lambda loads hash-verified artifacts into native DuckDB. DynamoDB stores sessions and quotas; Secrets Manager holds access configuration. Queries and MCP return bounded source-backed projections. No ingestion worker or database server stays running between requests.
+Official property IDs, addresses, coordinates and permitted observations may be shown to evaluators and in the walkthrough. Nullable raw name parts and mailing text are not fabricated into a verified owner. The additive `officialParcelObservation` shape preserves source/native/PIN association, original observation time, metadata/terms/record digests, availability and the regional derivation basis. Postal-only observations do not fit the older named-owner model and are kept explicit. Current source contract and consumer identity are read from their contract manifests; historical runtime 0.5.0 and public schema 0.4.0 remain unchanged records. The source revision does not establish deployed data admission.
 
-`packages/query/src/real-utils.ts` validates immutable files; `real-loader.ts` manages native connections and sidecars; `real-full-sources.ts` projects full-source observations; `real-source-observations.ts` validates contract/file/JSON digests, property bindings and existing municipal associations. `real.ts` assembles query/property responses. UI panels separate overview, artifacts and source detail while the App owns abort/generation state to reject stale responses.
+Private S3 and owner-only local files are operational access controls. Legacy `private_` tables/sidecars and `protected-real` transport labels do not make every official fact a secret. Source-restricted provider payloads, credentials and mutable CRM records keep their actual boundaries. [ADR009](decisions/009-source-specific-data-boundaries.md) supersedes categorical owner exclusion and media masking.
 
-Independent native closure takes precedence over provider activity. A current-PIN deed observation carries its verified cutoff and bounded claim window. Loading only public artifacts creates empty protected source tables. Contract metadata distinguishes the entry-file digest from the complete sorted three-module graph; both locks bind every module. Historical public schema 0.4.0 is not rewritten by the compatible runtime contract 0.5.0.
+CloudFront/private S3 serve the UI and HTTP API. Lambda loads verified artifacts into native DuckDB; DynamoDB stores sessions/quotas and Secrets Manager access configuration. Query/MCP responses remain bounded and source-backed. No acquisition worker or database server stays running between requests. `packages/query/src/real-utils.ts` verifies files; `real-loader.ts` manages native connections/sidecars; `real-full-sources.ts` projects source observations; `real-source-observations.ts` checks digests and associations; `real.ts` assembles responses. Abort/generation state prevents stale result substitution.
 
-## Technology choices and rejected alternatives
+## Technology choices
 
-- **Two modular TypeScript workspaces:** preserve the designated Oracle/CRM submission boundaries and share a serialized contract. Combining repositories would obscure ownership; duplicating source ingestion would introduce drift.
-- **Controlled producer and serverless read plane:** separate costly acquisition from bounded review traffic. Always-on EC2, a database service, NAT gateways, OpenSearch or Kubernetes would add fixed cost and operational work for this workload.
-- **DuckDB, Parquet, CIDs and CARs:** provide native portable analytics, compact columnar files, immutable content identities and importable DAG snapshots. A hosted database alone would not preserve those artifact identities.
-- **Typed retrieval with model-mediated intent:** keeps source predicates, authorization and authoritative facts in deterministic code. Unrestricted SQL or uncited model facts would bypass those controls. One accepted CRM turn permits one model attempt and bounded retrieval against the same query.
-- **MapLibre with Amazon Location:** supplies actual attributed maps with origin/action/provider-restricted access and a tested rendering fallback. The fixed finite key expiry and used-key `ForceUpdate` preserve those restrictions.
-- **CDK, Powertools, CloudWatch and X-Ray:** provide reproducible task-scoped infrastructure, bounded metrics and traces without a monitoring server. Optional PagerDuty delivery sends a fixed minimized summary; paid plans are unnecessary.
+- Two modular TypeScript repositories preserve the assignment's producer/consumer split and share a pinned serialized contract.
+- A durable request/run ledger and DuckDB/Parquet producer replace the archived Restate/PostgreSQL stack. The outcome mapping is explicit; no rewrite or transform-repository PR is claimed.
+- DuckDB, Parquet, immutable CIDv1 roots and CARs provide portable analytics and recoverable artifact identity. Historical custom roots and bounded current CLI/Atlas preparation are different evidence.
+- Typed retrieval and deterministic factual rendering keep source predicates, authority and citations outside model control. Model minimization is a cost/grounding choice, not a reason to hide permitted facts from the evaluator.
+- MapLibre/Amazon Location, standard CDK, Powertools, CloudWatch/X-Ray and bounded alerting retain the existing scale-to-zero read architecture. Origin/action/provider restrictions and finite dependencies remain.
 
-These decisions and the admitted data are frozen for release assembly. Source gaps do not trigger another provider search or redesign. [Known limitations](KNOWN_LIMITATIONS.md) gives the source disposition once; [security](SECURITY_PRIVACY.md) and [costs](COST_MODEL.md) explain its operational boundaries.
+The least-change access path is a dedicated low-privilege capability in each approved draft PR. It grants no AWS/admin, acquisition, publication or outreach authority. Source-specific facts are visible; lead state remains session-isolated. No paid plan, new source campaign, provider/service or architecture change is implied.
 
 ## Release identity
 
-The existing `review` stack uses the standard CDK synthesizer with qualifier `prismrvw`. Exact source, contract, region, package, snapshot and budget pins guard deployment. Existing-stack updates verify staged immutable data before activation. [Deployment](DEPLOYMENT.md) covers the operator gates; [release status](RELEASE_STATUS.json) binds current runtime identity to an external dated acceptance receipt without claiming a deployment from the source checkout alone.
+A source-independent external receipt binds clean heads/trees, contract graph, packages/frontend, admitted snapshots, deployed identities and actual access checks. Match health and served frontend to that receipt. [Release status](RELEASE_STATUS.json) records dated technical history; this checkout does not certify a later deployment, source refresh, video approval or submission. Historical CIDs/bytes remain immutable.

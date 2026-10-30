@@ -49,6 +49,8 @@ export default defineConfig({
         PRISM_PRIVATE_PROVIDER_OBSERVATIONS: "",
         PRISM_PRIVATE_TRANSFER_OBSERVATIONS: "",
         PRISM_PRIVATE_SOURCE_RUNS: "",
+        PRISM_OFFICIAL_PARCEL_PROFILE: "",
+        PRISM_OFFICIAL_PARCEL_PROFILE_SHA256: "",
         PRISM_SNAPSHOT_DIR: process.env.PRISM_SNAPSHOT_DIR ?? "",
       },
     },

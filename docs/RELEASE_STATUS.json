@@ -9,45 +9,23 @@
     "sourceCheckoutRule": "Resolve this checkout with Git. Its own final commit/build cannot be embedded self-referentially here. The external receipt binds the final source revision after build and deployment; the prior accepted identity is not silently promoted.",
     "retentionRule": "Use the dated access sheet and actual configured-expiry readback for current retention, capability rotation and quota headroom. This file does not extend credentials, map expiry or service availability."
   },
-  "acceptedTechnicalBaseline": {
-    "acceptedAt": "2026-10-29T06:44:22.094594+00:00",
-    "receiptName": "evidence/runtime/p7-final-runtime-acceptance.json",
-    "receiptLocation": "Accepted immutable release packet; not a file supplied by this source checkout",
-    "receiptSha256": "359e24ea8fcbd1a2ea88dd85a39d1f99948662a6018728c3ac15208ab22c9c74",
-    "status": "PASS_SCOPED_FINAL_RUNTIME_AND_NORMAL_REVIEW_ACCESS",
-    "oracle": {
-      "head": "6d14d60d15ace1a5722aada4e0bb6dc6b2114753",
-      "tree": "228b8086197fc76b6c82ad829735fef97c789583",
-      "buildId": "795193df1502b4eacc3b2e8ef04ac0ceb7f0d66b52d174e293f2b25a8a6c2ef3",
-      "archiveSha256": "62d14ccbad8f3a271f236bf0ccb006a7ad9fcd324cc8dcf087f252cea93ec865",
-      "frontendManifestSha256": "81f10e2ef42975d8ee888b40020f034176c6e260d124dc3867cacf5c0d3904fe"
-    },
-    "crm": {
-      "head": "f40b75a1d8be8e5c064c3b308312711060fddaf0",
-      "tree": "a4c3386c368ccf9f3f041051810f01eb7c88dfba",
-      "buildId": "47428e78a80729177b13f093aee890072d0e9036883d0fe328343850eaf3e26e",
-      "archiveSha256": "6bbf7c9436f3a4dc8c305506273630340c08efff67ec0b2a8f29a9171a3bfa10",
-      "frontendManifestSha256": "ae35116f6d78c80b0e7c2beb9e7f4680aa115a95b967212ca61f162ae0e0a986"
-    },
-    "meaning": "Dated accepted technical history; any later documentation/source/deployment identity requires its own external receipt. Full source outcomes, media and official submission are separate."
-  },
-  "contractVersion": "0.5.0",
-  "contractModuleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612",
   "dataProfile": {
-    "protectedProfile": "Unchanged reviewed v8 source companion",
     "sourceManifestSha256": "5d835ee72a5893b0e441c4fbe22d03ae564a3bfd5cfb248b0d88263f4404a044",
     "publicProfile": "Retained immutable public run04; public schema metadata 0.4.0",
     "publicCarSha256": "15fdf09f9ef09a1ff3b891d314292b0a0e16646e3e0545743269ba8f7cd2bbe2",
-    "meaning": "Read exact loaded public/protected identities from runtime and external release evidence; redeployment is not source refresh.",
+    "meaning": "Historical immutable public/runtime data identities are retained. New official parcel observation sidecar and actual admission use their own manifest/receipt. Legacy private/protected mode names are not source-rights classifications.",
     "sourceOutcomeAuthority": "docs/KNOWN_LIMITATIONS.md",
-    "newRuntimeSourceAdmissions": 0,
-    "paidSourceRequiredPurchasedOrNeeded": false
+    "paidSourceRequiredPurchasedOrNeeded": false,
+    "historicalV8Profile": "Unchanged reviewed v8 source companion",
+    "fieldAuthority": "docs/DATA_FIELD_AUTHORITY_MATRIX.md",
+    "historicalV8NewRuntimeSourceAdmissions": 0,
+    "historicalV8AdmissionMeaning": "Zero at the historical v8 baseline; new official observation admission is established only by the later exact manifest and external receipt, not by this count."
   },
   "recordedAccess": {
     "atAcceptedBaseline": true,
     "mapExpiresAt": "2026-11-12T08:17:25Z",
     "sessionTtlSeconds": 3600,
-    "capabilityLifetime": "Until rotation; value delivered separately, never embedded here",
+    "capabilityLifetime": "Historical separate-delivery policy; superseded by the current approved PR-contained low-privilege access instructions.",
     "converseCaps": {
       "total": 120,
       "perUtcDay": 80,
@@ -88,5 +66,83 @@
     "meaning": "Dated accepted native/hosted result; compare the actual deployed snapshot and later rehearsal receipt"
   },
   "publicationBoundary": "Historical CID1/CID2 public identities; retained run04 and current CLI/Atlas outputs local-only. New upload/Atlas/IPNS/on-chain/registry/shared-MCP effects remain unperformed and separately gated.",
-  "submissionBoundary": "Current explicit operator/Lead authority may cover local media preparation. GitHub writes, public sharing, employer communication, Ready transition and official submission remain distinct unperformed effects."
+  "submissionBoundary": "Local corrected media/PR preparation only. Exact live Human phrase APPROVE P11 V1.1 VIDEO AND DRAFT PR EFFECTS precedes upload/non-force push/draft PR creation. Slowking waits for actual playable approved media, both PRs, PR-contained runtime/access and green CI. No Ready transition or employer message is implied.",
+  "historicalP7TechnicalBaseline": {
+    "acceptedAt": "2026-10-29T06:44:22.094594+00:00",
+    "receiptName": "evidence/runtime/p7-final-runtime-acceptance.json",
+    "receiptLocation": "Accepted immutable release packet; not a file supplied by this source checkout",
+    "receiptSha256": "359e24ea8fcbd1a2ea88dd85a39d1f99948662a6018728c3ac15208ab22c9c74",
+    "status": "PASS_SCOPED_FINAL_RUNTIME_AND_NORMAL_REVIEW_ACCESS",
+    "oracle": {
+      "head": "6d14d60d15ace1a5722aada4e0bb6dc6b2114753",
+      "tree": "228b8086197fc76b6c82ad829735fef97c789583",
+      "buildId": "795193df1502b4eacc3b2e8ef04ac0ceb7f0d66b52d174e293f2b25a8a6c2ef3",
+      "archiveSha256": "62d14ccbad8f3a271f236bf0ccb006a7ad9fcd324cc8dcf087f252cea93ec865",
+      "frontendManifestSha256": "81f10e2ef42975d8ee888b40020f034176c6e260d124dc3867cacf5c0d3904fe"
+    },
+    "crm": {
+      "head": "f40b75a1d8be8e5c064c3b308312711060fddaf0",
+      "tree": "a4c3386c368ccf9f3f041051810f01eb7c88dfba",
+      "buildId": "47428e78a80729177b13f093aee890072d0e9036883d0fe328343850eaf3e26e",
+      "archiveSha256": "6bbf7c9436f3a4dc8c305506273630340c08efff67ec0b2a8f29a9171a3bfa10",
+      "frontendManifestSha256": "ae35116f6d78c80b0e7c2beb9e7f4680aa115a95b967212ca61f162ae0e0a986"
+    },
+    "meaning": "Dated accepted technical history; any later documentation/source/deployment identity requires its own external receipt. Full source outcomes, media and official submission are separate."
+  },
+  "acceptedTechnicalBaseline": {
+    "acceptedAt": "2026-10-30T01:41:42.839238+00:00",
+    "proofFinalizedAt": "2026-10-30T02:29:08.494262+00:00",
+    "receiptPathWithinAcceptedReturn": "evidence/runtime/p10-final-hosted-first-use.json",
+    "receiptSha256": "738104b42bb048a571b41e62fcad018a2edcf1f0e915a424d374f55150d91b03",
+    "sourceReturnSha256": "ec9768a28ced23d268d92e4463942d21bd5f3e865fe2642a36d41b1d3ab40508",
+    "applications": {
+      "oracle": {
+        "identity": {
+          "application": "oracle",
+          "head": "78515e090bab0a425a4471804b0e95191e9c7da6",
+          "tree": "8cfd780a241df1e2ece20b3c608c408c3091abfe",
+          "buildId": "3eaaa8c4aea8aef8d889a2815a1c0d7e0454ac8f38307405fb3af0c94d500afd",
+          "sourceDirty": false,
+          "contractVersion": "0.5.0",
+          "contractSha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+          "region": "us-east-2",
+          "stage": "review"
+        },
+        "archiveSha256": "a435138274ffe6970ebf33120240c2a25a5d5a47f0be0c6df969430948af6391",
+        "frontendManifestSha256": "764b3ff5c8184312465699ea020799aa208933ec4c56961523523a328cf522e3",
+        "snapshotId": "oakland-real-ad414e5e71b11e3359ab-protected-7a4ceb771e832bab0003",
+        "snapshotDigest": "7a4ceb771e832bab0003d805f8183bbc20cc2d9733364353a64ea0c49095c5f4"
+      },
+      "crm": {
+        "identity": {
+          "application": "crm",
+          "head": "99ade4e718ebc525f8abb6ad9f5b851e4ffa8048",
+          "tree": "e9c8a3492eefc09e296f5b72c24650be41dbba18",
+          "buildId": "6b2b33b776b6b4feb8c196aaff7396e2464de4c3a75391ffedd8b9c924c698fd",
+          "sourceDirty": false,
+          "contractVersion": "0.5.0",
+          "contractSha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+          "region": "us-east-2",
+          "stage": "review"
+        },
+        "archiveSha256": "9b884744e79210ae6cc42f87a4bbcd4652c9ccc7dde5250ff4b86e66617ede33",
+        "frontendManifestSha256": "d8521f4f3e683da7a97aa383252e3effbac327576141d027b03d245786e15a85",
+        "snapshotId": "oakland-real-ad414e5e71b11e3359ab-protected-7a4ceb771e832bab0003",
+        "snapshotDigest": "7a4ceb771e832bab0003d805f8183bbc20cc2d9733364353a64ea0c49095c5f4"
+      }
+    },
+    "meaning": "Accepted technical history only. Its masked media/data-boundary interpretation is superseded. No later source, observation admission, deployment or media is certified by this record."
+  },
+  "historicalBaselineContract": {
+    "version": "0.5.0",
+    "moduleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612"
+  },
+  "sourceContractAuthority": "Read the producer/consumer packages/contracts/contract_manifest.json and match the final external release receipt; do not infer current deployment from this documentation.",
+  "evaluatorAccess": {
+    "mode": "Existing low-privilege application capability in the approved draft PR access section",
+    "firstUseRequiresPrivateEmail": false,
+    "privilegedCredentialsInSourceOrMedia": false,
+    "literalCapabilityStoredInThisSource": false,
+    "currentQuotaRetentionAndCode": "Read the approved PR and dated external access receipt; no static source field extends them."
+  }
 }

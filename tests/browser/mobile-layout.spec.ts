@@ -38,7 +38,14 @@ const fixtures = syntheticProperties(3).map((property, index) =>
   }),
 );
 
-async function openReact(page: Page, baseURL: string | undefined) {
+import { projectOfficialParcelObservation } from "../../packages/county/src/official-parcel.ts";
+import { officialProfileFixture } from "../official-parcel.fixture.ts";
+
+async function openReact(
+  page: Page,
+  baseURL: string | undefined,
+  properties = fixtures,
+) {
   if (!baseURL) throw new Error("Explicit loopback baseURL required");
   const base = new URL(baseURL);
   if (
@@ -72,8 +79,8 @@ async function openReact(page: Page, baseURL: string | undefined) {
           snapshotDigest: "a".repeat(64),
           mode: "real",
           dataMode: "synthetic",
-          count: fixtures.length,
-          addressCount: fixtures.length,
+          count: properties.length,
+          addressCount: properties.length,
           buildId: "synthetic-mobile-layout-regression",
           accessMode: "local",
           contractVersion: CONTRACT_VERSION,
@@ -89,7 +96,7 @@ async function openReact(page: Page, baseURL: string | undefined) {
       currentHash = createHash("sha256")
         .update(JSON.stringify(query))
         .digest("hex");
-      const rows = fixtures
+      const rows = properties
         .filter((property) => propertyMatchesQuery(property, query))
         .map((property) => ({
           ...property,
@@ -120,7 +127,7 @@ async function openReact(page: Page, baseURL: string | undefined) {
       const id = decodeURIComponent(
         url.pathname.slice("/api/properties/".length),
       );
-      const property = fixtures.find((row) => row.id === id);
+      const property = properties.find((row) => row.id === id);
       if (property && url.searchParams.get("snapshotId") === SNAPSHOT)
         return route.fulfill({ json: property });
     }
@@ -302,3 +309,89 @@ for (const viewport of [
       await context.close();
     }
   });
+
+for (const width of [390, 360])
+  for (const state of [
+    "observed_value",
+    "observed_null_or_empty",
+    "not_observed_in_retained_record",
+  ] as const)
+    test(`${width}: official postal ${state} and long provenance remain visible without overflow`, async ({
+      page,
+      baseURL,
+    }, info) => {
+      await page.setViewportSize({ width, height: 844 });
+      const attributes = {
+        OBJECTID_12: 1,
+        PIN: "SYNTHETIC-PIN",
+        NAME1: "SYNTHETIC_OWNER_" + "X".repeat(850),
+        NAME2: null,
+        ...(state === "not_observed_in_retained_record"
+          ? {}
+          : {
+              POSTALADDRESS:
+                state === "observed_value"
+                  ? "SYNTHETIC_MAILING_" + "Y".repeat(850) + " MI 00000"
+                  : null,
+            }),
+      };
+      const raw = JSON.stringify(attributes);
+      const observation = projectOfficialParcelObservation(
+        {
+          property_id: "oakland-parcel-1",
+          native_id: "1",
+          source_record_json: raw,
+          record_digest: createHash("sha256").update(raw).digest("hex"),
+          observed_at: "2026-10-28T03:18:00.000Z",
+        },
+        officialProfileFixture(),
+      );
+      const first = PropertySchema.parse({
+        ...fixtures[0]!,
+        id: "oakland-parcel-1",
+        nativeId: "1",
+        ownership: {
+          ...fixtures[0]!.ownership,
+          ownerRegion: observation.ownerLocation.ownerRegion,
+          officialParcelObservation: observation,
+        },
+      });
+      const f = await openReact(page, baseURL, [first, ...fixtures.slice(1)]);
+      await page
+        .getByRole("button", { name: /^Inspect evidence for / })
+        .first()
+        .click();
+      const section = page.locator(".official-parcel-observation");
+      await section.scrollIntoViewIfNeeded();
+      await expect(section).toBeVisible();
+      await expect(section).toContainText(state);
+      await expect(section).toContainText(observation.recordSha256);
+      await expect(section).toContainText("SYNTHETIC-PIN");
+      if (state === "observed_value")
+        await expect(section).toContainText(
+          observation.postalAddressAsObserved!,
+        );
+      const measured = await section.evaluate((node) => ({
+        sectionWidth: node.getBoundingClientRect().width,
+        sectionScroll: node.scrollWidth,
+        pageWidth: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+        codes: [...node.querySelectorAll("code")].map((code) => ({
+          width: code.getBoundingClientRect().width,
+          scroll: code.scrollWidth,
+        })),
+      }));
+      expect(measured.sectionScroll).toBeLessThanOrEqual(
+        measured.sectionWidth + 1,
+      );
+      expect(measured.pageWidth).toBeLessThanOrEqual(measured.viewport + 1);
+      expect(f.errors).toEqual([]);
+      await info.attach("official-observation-mobile-layout", {
+        body: JSON.stringify(
+          { transport: "SYNTHETIC_API_ACTUAL_REACT", width, state, measured },
+          null,
+          2,
+        ),
+        contentType: "application/json",
+      });
+    });

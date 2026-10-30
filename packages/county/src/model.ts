@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
+import type { SourceFieldProfile } from "../../source-profiles/src/field-authority.ts";
 export const TRANSFORM_VERSION = "oakland-public-v3";
 export const OWNER_DERIVATION_VERSION = "postal-state-v2-exact-tokens";
+/** Historical approved publication projection, not a ban on official runtime fields. */
 export const PUBLIC_PARCEL_FIELDS = [
   "OBJECTID_12",
   "OBJECTID",
@@ -42,6 +44,8 @@ export interface SourceLayer {
   objectIdsPath: string;
   pages: SourcePage[];
   schemaDigest?: string;
+  sourceProfile?: SourceFieldProfile;
+  sourceFieldClassificationDigest?: string;
 }
 export interface CountySourceManifest {
   version: string;
@@ -105,7 +109,7 @@ export type OwnerDerivative = {
   siteAddressMatch: boolean | null;
   evidenceClass: "derived_deterministically" | "unknown";
 };
-/** Protected input only. Never returns or logs the owner postal value. No county inference from ZIP. */
+/** Deterministic derivative of a source-observed postal string; no county inference from ZIP. */
 export function deriveOwnerLocation(
   postal: unknown,
   siteAddress: unknown,
@@ -157,7 +161,7 @@ export const COUNTY_LIMITATIONS = [
   "Official Site Address points approximate parcel centers and may be stacked; they are not surveyed roof locations.",
   "Exact PIN joins retain all source-native records and all address associations, including unmatched address-only entities.",
   "Roof age, permits, ownership-transfer tenure, verified contractors/licenses and ratings remain unknown unless separately sourced.",
-  "Public artifacts contain no owner names or postal/contact values. Optional owner-location derivatives belong only to protected operational storage.",
+  "Official owner/mail observations are governed by their source-specific availability and terms; runtime display is separate from exact-byte approval for irreversible publication.",
   "A source revision timestamp is not an ownership-transfer or roof-installation date.",
 ];
 export const PROPERTY_RELATION_SELECT_SQL = `SELECT id,source_id,native_id,pin,keypin,revision_date,jurisdiction_code,jurisdiction_name,class_code,address,city,state,postal_code,content_hash,observed_at FROM parcels UNION ALL SELECT 'oakland-address-'||a.native_id AS id,a.source_id,a.native_id,a.pin,NULL AS keypin,NULL AS revision_date,NULL AS jurisdiction_code,NULL AS jurisdiction_name,NULL AS class_code,a.address,a.city,a.state,a.postal_code,a.content_hash,a.observed_at FROM site_addresses a WHERE NOT EXISTS(SELECT 1 FROM parcels p WHERE p.pin IS NOT NULL AND p.pin=a.pin)`;

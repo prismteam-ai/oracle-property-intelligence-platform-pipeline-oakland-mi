@@ -6,7 +6,9 @@ import {
   PermitActivityClaimSchema,
 } from "./source-observations.ts";
 export * from "./source-observations.ts";
-export const CONTRACT_VERSION = "0.5.0" as const;
+import { OfficialParcelObservationSchema } from "./official-parcel-observation.ts";
+export * from "./official-parcel-observation.ts";
+export const CONTRACT_VERSION = "0.6.0" as const;
 export const EvidenceState = z.enum([
   "confirmed_present",
   "confirmed_empty",
@@ -164,6 +166,7 @@ export const PropertySchema = z
     }),
     permits: z.array(PermitSchema),
     ownership: z.object({
+      officialParcelObservation: OfficialParcelObservationSchema.optional(),
       recordedTransferIndexObservations: z
         .array(RecordedTransferIndexObservationSchema)
         .max(20)
@@ -241,6 +244,9 @@ export const PropertySchema = z
   })
   .superRefine((property, ctx) => {
     if (
+      (property.ownership.officialParcelObservation !== undefined &&
+        property.ownership.officialParcelObservation.canonicalPropertyId !==
+          property.id) ||
       property.permits.some((permit) =>
         (permit.sourceObservations ?? []).some(
           (row) => row.canonicalPropertyId !== property.id,

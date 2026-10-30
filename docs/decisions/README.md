@@ -8,3 +8,5 @@
 - [Blue/green neutral review migration](006-region-migration.md)
 - [Original assignment and moving engineering guidance](007-moving-guidance.md)
 - [Immutable publication and CLI/Atlas distinction](008-publication-status.md)
+
+- [Source-specific facts, runtime access and exact-byte publication approval](009-source-specific-data-boundaries.md) — current authority for data boundaries.

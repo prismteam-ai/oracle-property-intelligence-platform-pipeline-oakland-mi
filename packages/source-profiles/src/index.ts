@@ -24,12 +24,17 @@ export const oaklandParcelProfile = Object.freeze({
     "NUM_BATHS",
     "STRUCTURE_DESC",
     "LIVING_AREA_SQFT",
+    "NAME1",
+    "NAME2",
+    "POSTALADDRESS",
     "Shape",
   ],
-  excluded: ["NAME1", "NAME2", "POSTALADDRESS", "PHONE", "EMAIL"],
+  notInSource: ["PHONE", "EMAIL"],
+  fieldAuthority:
+    "Use a timestamped source-specific field classification and terms digest; metadata presence alone does not establish populated values.",
   limitations: [
     "GIS features are not the certified assessed-property population",
-    "Source rights and immutable publication require later approval",
+    "Source-specific terms govern use; irreversible publication requires exact Human approval",
     "Parcel metadata does not establish roof age, ownership transfer or permit history",
   ],
 } as const);

@@ -24,6 +24,11 @@ import {
 import { quote, verifySnapshotDirectory } from "./real-utils.ts";
 import { loadSourceObservations } from "./real-source-observations.ts";
 import { loadFullSources } from "./real-full-sources.ts";
+import {
+  validateOfficialParcelProfile,
+  parsePinnedOfficialParcelProfile,
+  type OfficialParcelProfileEnvelope,
+} from "../../county/src/official-parcel.ts";
 import type {
   SnapshotOpenOptions,
   SnapshotConstructionArguments,
@@ -176,6 +181,11 @@ export async function loadRealSnapshot<T>(
       await db.run(
         "CREATE TABLE owner_derivatives(property_id VARCHAR,owner_region VARCHAR,location_class VARCHAR,site_address_match BOOLEAN,observed_at VARCHAR,evidence_class VARCHAR)",
       );
+    // Preserve county-derived values before independent source precedence updates.
+    // A view would follow the later Troy UPDATE and would not be a baseline.
+    await db.run(
+      "CREATE TEMP TABLE county_owner_derivative_baseline AS SELECT property_id,owner_region,location_class,site_address_match,evidence_class FROM owner_derivatives",
+    );
     if (options.protectedEnrichmentFile) {
       await checkPrivate(
         options.protectedEnrichmentFile,
@@ -381,6 +391,39 @@ export async function loadRealSnapshot<T>(
       allowedSourcePaths,
       overlayDigests,
     });
+    let officialParcelProfile: OfficialParcelProfileEnvelope | undefined;
+    if (options.officialParcelProfileFile) {
+      await checkPrivate(
+        options.officialParcelProfileFile,
+        options.officialParcelProfileSha256,
+      );
+      officialParcelProfile = parsePinnedOfficialParcelProfile(
+        await readFile(options.officialParcelProfileFile),
+        options.officialParcelProfileSha256,
+      );
+      const county = fullSources.find(
+        (source) => source.role === "county-parcels",
+      );
+      if (!county)
+        throw new Error(
+          "Official parcel observations require the pinned retained county source",
+        );
+      validateOfficialParcelProfile(
+        officialParcelProfile,
+        county,
+        verified.manifest.snapshotId,
+      );
+      overlayDigests.push(
+        "official-public-profile:" + options.officialParcelProfileSha256,
+      );
+      await db.run(
+        "CREATE VIEW official_parcel_observations AS SELECT property_id,native_id,source_record_json,record_digest,observed_at FROM private_county_parcels WHERE property_id IS NOT NULL",
+      );
+    } else {
+      await db.run(
+        "CREATE TABLE official_parcel_observations(property_id VARCHAR,native_id VARCHAR,source_record_json VARCHAR,record_digest VARCHAR,observed_at VARCHAR)",
+      );
+    }
     if (
       sourceIntakeCount +
         fullSourceAudits
@@ -452,6 +495,7 @@ export async function loadRealSnapshot<T>(
       fullSourceAudits,
       sourceObservationAudit,
       temporaryDirectory,
+      officialParcelProfile,
     );
   } catch (error) {
     db.closeSync();

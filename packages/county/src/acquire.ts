@@ -3,6 +3,10 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import { assertPrivateDestination } from "../../receipts/src/private-paths.ts";
 import { sha256, stableJson, sourceOid, type SourcePage } from "./model.ts";
+import {
+  validateSourceFieldProfile,
+  type SourceFieldProfile,
+} from "../../source-profiles/src/field-authority.ts";
 export interface HttpReply {
   status: number;
   headers: Record<string, string>;
@@ -325,9 +329,9 @@ export async function acquireFrozenLayer(options: {
   privateDirectory: string;
   termsDigest: string;
   fieldClassificationDigest: string;
+  sourceProfile: SourceFieldProfile;
   returnGeometry: boolean;
   batchSize?: number;
-  includeProtectedOwnerPostal?: boolean;
   afterPage?: (page: SourcePage) => Promise<void>;
 }): Promise<SourcePage[]> {
   if (
@@ -339,15 +343,12 @@ export async function acquireFrozenLayer(options: {
     );
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(options.oidField))
     throw new Error("Invalid source OID column");
-  if (
-    options.fields.includes("POSTALADDRESS") &&
-    !options.includeProtectedOwnerPostal
-  )
-    throw new Error("Protected owner postal purpose must be explicit");
-  if (options.fields.some((f) => /NAME1|NAME2|PHONE|EMAIL/i.test(f)))
-    throw new Error(
-      "Owner names/contact fields are excluded from this producer",
-    );
+  validateSourceFieldProfile(options.sourceProfile, {
+    sourceUrl: options.source,
+    termsSha256: options.termsDigest,
+    fieldClassificationDigest: options.fieldClassificationDigest,
+    requestedFields: options.fields,
+  });
   const ids = [...options.ids].sort((a, b) => a - b);
   if (
     new Set(ids).size !== ids.length ||
@@ -368,7 +369,6 @@ export async function acquireFrozenLayer(options: {
       fieldClassificationDigest: options.fieldClassificationDigest,
       returnGeometry: options.returnGeometry,
       batchSize,
-      includeProtectedOwnerPostal: options.includeProtectedOwnerPostal ?? false,
     }),
   );
   const pages: SourcePage[] = [];

@@ -4,7 +4,11 @@ import type {
 } from "../../../packages/contracts/src/index.ts";
 import type { Health } from "./model.ts";
 import { roofBasis } from "./model.ts";
-import { PermitSourceDetails, DeedSourceDetails } from "./source-details.tsx";
+import {
+  PermitSourceDetails,
+  DeedSourceDetails,
+  isRestrictedProviderPermit,
+} from "./source-details.tsx";
 import { MunicipalSource } from "./municipal-source.tsx";
 export function EvidenceDetails({
   selected,
@@ -63,6 +67,15 @@ export function EvidenceDetails({
           </dd>
           <dt>Source-native ID</dt>
           <dd>{selected.nativeId}</dd>
+          <dt>Official point coordinates</dt>
+          <dd>
+            {selected.coordinates
+              ? `${selected.coordinates.lat}, ${selected.coordinates.lng}`
+              : "Unavailable"}{" "}
+            ·{" "}
+            {selected.coordinateBasis ??
+              "source point, not a surveyed roof location"}
+          </dd>
           <dt>Roof evidence</dt>
           <dd>
             {selected.roof.ageYears ?? "Unknown"} years ·{" "}
@@ -78,6 +91,115 @@ export function EvidenceDetails({
             · {selected.ownership.historyCoverage} coverage
           </dd>
         </dl>
+        {!!selected.ownership.locationProvenance?.length && (
+          <section
+            className="notice compact selected-owner-location-evidence"
+            style={{ overflowWrap: "anywhere" }}
+          >
+            <h3>Selected owner-location evidence</h3>
+            <p>
+              {selected.ownership.ownerRegion} ·{" "}
+              {selected.ownership.locationClass ?? "unknown"} · observed{" "}
+              {selected.ownership.observedAt ?? "unknown"}. These selected
+              source values govern owner-location filters.
+              {selected.ownership.officialParcelObservation &&
+                " A separate county observation retains its own basis below."}
+            </p>
+            {selected.ownership.locationProvenance.map((p) => (
+              <p key={`${p.sourceId}:${p.recordId}`}>
+                {p.sourceId} · {p.recordId} · observed {p.observedAt}
+              </p>
+            ))}
+          </section>
+        )}
+        {selected.ownership.officialParcelObservation &&
+          (() => {
+            const observation = selected.ownership.officialParcelObservation;
+            const shown = (value: string | null) =>
+              value === null
+                ? "Not available in this retained observation"
+                : value.trim()
+                  ? value
+                  : "Empty in source";
+            return (
+              <section
+                className="notice compact official-parcel-observation"
+                data-source-classification="official_public"
+              >
+                <h3>Official parcel ownership and mailing observation</h3>
+                <p>
+                  Name 1: {shown(observation.name1)} ·{" "}
+                  {observation.fieldAvailability.NAME1}
+                </p>
+                <p>
+                  Name 2: {shown(observation.name2)} ·{" "}
+                  {observation.fieldAvailability.NAME2}
+                </p>
+                <p>
+                  Mailing address as observed:{" "}
+                  {shown(observation.postalAddressAsObserved)} ·{" "}
+                  {observation.fieldAvailability.POSTALADDRESS}
+                </p>
+                <p>
+                  {observation.ownerLocation.ownerRegion} ·{" "}
+                  {observation.ownerLocation.locationClass}; derived from this
+                  exact postal observation, not verified residence or ownership
+                  tenure.
+                </p>
+                <p>
+                  {observation.sourceId} · native {observation.nativeId} · PIN{" "}
+                  {observation.pin ?? "Unavailable"} · observed{" "}
+                  {observation.observedAt}
+                </p>
+                <a
+                  href={observation.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Official county source
+                </a>
+                <p>
+                  Source record <code>{observation.recordSha256}</code> · terms{" "}
+                  <code>{observation.termsSha256}</code>
+                </p>
+                {observation.limitations.map((limitation) => (
+                  <p key={limitation}>{limitation}</p>
+                ))}
+              </section>
+            );
+          })()}
+        {(selected.ownership.reportedOwnerObservations ?? []).map(
+          (observation, index) => (
+            <section
+              className="notice compact"
+              data-source-classification="official_public"
+              key={`${observation.sourceLabel}:${index}`}
+            >
+              <h3>
+                {observation.sourceLabel}: {observation.reportedName}
+              </h3>
+              <p>
+                Source-reported party; legal ownership, effective date and role
+                remain unverified.
+              </p>
+              {observation.mailingAddress && (
+                <p>
+                  {Object.values(observation.mailingAddress)
+                    .filter((value) => value !== null)
+                    .join(" · ")}
+                </p>
+              )}
+              {observation.provenance.map((p) => (
+                <p key={p.recordId}>
+                  {p.sourceId} · {p.recordId} · {p.observedAt}
+                </p>
+              ))}
+              {observation.limitations.map((text) => (
+                <p key={text}>{text}</p>
+              ))}
+            </section>
+          ),
+        )}
         {selected.roof.caveats.map((c) => (
           <p className="notice compact" key={c}>
             {c}
@@ -131,16 +253,13 @@ export function EvidenceDetails({
         <h3>Permits and contractor evidence</h3>
         {selected.permits.map((p) => (
           <article
-            className={
-              "detail-permit" +
-              (health?.dataMode === "protected-real"
-                ? " private-protected-evidence"
-                : "")
-            }
-            data-private-evidence={
-              health?.dataMode === "protected-real" ? "true" : undefined
-            }
+            className="detail-permit"
             key={p.id}
+            data-private-evidence={
+              isRestrictedProviderPermit(p)
+                ? "provider-derived-permit"
+                : undefined
+            }
           >
             <strong>{p.permitNumber ?? p.id}</strong>
             <PermitSourceDetails permit={p} />

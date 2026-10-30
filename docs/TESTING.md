@@ -25,3 +25,9 @@ These results bind the exact accepted heads/packages in [release status](RELEASE
 The external release receipt must bind clean source head/tree, contract/module graph, lockfile, Lambda ZIP, frontend assets, public/protected snapshot and deployed identity. Repeat clean first use, API/MCP, model/map, lead/session isolation, expiry/logout/revocation, telemetry, privacy and independent review for that identity. Preserve failed attempts and quota consumption. Native BugBot was unavailable in the accepted baseline; its independent fallback is explicitly labeled and is not a native invocation.
 
 [The release checklist](RELEASE_CHECKLIST.md) separates local, hosted, privacy, media and submission gates. A plan or successful health response is not complete acceptance; CI does not promote missing business outcomes.
+
+## Source-specific official facts and release access
+
+The current release must verify that official owner fields are not categorically banned; null/absent fields stay null/absent; metadata/terms/record digests and field classifications are bound; postal-only observations do not invent a named owner; regional derivation retains its raw basis; and permitted official facts are visible through the actual UI/API/MCP contract. Restricted-source publication and actual secret/log/media controls remain. Verify all sixteen Oracle onboarding stages and a deterministic, unuploaded field-level publication candidate.
+
+Rehearse first use from the proposed PR instructions alone, including the deliberately issued low-privilege application capability, actual release identity, finite quota and retention. Current exact-head CI/native/hosted/media receipts are required after code/data changes. These are acceptance requirements, not claims that this documentation revision ran them. Native Bugbot availability is reported separately; a labeled independent fallback is not a native invocation or official employer score.

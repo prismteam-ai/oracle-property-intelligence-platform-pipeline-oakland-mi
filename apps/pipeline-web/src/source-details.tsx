@@ -2,16 +2,32 @@ import type {
   Permit,
   Property,
 } from "../../../packages/contracts/src/index.ts";
+/** Match parent provenance to its validated provider observation, not an ID/name pattern. */
+export function isRestrictedProviderPermit(permit: Permit) {
+  return (
+    !!permit.sourceObservations?.length &&
+    permit.provenance.length > 0 &&
+    permit.provenance.every((citation) =>
+      permit.sourceObservations!.some(
+        (row) =>
+          row.provenance.sourceId === citation.sourceId &&
+          row.providerRecordId === citation.recordId &&
+          row.provenance.recordDigest === citation.digest,
+      ),
+    )
+  );
+}
 export function PermitSourceDetails({ permit }: { permit: Permit }) {
   return (
     <>
       {(permit.sourceObservations ?? []).map((row) => (
         <section
-          className="notice compact private-protected-evidence"
+          className="notice compact restricted-source-evidence private-protected-evidence"
+          data-source-classification="restricted_source"
           data-private-evidence
           key={row.providerRecordId}
         >
-          <h4>Protected provider source observation</h4>
+          <h4>Terms-restricted provider source observation</h4>
           {permit.kind === "other" && (
             <p>
               Classification disagreement: provider ROOFING; retained municipal
@@ -49,8 +65,8 @@ export function PermitSourceDetails({ permit }: { permit: Permit }) {
             role unverified
           </p>
           <p>
-            Source {row.provenance.sourceId} · protected display only · no
-            public redistribution
+            Source {row.provenance.sourceId} · source-specific evaluator use ·
+            no public redistribution of restricted provider records
           </p>
           <code>{row.provenance.recordDigest}</code>
           {row.limitations.map((text) => (
@@ -67,11 +83,11 @@ export function DeedSourceDetails({ property }: { property: Property }) {
       {(property.ownership.recordedTransferIndexObservations ?? []).map(
         (row) => (
           <section
-            className="notice compact private-protected-evidence"
-            data-private-evidence
+            className="notice compact"
+            data-source-classification="official_public"
             key={row.reference.recordSha256}
           >
-            <h3>Protected official recorded-deed index observation</h3>
+            <h3>Official recorded-deed index observation</h3>
             <p>
               {row.noDeedObservedForMoreThanTenYears
                 ? "No recorded deed transfer was observed for more than ten years in this current-PIN official-index query."
@@ -96,7 +112,7 @@ export function DeedSourceDetails({ property }: { property: Property }) {
             </p>
             <p>
               Witness {row.witnessTiming.replaceAll("_", " ")} · observed{" "}
-              {row.reference.observedAt} · protected official-host receipt{" "}
+              {row.reference.observedAt} · official-host receipt{" "}
               <a
                 href={row.reference.sourceUrl}
                 target="_blank"

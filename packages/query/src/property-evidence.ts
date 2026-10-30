@@ -5,14 +5,16 @@ export interface PropertyEvidence {
   addresses: Row[];
   count: Row[];
   owner: Row[];
+  countyOwnerBaseline: Row[];
   reportedOwners: Row[];
+  officialParcel: Row[];
   locationProvenance: Row[];
   enrichment: Row[];
   assessmentCaveats: Row[];
   permits: Row[];
   deedObservations: Row[];
 }
-/** Nine bounded reads per page, rather than nine reads for every property. */
+/** Bounded batch reads per page, rather than repeated reads for every property. */
 export async function loadPropertyEvidence(
   connection: DuckDBConnection,
   propertyIds: readonly string[],
@@ -27,7 +29,9 @@ export async function loadPropertyEvidence(
         addresses: [],
         count: [{ n: "0" }],
         owner: [],
+        countyOwnerBaseline: [],
         reportedOwners: [],
+        officialParcel: [],
         locationProvenance: [],
         enrichment: [],
         assessmentCaveats: [],
@@ -41,6 +45,10 @@ export async function loadPropertyEvidence(
     "IN(SELECT json_extract_string(value,'$') FROM json_each($ids))";
   const queries: [keyof PropertyEvidence, string][] = [
     [
+      "officialParcel",
+      `SELECT property_id AS __property_id,* FROM official_parcel_observations WHERE property_id ${members} ORDER BY property_id,native_id`,
+    ],
+    [
       "addresses",
       `SELECT * EXCLUDE(__rank) FROM (SELECT l.property_id AS __property_id,a.*,row_number() OVER(PARTITION BY l.property_id ORDER BY a.id) AS __rank FROM parcel_address_links l JOIN site_addresses a ON a.id=l.address_id WHERE l.property_id ${members}) WHERE __rank<=25 ORDER BY __property_id,id`,
     ],
@@ -51,6 +59,10 @@ export async function loadPropertyEvidence(
     [
       "owner",
       `SELECT property_id AS __property_id,* FROM owner_derivatives WHERE property_id ${members} ORDER BY property_id,rowid`,
+    ],
+    [
+      "countyOwnerBaseline",
+      `SELECT property_id AS __property_id,* FROM county_owner_derivative_baseline WHERE property_id ${members} ORDER BY property_id,rowid`,
     ],
     [
       "reportedOwners",

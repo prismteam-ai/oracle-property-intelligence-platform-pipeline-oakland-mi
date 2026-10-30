@@ -31,6 +31,11 @@ import {
 } from "../../county/src/private-full-source.ts";
 import { text, type Row } from "./real-utils.ts";
 import { loadRealSnapshot } from "./real-loader.ts";
+import {
+  projectOfficialParcelObservation,
+  type OfficialParcelProfileEnvelope,
+} from "../../county/src/official-parcel.ts";
+import { assertOfficialOwnerDerivativeCompatible } from "../../county/src/official-parcel-derivatives.ts";
 import type { SnapshotOpenOptions } from "./real-loader-types.ts";
 export { verifySnapshotDirectory } from "./real-utils.ts";
 const distanceSql =
@@ -61,6 +66,7 @@ export class RealSnapshot {
     readonly fullSourceAudits: readonly FullSourceAudit[],
     readonly sourceObservationAudit: import("./real-source-observations.ts").SourceObservationAudit,
     private temporaryDirectory: string,
+    private officialParcelProfile?: OfficialParcelProfileEnvelope,
   ) {
     this.publicSnapshotId = manifest.snapshotId;
     this.protectedSignals = overlayDigests.length > 0;
@@ -87,18 +93,36 @@ export class RealSnapshot {
     this.addressCount = manifest.addressCount;
     this.coverage = [
       coverage,
+      ...(officialParcelProfile
+        ? [
+            {
+              source:
+                "Official Oakland parcel ownership/contact field availability",
+              classification: "official_public",
+              retainedSourceRecords: officialParcelProfile.sourceRecordCount,
+              availability: officialParcelProfile.availability,
+              termsUrl: officialParcelProfile.profile.termsUrl,
+              termsSha256: officialParcelProfile.profile.termsSha256,
+              limitations: [
+                "Current field counts are a separate finite observation, not a reload of the historical snapshot.",
+                "Source-reported mailing/name values are not verified ownership or tenure; absent phone/email are not invented.",
+                "Runtime availability and exact-byte Human approval for irreversible publication are distinct.",
+              ],
+            },
+          ]
+        : []),
       ...(overlayDigests.length
         ? [
             {
-              source: "Protected operational observations",
+              source: "Source-backed operational observations",
               scope:
-                "Authenticated operational model only; excluded from public artifacts",
+                "Official facts and terms-restricted provider observations retain distinct source classifications; public publication is a separate decision",
               state: "partial",
               count: null,
               limitations: [
                 "Owner location is derived from postal state, not a county or tenure inference.",
                 "Official sales cohorts are partial; built year is a low-confidence roof proxy, not an observed replacement.",
-                "No private observation is promoted to public bytes without redistribution approval.",
+                "Runtime display does not authorize irreversible bulk publication; restricted-provider terms do not restrict unrelated official Open Data.",
                 "Troy permit observations are a bounded cohort selected by the visible roof-description filter. Original non-roof permit types remain retained; only explicit roofing scope qualifies for roofing predicates. Issuance does not establish open status or completed work.",
                 "Property views retain only clearly reported business Applicants with contractor role unverified. The full source working intake retains original Applicant values privately; license metadata describes the reported business.",
               ],
@@ -301,7 +325,9 @@ export class RealSnapshot {
       addresses,
       count,
       owner,
+      countyOwnerBaseline,
       reportedOwners,
+      officialParcel,
       locationProvenance,
       enrichment,
       assessmentCaveats,
@@ -334,6 +360,36 @@ export class RealSnapshot {
     const representative =
       siteAddresses.find((a) => a.coordinates)?.coordinates ?? null;
     const o = owner[0];
+    const officialObservation =
+      officialParcel.length && this.officialParcelProfile
+        ? projectOfficialParcelObservation(
+            officialParcel[0]!,
+            this.officialParcelProfile,
+          )
+        : undefined;
+    if (officialObservation)
+      assertOfficialOwnerDerivativeCompatible(
+        officialObservation,
+        countyOwnerBaseline[0],
+      );
+    const selectedLocationProvenance = locationProvenance.length
+      ? locationProvenance.map(
+          (p) => JSON.parse(String(p.canonical_json)) as unknown,
+        )
+      : officialObservation
+        ? [
+            {
+              sourceId: officialObservation.sourceId,
+              recordId: officialObservation.nativeId,
+              observedAt: officialObservation.observedAt,
+              digest: officialObservation.recordSha256,
+              kind: "real-public" as const,
+            },
+          ]
+        : undefined;
+    const selectedLocationObservedAt = locationProvenance.length
+      ? (o?.observed_at ?? null)
+      : (officialObservation?.observedAt ?? o?.observed_at ?? null);
     const builtYears = [
       ...new Set(
         enrichment
@@ -437,6 +493,11 @@ export class RealSnapshot {
             },
       ),
       ownership: {
+        ...(officialObservation
+          ? {
+              officialParcelObservation: officialObservation,
+            }
+          : {}),
         ...(deedObservations.length
           ? {
               recordedTransferIndexObservations: deedObservations.map(
@@ -451,11 +512,9 @@ export class RealSnapshot {
               ),
             }
           : {}),
-        ...(locationProvenance.length
+        ...(selectedLocationProvenance
           ? {
-              locationProvenance: locationProvenance.map(
-                (p) => JSON.parse(String(p.canonical_json)) as unknown,
-              ),
+              locationProvenance: selectedLocationProvenance,
             }
           : {}),
         lastTransferDate: null,
@@ -490,7 +549,7 @@ export class RealSnapshot {
         ownerRegion: o?.owner_region ?? "unknown",
         locationClass: o?.location_class ?? "unknown",
         siteAddressMatch: o?.site_address_match ?? null,
-        observedAt: o?.observed_at ?? null,
+        observedAt: selectedLocationObservedAt,
         evidenceClass: o?.evidence_class ?? "unknown",
       },
       provenance: provenance(row),
@@ -692,7 +751,7 @@ export class RealSnapshot {
           : []),
         ...(this.protectedSignals
           ? [
-              "Protected owner location is derived from postal state; no ownership tenure is inferred.",
+              "Owner location is derived from a source-observed postal state; no ownership tenure is inferred.",
             ]
           : []),
         ...(q.minReportedSaleAgeYears !== undefined

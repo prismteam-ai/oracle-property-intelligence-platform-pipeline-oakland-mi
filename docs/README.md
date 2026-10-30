@@ -4,6 +4,10 @@ Start with the [evaluator guide](EVALUATOR_GUIDE.md) to use the hosted workspace
 
 ## Current guides
 
+- [County onboarding: all sixteen referenced stages](COUNTY_ONBOARDING_ALIGNMENT.md)
+- [Field authority and every data boundary](DATA_FIELD_AUTHORITY_MATRIX.md)
+- [Current source-specific classification decision](decisions/009-source-specific-data-boundaries.md)
+
 - [Architecture and decisions](ARCHITECTURE.md)
 - [Data coverage and source semantics](DATA_COVERAGE.md)
 - [Local development](LOCAL_DEVELOPMENT.md)

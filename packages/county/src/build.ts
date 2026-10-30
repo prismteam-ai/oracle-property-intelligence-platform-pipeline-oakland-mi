@@ -9,6 +9,7 @@ import {
 import path from "node:path";
 import { DuckDBInstance, type DuckDBAppender } from "@duckdb/node-api";
 import { CONTRACT_VERSION } from "../../contracts/src/index.ts";
+import { validateSourceFieldProfile } from "../../source-profiles/src/field-authority.ts";
 import {
   assertPrivateDestination,
   canonicalDestination,
@@ -102,6 +103,15 @@ async function consume(
     ...publicFields,
     ...(kind === "parcel" ? ["POSTALADDRESS"] : []),
   ]);
+  if (layer.sourceProfile) {
+    validateSourceFieldProfile(layer.sourceProfile, {
+      sourceUrl: layer.source,
+      termsSha256: layer.sourceProfile.termsSha256,
+      fieldClassificationDigest: layer.sourceFieldClassificationDigest ?? "",
+      requestedFields: layer.fields,
+    });
+    for (const field of layer.fields) allowed.add(field);
+  }
   for (const page of [...layer.pages].sort(
     (a, b) => (a.index ?? 0) - (b.index ?? 0),
   )) {
@@ -226,7 +236,9 @@ export async function buildCountySnapshot(options: {
     ...(options.protectedRoots ?? []),
   ]);
   await mkdir(privateOut, { recursive: true, mode: 0o700 });
-  // A private build database contains derivatives only; raw source bodies are read in memory and never copied.
+  // This historical public projection retains its approved field set. Full
+  // official observations remain in pinned source receipts/runtime views;
+  // a separate exact-byte candidate controls later irreversible publication.
   const instance = await DuckDBInstance.create(":memory:", {
     threads: "1",
     memory_limit: "2GB",
@@ -481,6 +493,8 @@ export async function buildCountySnapshot(options: {
         siteAddress: PUBLIC_ADDRESS_FIELDS,
         publicOnly: true,
         ownerNamesPostalContactIncluded: false,
+        fieldDecision:
+          "Historical approved baseline projection only; not a source/runtime ban. Official observations use the source-specific profile and separate publication candidate.",
         identity:
           "Exact source-layer/native OID; PIN is an association attribute",
         pointSemantics:
@@ -506,8 +520,12 @@ export async function buildCountySnapshot(options: {
       snapshotId,
       count: parcel.count,
       counts: parcel.derivatives,
-      rawNamesRequested: false,
+      rawNamesRequested: source.layers.parcel.fields.some((field) =>
+        ["NAME1", "NAME2"].includes(field),
+      ),
       rawPostalReturned: false,
+      rawSourceRetention:
+        "Pinned full source receipts retain observed fields; this file summarizes derivatives only.",
       derivativeFileSha256: sha256(
         await readFile(path.join(privateOut, "owner-derivatives.parquet")),
       ),

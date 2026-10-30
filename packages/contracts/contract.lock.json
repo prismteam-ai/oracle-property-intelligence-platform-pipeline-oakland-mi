@@ -1,11 +1,12 @@
 {
-  "version": "0.5.0",
-  "sha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+  "version": "0.6.0",
+  "sha256": "ca821d42b8017a61fb839647dc60f93e1446e4ebabf72bfefd9e2d713b97b513",
   "files": {
-    "index.ts": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+    "index.ts": "ca821d42b8017a61fb839647dc60f93e1446e4ebabf72bfefd9e2d713b97b513",
+    "official-parcel-observation.ts": "214ad6f6627ff236f7805fb8697bc8c0f50de82f04b91d3a8e6f5fed351f4ffc",
     "query-predicates.ts": "40fb1e0d2856357412c190440470f52bdd54ca5fcf3bcce22268ef0bb0b340aa",
     "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
   },
-  "moduleGraphSha256": "017475a11c52252bbfc6ca2aedb90585638ad6c1b16f41321c7e8799c19d2612",
+  "moduleGraphSha256": "e9fec23c888c8078c468c947e6ee983255136ddb3e05a273e0ff44dd601d5141",
   "sha256Meaning": "compatibility_entry_file_sha256"
 }

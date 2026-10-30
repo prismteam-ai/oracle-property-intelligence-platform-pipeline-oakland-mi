@@ -51,7 +51,7 @@ it("materializes the exact duplicate/null-preserving public property relation", 
   }
 });
 
-it("hydrates duplicate IDs, nulls, per-property limits and evidence order in nine bounded reads", async () => {
+it("hydrates duplicate IDs, nulls, selected and county-baseline evidence in eleven bounded reads", async () => {
   const instance = await DuckDBInstance.create(":memory:"),
     db = await instance.connect();
   try {
@@ -59,6 +59,7 @@ it("hydrates duplicate IDs, nulls, per-property limits and evidence order in nin
       "CREATE TABLE site_addresses(id VARCHAR,content_hash VARCHAR,lat DOUBLE)",
       "CREATE TABLE parcel_address_links(property_id VARCHAR,address_id VARCHAR)",
       "CREATE TABLE owner_derivatives(property_id VARCHAR,owner_region VARCHAR)",
+      "CREATE TABLE official_parcel_observations(property_id VARCHAR,native_id VARCHAR,source_record_json VARCHAR,record_digest VARCHAR,observed_at VARCHAR)",
       "CREATE TABLE private_reported_owner_observations(property_id VARCHAR,source_id VARCHAR,native_id VARCHAR,canonical_json VARCHAR)",
       "CREATE TABLE private_owner_location_provenance(property_id VARCHAR,canonical_json VARCHAR)",
       "CREATE TABLE protected_enrichment(property_id VARCHAR,source_id VARCHAR,native_id VARCHAR,built_year INTEGER)",
@@ -75,6 +76,15 @@ it("hydrates duplicate IDs, nulls, per-property limits and evidence order in nin
     );
     await db.run(
       "INSERT INTO owner_derivatives VALUES('A',NULL),('B','unknown')",
+    );
+    await db.run(
+      "CREATE TEMP TABLE county_owner_derivative_baseline AS SELECT * FROM owner_derivatives",
+    );
+    await db.run(
+      "UPDATE owner_derivatives SET owner_region='regional' WHERE property_id='A'",
+    );
+    await db.run(
+      "INSERT INTO official_parcel_observations VALUES('A','1',NULL,NULL,NULL)",
     );
     await db.run(
       "INSERT INTO private_reported_owner_observations VALUES('A','z','2','{}'),('A','a','1','{}'),('A','a','1','{}')",
@@ -99,7 +109,7 @@ it("hydrates duplicate IDs, nulls, per-property limits and evidence order in nin
       return original.apply(this, args);
     };
     const batch = await loadPropertyEvidence(db, ["A", "A", "B", "empty"]);
-    expect(calls).toBe(9);
+    expect(calls).toBe(11);
     expect(batch.size).toBe(3);
     const legacy: [keyof PropertyEvidence, string][] = [
       [
@@ -114,6 +124,14 @@ it("hydrates duplicate IDs, nulls, per-property limits and evidence order in nin
         "SELECT count(*) AS n FROM parcel_address_links WHERE property_id=$id",
       ],
       ["owner", "SELECT * FROM owner_derivatives WHERE property_id=$id"],
+      [
+        "countyOwnerBaseline",
+        "SELECT * FROM county_owner_derivative_baseline WHERE property_id=$id",
+      ],
+      [
+        "officialParcel",
+        "SELECT * FROM official_parcel_observations WHERE property_id=$id ORDER BY native_id",
+      ],
       [
         "reportedOwners",
         "SELECT canonical_json FROM private_reported_owner_observations WHERE property_id=$id ORDER BY source_id,native_id",

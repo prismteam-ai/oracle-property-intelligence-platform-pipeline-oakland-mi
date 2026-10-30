@@ -43,6 +43,7 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
     const protectedTransferObservationsFile =
       process.env.PRISM_PRIVATE_TRANSFER_OBSERVATIONS;
     const protectedSourceRunsFile = process.env.PRISM_PRIVATE_SOURCE_RUNS;
+    const officialParcelProfileFile = process.env.PRISM_OFFICIAL_PARCEL_PROFILE;
     const protectedFullSources = parseFullSourceConfigs(
       JSON.parse(process.env.PRISM_PRIVATE_FULL_SOURCES || "[]"),
     );
@@ -54,6 +55,7 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
         protectedProviderObservationsFile ||
         protectedTransferObservationsFile ||
         protectedSourceRunsFile ||
+        officialParcelProfileFile ||
         protectedFullSources.length > 0) &&
       process.env.PRISM_REQUIRE_AUTH !== "1"
     )
@@ -63,6 +65,9 @@ export async function createActiveSnapshot(): Promise<ActiveSnapshot> {
     return RealSnapshot.open(
       process.env.PRISM_SNAPSHOT_DIR ?? path.join(root, "data/public-safe"),
       {
+        officialParcelProfileFile,
+        officialParcelProfileSha256:
+          process.env.PRISM_OFFICIAL_PARCEL_PROFILE_SHA256,
         protectedDerivativeFile,
         protectedDerivativeSha256: process.env.PRISM_OWNER_DERIVATIVES_SHA256,
         protectedEnrichmentFile,

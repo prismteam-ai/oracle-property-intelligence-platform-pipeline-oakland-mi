@@ -1,3 +1,5 @@
+> Historical decision. Categorical official-owner exclusion/masking is superseded by [ADR009](009-source-specific-data-boundaries.md). Provider-specific rights still apply to their actual source. The original body is preserved below.
+
 # Permit source rights and protected display
 
 Status: accepted local implementation decision; factual source/external results remain separately measured gates.

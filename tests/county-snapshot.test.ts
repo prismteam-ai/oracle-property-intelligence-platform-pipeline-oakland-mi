@@ -10,6 +10,8 @@ import {
 import path from "node:path";
 import os from "node:os";
 import { buildCountySnapshot } from "../packages/county/src/build.ts";
+import { validateOfficialParcelProfile } from "../packages/county/src/official-parcel.ts";
+import { officialProfileFixture } from "./official-parcel.fixture.ts";
 import {
   deriveOwnerLocation,
   sha256,
@@ -170,7 +172,9 @@ test("hash-pinned complete county attributes stay lazy and private under an exac
       OBJECTID_12: 1,
       NAME1: "PRIVATE_FULL_COUNTY_PARTY_SENTINEL",
       NAME2: "PRIVATE_FULL_COUNTY_SECOND_PARTY",
-      POSTALADDRESS: "PRIVATE_FULL_COUNTY_POSTAL_SENTINEL",
+      POSTALADDRESS: "Synthetic site 1, Synthetic town MI 00000",
+      SITEADDRESS: "Synthetic site 1",
+      SITECITY: "Synthetic town",
       ASSESSEDVALUE: 12345,
       NUM_BEDS: 3,
       STRUCTURE_DESC: "Synthetic structure",
@@ -288,6 +292,68 @@ test("hash-pinned complete county attributes stay lazy and private under an exac
       ).not.toContain("PRIVATE_FULL_COUNTY_");
     } finally {
       reader.close();
+    }
+    const envelope = officialProfileFixture();
+    envelope.publicSnapshotId = m.snapshotId;
+    envelope.sourceFileSha256 = config.sha256;
+    envelope.sourceSchemaSha256 = config.sourceSchemaSha256;
+    envelope.sourceRecordCount = config.sourceRecordCount;
+    validateOfficialParcelProfile(envelope, config, m.snapshotId);
+    const profileFile = path.join(
+      f.privateRoot,
+      "official-parcel-profile.json",
+    );
+    const profileBytes = JSON.stringify(envelope);
+    await writeFile(profileFile, profileBytes, { mode: 0o600 });
+    const official = await RealSnapshot.open(out, {
+      protectedFullSources: [config],
+      protectedDerivativeFile: path.join(
+        f.privateRoot,
+        "owners",
+        "owner-derivatives.parquet",
+      ),
+      protectedDerivativeSha256: sha256(
+        await readFile(
+          path.join(f.privateRoot, "owners", "owner-derivatives.parquet"),
+        ),
+      ),
+      officialParcelProfileFile: profileFile,
+      officialParcelProfileSha256: sha256(profileBytes),
+    });
+    try {
+      const detail = await official.detail(
+        "oakland-parcel-1",
+        official.snapshotId,
+      );
+      expect(detail.ownership.officialParcelObservation?.name1).toBe(
+        "PRIVATE_FULL_COUNTY_PARTY_SENTINEL",
+      );
+      expect(
+        detail.ownership.officialParcelObservation?.postalAddressAsObserved,
+      ).toBe("Synthetic site 1, Synthetic town MI 00000");
+      expect(detail.ownership).toMatchObject({
+        ownerRegion: "regional",
+        locationClass: "local",
+        siteAddressMatch: true,
+        observedAt: rows[0]!.observed_at,
+      });
+      expect(detail.ownership.officialParcelObservation?.recordSha256).toBe(
+        sha256(sourceJson),
+      );
+      expect(official.coverage).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ classification: "official_public" }),
+        ]),
+      );
+      await expect(
+        RealSnapshot.open(out, {
+          protectedFullSources: [config],
+          officialParcelProfileFile: profileFile,
+          officialParcelProfileSha256: sha256("wrong"),
+        }),
+      ).rejects.toThrow("integrity");
+    } finally {
+      official.close();
     }
     await expect(
       RealSnapshot.open(out, {
@@ -1360,6 +1426,153 @@ test("a pinned single UI assessment preserves39rawfields and yields an actual-co
     } finally {
       reader.close();
       publicReader.close();
+    }
+    const countySchema = sha256(
+        "synthetic retained county schema for independent-source precedence",
+      ),
+      countyJson = JSON.stringify({
+        OBJECTID_12: 3,
+        PIN: "2000000001",
+        NAME1: null,
+        NAME2: null,
+        POSTALADDRESS: null,
+        SITEADDRESS: "Synthetic site 3",
+        SITECITY: "Synthetic town",
+      }),
+      countyObservedAt = "2026-10-28T03:18:00.000Z";
+    await db.run(
+      "CREATE TABLE county_precedence(" +
+        FULL_SOURCE_COLUMNS.map((k) => k + " VARCHAR").join(",") +
+        ")",
+    );
+    await db.run(
+      "INSERT INTO county_precedence VALUES($version,$source,$native,$snapshot,$schema,$raw,$digest,$at,$property)",
+      {
+        version: "county-full-attributes-v1",
+        source: "official-oakland-tax-parcel-full-attributes",
+        native: "3",
+        snapshot: m.snapshotId,
+        schema: countySchema,
+        raw: countyJson,
+        digest: sha256(countyJson),
+        at: countyObservedAt,
+        property: "oakland-parcel-3",
+      },
+    );
+    const countyFile = path.join(f.privateRoot, "county-precedence.parquet");
+    await db.run(
+      `COPY county_precedence TO '${countyFile.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+    );
+    const countyConfig: FullSourceConfig = {
+      role: "county-parcels",
+      file: countyFile,
+      sha256: sha256(await readFile(countyFile)),
+      sourceSchemaSha256: countySchema,
+      sourceRecordCount: 1,
+      sourceValidationSha256: sha256("synthetic retained county validation"),
+      sourceValidatedOffline: true,
+    };
+    const envelope = officialProfileFixture();
+    Object.assign(envelope, {
+      publicSnapshotId: m.snapshotId,
+      sourceFileSha256: countyConfig.sha256,
+      sourceSchemaSha256: countySchema,
+      sourceRecordCount: 1,
+    });
+    const profileFile = path.join(
+        f.privateRoot,
+        "precedence-official-profile.json",
+      ),
+      profileBytes = JSON.stringify(envelope);
+    await writeFile(profileFile, profileBytes, { mode: 0o600 });
+    const ownerFile = path.join(
+      f.privateRoot,
+      "owners",
+      "owner-derivatives.parquet",
+    );
+    const pairedOptions = {
+      protectedDerivativeFile: ownerFile,
+      protectedDerivativeSha256: sha256(await readFile(ownerFile)),
+      protectedFullSources: [countyConfig, config],
+      officialParcelProfileFile: profileFile,
+      officialParcelProfileSha256: sha256(profileBytes),
+    };
+    const paired = await RealSnapshot.open(out, pairedOptions);
+    try {
+      const detail = await paired.detail("oakland-parcel-3", paired.snapshotId);
+      expect(detail.ownership).toMatchObject({
+        ownerRegion: "regional",
+        locationClass: "in_state",
+        siteAddressMatch: null,
+        observedAt: assessmentRow(m.snapshotId).observed_at,
+      });
+      expect(detail.ownership.locationProvenance).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            sourceId: "official-troy-real-property-assessing-ui",
+            observedAt: assessmentRow(m.snapshotId).observed_at,
+          }),
+        ]),
+      );
+      expect(detail.ownership.officialParcelObservation).toMatchObject({
+        observedAt: countyObservedAt,
+        postalAddressAsObserved: null,
+        ownerLocation: {
+          ownerRegion: "unknown",
+          locationClass: "unknown",
+          siteAddressMatch: null,
+          evidenceClass: "unknown",
+          sourceRecordSha256: sha256(countyJson),
+        },
+      });
+      const query = {
+        snapshotId: paired.snapshotId,
+        lat: 42.66,
+        lng: -83.29,
+        radiusMeters: 1000,
+      };
+      expect(
+        (await paired.search({ ...query, ownerRegion: "regional" })).rows.map(
+          (p) => p.id,
+        ),
+      ).toContain("oakland-parcel-3");
+      expect(
+        (await paired.search({ ...query, ownerRegion: "unknown" })).rows.map(
+          (p) => p.id,
+        ),
+      ).not.toContain("oakland-parcel-3");
+      const connection = (paired as unknown as { connection: typeof db })
+        .connection;
+      const original = await (
+        await connection.run(
+          "SELECT owner_region FROM county_owner_derivative_baseline WHERE property_id='oakland-parcel-3'",
+        )
+      ).getRowObjectsJson();
+      expect(original[0]!.owner_region).toBe("unknown");
+    } finally {
+      paired.close();
+    }
+    // Even a legitimate later override must not hide corrupt or missing county evidence.
+    for (const failure of ["corrupt", "missing"]) {
+      const badOwner = path.join(
+        f.privateRoot,
+        "owner-precedence-" + failure + ".parquet",
+      );
+      await db.run(
+        `COPY (SELECT *${failure === "corrupt" ? " REPLACE(CASE WHEN property_id='oakland-parcel-3' THEN 'out_of_area' ELSE owner_region END AS owner_region)" : ""} FROM read_parquet('${ownerFile.replaceAll("'", "''")}')${failure === "missing" ? " WHERE property_id!='oakland-parcel-3'" : ""}) TO '${badOwner.replaceAll("'", "''")}' (FORMAT PARQUET)`,
+      );
+      const invalid = await RealSnapshot.open(out, {
+        ...pairedOptions,
+        protectedDerivativeFile: badOwner,
+        protectedDerivativeSha256: sha256(await readFile(badOwner)),
+      });
+      try {
+        await expect(
+          invalid.detail("oakland-parcel-3", invalid.snapshotId),
+        ).rejects.toThrow("contradicts the configured owner derivative");
+      } finally {
+        invalid.close();
+      }
     }
     const row = assessmentRow(m.snapshotId),
       raw = JSON.parse(row.source_record_json);

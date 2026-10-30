@@ -21,3 +21,5 @@ Model calls share the durable limits and dated headroom in the [evaluator guide]
 ## External discovery boundary
 
 The public Elephant MCP repository returned `Repository not found` during the dated 2026-10-29 reference check. This records access/availability, not proof the service does not exist. Local MCP compatibility does not establish shared MCP synchronization, internal registry writes, Atlas registration or global discovery. [Publication](IPFS_PUBLICATION.md) separates local compatibility from those unperformed external effects.
+
+Data classification follows the [field authority matrix](DATA_FIELD_AUTHORITY_MATRIX.md). Existing public-artifact-only and authenticated observation modes remain separate technical profiles. Legacy `private_`/`protected-real` names do not classify all official facts as secrets. Use the current source-backed observation manifest for actual admitted facts; official permitted identities may be visible in evaluator/media even when transport is authenticated. Restricted-source payloads and credentials retain their own limits.

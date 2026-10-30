@@ -213,6 +213,13 @@ h1 {
   color: #355342;
   white-space: nowrap;
 }
+.official-parcel-observation {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.official-parcel-observation code {
+  white-space: normal;
+}
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

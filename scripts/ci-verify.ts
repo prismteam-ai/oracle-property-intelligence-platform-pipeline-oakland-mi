@@ -67,7 +67,7 @@ const env = {
 };
 for (const key of Object.keys(env))
   if (
-    /^PRISM_(?:SNAPSHOT|PRIVATE_|OWNER_|ENABLE_PROTECTED|REAL_|TROY_|ROCHESTER_)/.test(
+    /^PRISM_(?:SNAPSHOT|PRIVATE_|OWNER_|OFFICIAL_PARCEL_|ENABLE_PROTECTED|REAL_|TROY_|ROCHESTER_)/.test(
       key,
     )
   )

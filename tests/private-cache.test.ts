@@ -7,6 +7,63 @@ import {
   validatePrivateManifest,
 } from "../packages/hosted-runtime/src/private-cache.ts";
 import { sha256, stableJson } from "../packages/county/src/model.ts";
+import {
+  FULL_SOURCE_DEFINITIONS,
+  type FullSourceRole,
+} from "../packages/county/src/private-full-source.ts";
+
+it("v9 adds exactly one pinned official-field profile while preserving the existing source roles", () => {
+  const base = "oakland-real-" + "a".repeat(20),
+    hash = sha256("synthetic metadata");
+  const regular = [
+    ["owner", "owner-derivatives.parquet"],
+    ["enrichment", "protected-enrichment.parquet"],
+    ["permits", "protected-permits.parquet"],
+    ["source-intake", "private-source-intake.parquet"],
+    ["provider-permit-observations", "provider-permit-observations.parquet"],
+    [
+      "recorded-transfer-observations",
+      "recorded-transfer-observations.parquet",
+    ],
+    ["private-source-runs", "private-source-runs.json"],
+    ["official-parcel-profile", "official-parcel-profile.json"],
+  ].map(([role, name]) => ({ role, name, bytes: 8, sha256: hash }));
+  const full = (Object.keys(FULL_SOURCE_DEFINITIONS) as FullSourceRole[]).map(
+    (role) => ({
+      role,
+      name: FULL_SOURCE_DEFINITIONS[role].name,
+      bytes: 8,
+      sha256: hash,
+      sourceRecordCount: 1,
+      sourceSchemaSha256: hash,
+      sourceValidationSha256: hash,
+      sourceValidatedOffline: true,
+    }),
+  );
+  const files = [...regular, ...full].sort((a, b) =>
+    a.name! < b.name! ? -1 : 1,
+  );
+  const manifest = {
+    version: "9",
+    publicSnapshotId: base,
+    snapshotId: base,
+    files,
+    digest: sha256(stableJson(files)),
+  };
+  expect(() => validatePrivateManifest(manifest, base)).not.toThrow();
+  expect(() =>
+    validatePrivateManifest({ ...manifest, version: "8" }, base),
+  ).toThrow();
+  expect(() =>
+    validatePrivateManifest(
+      {
+        ...manifest,
+        files: files.filter((f) => f.role !== "official-parcel-profile"),
+      },
+      base,
+    ),
+  ).toThrow();
+});
 it("pins private roles/base/hash separately, rejects extras and wrong base before files", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "prism-private-cache-")),
     base = "oakland-real-" + "a".repeat(20),

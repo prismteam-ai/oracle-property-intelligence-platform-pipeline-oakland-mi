@@ -6,6 +6,8 @@ import type {
   FullSourceAudit,
 } from "../../county/src/private-full-source.ts";
 export interface SnapshotOpenOptions {
+  officialParcelProfileFile?: string;
+  officialParcelProfileSha256?: string;
   protectedProviderObservationsFile?: string;
   protectedProviderObservationsSha256?: string;
   protectedTransferObservationsFile?: string;
@@ -47,4 +49,5 @@ export type SnapshotConstructionArguments = [
   fullSourceAudits: FullSourceAudit[],
   sourceObservationAudit: import("./real-source-observations.ts").SourceObservationAudit,
   temporaryDirectory: string,
+  officialParcelProfile?: import("../../county/src/official-parcel.ts").OfficialParcelProfileEnvelope,
 ];

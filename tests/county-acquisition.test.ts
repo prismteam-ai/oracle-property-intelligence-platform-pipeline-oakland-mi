@@ -8,6 +8,37 @@ import {
   type HttpReply,
 } from "../packages/county/src/acquire.ts";
 import { sha256 } from "../packages/county/src/model.ts";
+import {
+  sourceFieldProfileDigest,
+  type SourceFieldProfile,
+} from "../packages/source-profiles/src/field-authority.ts";
+function fieldProfile(
+  sourceUrl: string,
+  fields: string[],
+  terms: string,
+): SourceFieldProfile {
+  return {
+    version: "source-field-authority-v1",
+    sourceId: "synthetic-official-source",
+    sourceUrl,
+    sourceMetadataSha256: sha256("synthetic metadata"),
+    termsUrl: "https://official.invalid/terms",
+    termsSha256: sha256(terms),
+    reviewedAt: "2026-10-30T05:00:00.000Z",
+    fields: Object.fromEntries(
+      fields.map((field) => [
+        field,
+        {
+          classification: "official_public",
+          exposed: true,
+          acquisitionAllowed: true,
+          runtimeAllowed: true,
+          publication: "eligible_pending_human",
+        } as const,
+      ]),
+    ),
+  };
+}
 const reply = (
   status: number,
   body: unknown,
@@ -99,6 +130,11 @@ test("actual interrupted acquisition resumes immutable ready pages without dupli
       },
     },
   });
+  const profile = fieldProfile(
+    "https://official.invalid/open",
+    ["OBJECTID", "PIN"],
+    "test terms",
+  );
   const options = {
     client,
     source: "https://official.invalid/open",
@@ -107,7 +143,8 @@ test("actual interrupted acquisition resumes immutable ready pages without dupli
     ids: [1, 2, 3, 4],
     privateDirectory: path.join(root, "pages"),
     termsDigest: sha256("test terms"),
-    fieldClassificationDigest: sha256("test fields"),
+    sourceProfile: profile,
+    fieldClassificationDigest: sourceFieldProfileDigest(profile),
     returnGeometry: false,
     batchSize: 2,
   };
@@ -127,11 +164,17 @@ test("actual interrupted acquisition resumes immutable ready pages without dupli
   expect(calls).toBe(2);
   await expect(
     acquireFrozenLayer({ ...options, termsDigest: sha256("changed terms") }),
-  ).rejects.toThrow("contract mismatch");
+  ).rejects.toThrow("terms");
+  const differentProfile = {
+    ...profile,
+    sourceUrl: "https://official.invalid/different",
+  };
   await expect(
     acquireFrozenLayer({
       ...options,
       source: "https://official.invalid/different",
+      sourceProfile: differentProfile,
+      fieldClassificationDigest: sourceFieldProfileDigest(differentProfile),
     }),
   ).rejects.toThrow("contract mismatch");
   expect(calls).toBe(2);
@@ -139,7 +182,7 @@ test("actual interrupted acquisition resumes immutable ready pages without dupli
     JSON.parse(await readFile(pages[0]!.path, "utf8")).features,
   ).toHaveLength(2);
 });
-test("frozen census rejects source drift and unapproved private/contact fields", async () => {
+test("frozen census rejects source drift and fields not approved by the source profile", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "prism-drift-"));
   const client = await CountyAcquisitionClient.open({
     privateRoot: path.join(root, "raw"),
@@ -156,6 +199,11 @@ test("frozen census rejects source drift and unapproved private/contact fields",
         }),
     },
   });
+  const profile = fieldProfile(
+    "https://official.invalid/open",
+    ["OBJECTID", "PIN"],
+    "terms",
+  );
   const options = {
     client,
     source: "https://official.invalid/open",
@@ -164,13 +212,54 @@ test("frozen census rejects source drift and unapproved private/contact fields",
     ids: [1, 2],
     privateDirectory: path.join(root, "pages"),
     termsDigest: sha256("terms"),
-    fieldClassificationDigest: sha256("fields"),
+    sourceProfile: profile,
+    fieldClassificationDigest: sourceFieldProfileDigest(profile),
     returnGeometry: false,
   };
   await expect(acquireFrozenLayer(options)).rejects.toThrow("drift");
   await expect(
     acquireFrozenLayer({ ...options, fields: ["OBJECTID", "NAME1"] }),
   ).rejects.toThrow("excluded");
+});
+
+test("official classified owner fields are acquired verbatim including null names", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "prism-official-owners-"));
+  const fields = ["OBJECTID", "NAME1", "NAME2", "POSTALADDRESS"];
+  const profile = fieldProfile(
+    "https://official.invalid/open",
+    fields,
+    "terms",
+  );
+  const attributes = {
+    OBJECTID: 1,
+    NAME1: null,
+    NAME2: null,
+    POSTALADDRESS: "  SYNTHETIC OBSERVED POSTAL MI 00000  ",
+  };
+  const client = await CountyAcquisitionClient.open({
+    privateRoot: path.join(root, "raw"),
+    protectedRoots: [],
+    allowedHosts: ["official.invalid"],
+    permittedPath: () => true,
+    dependencies: {
+      request: async () => reply(200, { features: [{ attributes }] }),
+    },
+  });
+  const pages = await acquireFrozenLayer({
+    client,
+    source: profile.sourceUrl,
+    oidField: "OBJECTID",
+    fields,
+    ids: [1],
+    privateDirectory: path.join(root, "pages"),
+    termsDigest: profile.termsSha256,
+    fieldClassificationDigest: sourceFieldProfileDigest(profile),
+    sourceProfile: profile,
+    returnGeometry: false,
+  });
+  expect(
+    JSON.parse(await readFile(pages[0]!.path, "utf8")).features[0].attributes,
+  ).toEqual(attributes);
 });
 
 test("persisted Retry-After cooldown survives an interrupted client and a reopened process view", async () => {
