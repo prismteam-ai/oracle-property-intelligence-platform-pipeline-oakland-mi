@@ -2,6 +2,8 @@
  * No observations, owner/contact fields or source document bytes are embedded.
  * Registry evidence: P3 protected_source_context_registry.json, verified 2026-10-27.
  */
+const historicalPublicationScope =
+  "Historical publication scope only: the previously approved exact-byte public snapshots excluded raw PDFs and these owner/address/contact/provider observations. That scope does not prohibit retained working facts or categorically exclude official public facts. Each new public candidate needs its own source-specific eligibility decision and exact-byte approval; restricted-provider payloads and credentials remain excluded.";
 const sources = {
   "official-novi-residential-sales-pdf": {
     sourceId: "official-novi-residential-sales-pdf",
@@ -33,7 +35,7 @@ const sources = {
       "Reported sale observations are a partial assessor study cohort, not complete deed or transfer history.",
       "Observed sale-date range, PDF metadata dates and URL year are separate facts; none is substituted for a declared report period.",
       "Reported built year is a building-year proxy with low confidence for roof age; roof replacement/condition is unverified.",
-      "Only the exact approved private companion may be staged; raw PDFs, owner/address/contact fields and provider rows remain excluded from public artifacts.",
+      historicalPublicationScope,
     ],
     semanticBasis: "building_year_proxy",
   },
@@ -67,15 +69,20 @@ const sources = {
       "Reported sale observations are a partial assessor study cohort, not complete deed or transfer history.",
       "Observed sale-date range, PDF metadata dates and URL year are separate facts; none is substituted for a declared report period.",
       "Reported built year is a building-year proxy with low confidence for roof age; roof replacement/condition is unverified.",
-      "Only the exact approved private companion may be staged; raw PDFs, owner/address/contact fields and provider rows remain excluded from public artifacts.",
+      historicalPublicationScope,
     ],
     semanticBasis: "building_year_proxy",
   },
 } as const;
 export type MunicipalSourceId = keyof typeof sources;
+export function isMunicipalReportSourceId(
+  sourceId: string,
+): sourceId is MunicipalSourceId {
+  return Object.hasOwn(sources, sourceId);
+}
 export function sourceContext(sourceId: string, page?: number) {
-  if (!Object.hasOwn(sources, sourceId)) return null;
-  const source = sources[sourceId as MunicipalSourceId];
+  if (!isMunicipalReportSourceId(sourceId)) return null;
+  const source = sources[sourceId];
   if (
     page !== undefined &&
     (!Number.isInteger(page) || page < 1 || page > source.reportPages)

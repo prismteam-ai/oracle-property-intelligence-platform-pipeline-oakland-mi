@@ -10,6 +10,7 @@ import {
   isRestrictedProviderPermit,
 } from "./source-details.tsx";
 import { MunicipalSource } from "./municipal-source.tsx";
+import { isMunicipalReportSourceId } from "../../../packages/hosted-runtime/src/source-context.ts";
 export function EvidenceDetails({
   selected,
   health,
@@ -215,12 +216,13 @@ export function EvidenceDetails({
                   {p.recordId} · {p.observedAt}
                 </p>
                 <code>{p.digest}</code>
-                {health?.dataMode === "protected-real" && (
-                  <MunicipalSource
-                    sourceId={p.sourceId}
-                    recordId={p.recordId}
-                  />
-                )}
+                {health?.dataMode === "protected-real" &&
+                  isMunicipalReportSourceId(p.sourceId) && (
+                    <MunicipalSource
+                      sourceId={p.sourceId}
+                      recordId={p.recordId}
+                    />
+                  )}
               </article>
             ))}
           </>

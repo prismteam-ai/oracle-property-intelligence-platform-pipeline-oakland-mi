@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
-import type { SourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
-import { get } from "./model.ts";
+import {
+  isMunicipalReportSourceId,
+  type MunicipalSourceId,
+  type SourceContext,
+} from "../../../packages/hosted-runtime/src/source-context.ts";
+import { loadMunicipalReportContext } from "./municipal-source-loader.ts";
 export function MunicipalSource({
   sourceId,
   recordId,
@@ -8,20 +12,30 @@ export function MunicipalSource({
   sourceId: string;
   recordId: string;
 }) {
+  if (!isMunicipalReportSourceId(sourceId)) return null;
+  return <RegisteredMunicipalSource sourceId={sourceId} recordId={recordId} />;
+}
+
+function RegisteredMunicipalSource({
+  sourceId,
+  recordId,
+}: {
+  sourceId: MunicipalSourceId;
+  recordId: string;
+}) {
   const [source, setSource] = useState<SourceContext | null>(null),
     [failed, setFailed] = useState(false);
   useEffect(() => {
     setSource(null);
     setFailed(false);
-    const abort = new AbortController(),
-      page = recordId.match(/:page:(\d+)/)?.[1];
+    const abort = new AbortController();
     let active = true;
-    void get<{ source: SourceContext }>(
-      `source-context?sourceId=${encodeURIComponent(sourceId)}${page ? `&page=${page}` : ""}`,
-      abort.signal,
-    )
+    void loadMunicipalReportContext(sourceId, recordId, abort.signal)
       .then((v) => {
-        if (active) setSource(v.source);
+        if (active) {
+          setSource(v);
+          setFailed(v === null);
+        }
       })
       .catch(() => {
         if (active) setFailed(true);
