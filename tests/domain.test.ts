@@ -325,13 +325,19 @@ describe("source boundary, private adapter and dry publication", () => {
     expect(guard.observe(429, "").state).toBe("blocked");
     expect(guard.observe(200, "").state).toBe("blocked");
   });
-  test("minimized real adapter rejects owner/contact fields and missing identity", () => {
+  test("parcel adapter accepts profiled public fields and rejects unknown fields or missing identity", () => {
     expect(() =>
       transformOaklandFeature(
-        { attributes: { KEYPIN: "synthetic", NAME1: "forbidden" } },
+        { attributes: { KEYPIN: "synthetic", UNPROFILED_FIELD: "reject" } },
         "2026-10-26T00:00:00Z",
       ),
     ).toThrow("non-allowlisted");
+    expect(() =>
+      transformOaklandFeature(
+        { attributes: { KEYPIN: "synthetic", NAME1: "Synthetic public name" } },
+        "2026-10-26T00:00:00Z",
+      ),
+    ).not.toThrow();
     expect(() =>
       transformOaklandFeature({ attributes: {} }, "2026-10-26T00:00:00Z"),
     ).toThrow("Missing");
