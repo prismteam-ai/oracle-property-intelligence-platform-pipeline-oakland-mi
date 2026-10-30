@@ -68,9 +68,9 @@ try {
     alarmData: { state: { value: "ALARM", reason: privateCanary } },
   };
   const script =
-    "const r=await fetch('http://127.0.0.1:8080/2015-03-31/functions/function/invocations',{method:'POST',body:process.argv[1]});process.stdout.write(await r.text());";
+    "const started=performance.now();const r=await fetch('http://127.0.0.1:8080/2015-03-31/functions/function/invocations',{method:'POST',body:process.argv[1]});const body=await r.text();const invocationElapsedMs=performance.now()-started;process.stdout.write(JSON.stringify({responseStatus:r.status,response:JSON.parse(body),invocationElapsedMs}));";
   const started = performance.now();
-  const result = JSON.parse(
+  const invocation = JSON.parse(
     execFileSync(
       "docker",
       [
@@ -84,13 +84,20 @@ try {
       ],
       { encoding: "utf8", timeout: 30000, stdio: "pipe" },
     ),
-  ) as { statusCode?: number; body?: string };
-  const elapsedMs = performance.now() - started;
+  ) as {
+    responseStatus: number;
+    response: { statusCode?: number; body?: string };
+    invocationElapsedMs: number;
+  };
+  const elapsedMsIncludingDockerClient = performance.now() - started;
   if (
-    result.statusCode !== 202 ||
-    JSON.parse(result.body ?? "{}").status !==
+    invocation.responseStatus !== 200 ||
+    invocation.response.statusCode !== 202 ||
+    JSON.parse(invocation.response.body ?? "{}").status !==
       "EXTERNAL_ORGANIZATION_DEPENDENCY_BLOCKED" ||
-    elapsedMs > 10000
+    !Number.isFinite(invocation.invocationElapsedMs) ||
+    invocation.invocationElapsedMs < 0 ||
+    invocation.invocationElapsedMs > 10000
   )
     throw new Error("Packaged bounded disabled alert entrypoint failed");
   const captured = spawnSync("docker", ["logs", container], {
@@ -108,7 +115,10 @@ try {
       source,
       memoryMiB: 128,
       cpuLimit: 0.1,
-      elapsedMsIncludingDockerClient: elapsedMs,
+      invocationElapsedMs: invocation.invocationElapsedMs,
+      invocationTimingBasis:
+        "Client monotonic time immediately before RIE fetch through complete response body; Docker exec and client process startup excluded",
+      elapsedMsIncludingDockerClient,
       network: "none",
       secretOrProviderCalls: 0,
       privateCanaryAbsent: true,
