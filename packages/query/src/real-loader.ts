@@ -39,6 +39,7 @@ export async function loadRealSnapshot<T>(
   directory: string,
   options: SnapshotOpenOptions,
   construct: (...args: SnapshotConstructionArguments) => T,
+  projectBeforeReadOnly?: (connection: DuckDBConnection) => Promise<void>,
 ): Promise<T> {
   const verified = await verifySnapshotDirectory(directory);
   const root = verified.directory;
@@ -466,6 +467,9 @@ export async function loadRealSnapshot<T>(
       Number(count[0]!.addresses) !== verified.manifest.addressCount
     )
       throw new Error("Snapshot count reconciliation failed");
+    // Trusted local publication code may project verified facts before sealing
+    // the connection. No HTTP/configuration input can supply this callback.
+    if (projectBeforeReadOnly) await projectBeforeReadOnly(db);
     if (allowedSourcePaths.length)
       await db.run(
         "SET allowed_paths=[" + allowedSourcePaths.map(quote).join(",") + "]",
