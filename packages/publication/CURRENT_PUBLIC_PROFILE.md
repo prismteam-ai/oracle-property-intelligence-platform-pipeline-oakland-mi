@@ -23,6 +23,8 @@ Use the lockfile-pinned dependencies and Node24 runtime; do not install or upgra
 
 The current DuckDB2 engine produces different unused string-buffer bytes on independent physical encodings, including in a measured uncompressed case. All real source-derived Parquets/SQL/metadata matched across the observed independent builds; their physical DB hashes did not. This is disclosed, not patched or mislabeled as a pass. The empty hash-pinned seed fixes the engine's random identifier only.
 
+The canonical public-only worker uses normal supported AUTO/lossless compression; every complete logical relation must still match its exact canonical Parquet. The uncompressed intermediate source-projection DB is a disk-only development output and is not the public canonical binary.
+
 The release contract is an immutable, exact-hash canonical public-only DB, complete logical source/Parquet/schema/query parity, and repeatable exact DAG/CAR wrapping from that same frozen file. A future physical re-encoding is a new binary artifact unless its full hash actually matches. The recorded P13 review adjudication separates this engine behavior from the original assignment's immutable IPFS/offline-query requirements.
 
 The bounded regression fixture covers source/provider rejection, ordinary runtime locking, pre-lock callback cleanup, download integrity/bounds/cleanup, retained unmatched native identities with null schema, and ordinary offline queries. Set `PRISM_RUN_PUBLICATION_ISOLATION_TEST=1` for the actual Linux bubblewrap/network/file-isolation and canonical/two-wrap integration test; normal application CI need not install bubblewrap.

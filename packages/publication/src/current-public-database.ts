@@ -163,7 +163,7 @@ export async function rebuildCurrentPublicDatabase(options: {
   const instance = await DuckDBInstance.create(target, {
     threads: "1",
     memory_limit: "2GB",
-    force_compression: "uncompressed",
+    force_compression: "auto",
     checkpoint_threshold: "4GB",
     temp_directory: options.outputDirectory,
   });
@@ -295,6 +295,7 @@ export async function rebuildCurrentPublicDatabase(options: {
     seedSha256,
     seedSource: fileURLToPath(seed),
     physicalDatabaseRecomputeDeterminismClaimed: false,
+    databaseCompression: "auto_lossless",
     cleanEnvironmentKeys: Object.keys(process.env).sort(),
     isolation,
     inputData:

@@ -140,6 +140,7 @@ export async function finalizeCurrentPublicSnapshot(
   schema.reproducibility = {
     ...schema.reproducibility,
     mode: "immutable_hash_bound_canonical_database_and_logical_source_parity",
+    databaseCompression: proof.databaseCompression,
     physicalDatabaseRecomputeDeterminism: false,
     canonicalDatabaseSha256: database.sha256,
     fullCatalogSha256: proof.fullCatalogSha256,
@@ -159,6 +160,7 @@ export async function finalizeCurrentPublicSnapshot(
     sourceIndexSha256: proof.sourceIndexSha256,
     seedSha256: proof.seedSha256,
     physicalDatabaseRecomputeDeterminismClaimed: false,
+    databaseCompression: proof.databaseCompression,
     cleanEnvironmentKeys: proof.cleanEnvironmentKeys,
     isolation: proof.isolation,
     isolationMechanism: proof.isolationMechanism,
