@@ -5,6 +5,7 @@ import {
   type Permit,
 } from "../../contracts/src/index.ts";
 import { sha256 } from "./model.ts";
+import { isSupportedIndependenceCloseout } from "./independence-inline-evidence.ts";
 import {
   TROY_SOURCE,
   troyBusinessName,
@@ -131,7 +132,18 @@ function validateIndependencePermit(
         : ["FINALED", "ISSUED", "EXPIRED"]
     ).includes(permit.reportedStatus ?? "") ||
     permit.openedAt !== null ||
-    permit.closedAt !== null ||
+    (permit.closedAt !== null &&
+      !isSupportedIndependenceCloseout({
+        sourceId: row.source_id,
+        nativeId: row.native_id,
+        propertyId: row.property_id,
+        recordDigest: row.record_digest,
+        permitNumber: permit.permitNumber,
+        reportedStatus: permit.reportedStatus,
+        issuedAt: permit.issuedAt,
+        observedAt: row.observed_at,
+        closedAt: permit.closedAt,
+      })) ||
     permit.statusObservedAt !== row.observed_at ||
     (permit.issuedAt !== null &&
       permit.issuedAt !== undefined &&

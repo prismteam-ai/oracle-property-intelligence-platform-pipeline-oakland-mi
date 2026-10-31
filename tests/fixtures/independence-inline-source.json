@@ -1,0 +1,36 @@
+{
+  "basis": "Two official source records already retained in V9; exact facts revalidated against all33014 fresh rows in P13. No new acquisition or event is claimed.",
+  "sourceRows": [
+    {
+      "version": "official-municipal-permits-full-v2",
+      "source_id": "official-independence-public-permits",
+      "native_id": "2622164",
+      "public_snapshot_id": "oakland-real-ad414e5e71b11e3359ab",
+      "source_schema_sha256": "9268a82ae3d2419fe515e1c101867d865257053513aae1ebc4dddaf7b94ac0bd",
+      "source_record_json": "{\"attributes\":{\"Address\":null,\"Amount_Total\":444,\"Construction_Type\":null,\"Construction_Value\":17926,\"Contact\":null,\"Date_Issued\":1750685517000,\"Date_Time_Completed\":null,\"Description\":null,\"Inspection_Type\":null,\"Inspector\":null,\"Name\":null,\"OBJECTID\":2622164,\"Parcel_Number\":\"0817477013\",\"Permit_Number\":\"PB250524\",\"Permit_Type\":\"Building\",\"Result\":null,\"Status\":\"EXPIRED\",\"Work_Description\":\"RESIDENTIAL RE-ROOF\\nREV BY DM\\n\\n*9/15/25 CRAFTSMAN EXTERIORS SUBMITTED AN ADDITIONAL PROJECT FOR SIDING.  CONTRACTOR DOES NOT HOLD APPROPRIATE LICENSE FOR SIDING, ONLY ROOFING.\",\"Work_Done_By_Owner\":null},\"geometry\":{\"x\":-83.41151922122395,\"y\":42.74934037164101}}",
+      "record_digest": "180989711883e41475ad868e6f30c368df3989d270b398e8f022e0f5e42c0ec5",
+      "observed_at": "2026-10-28T06:17:33.382Z",
+      "property_id": "oakland-parcel-451882"
+    },
+    {
+      "version": "official-municipal-permits-full-v2",
+      "source_id": "official-independence-public-permits",
+      "native_id": "2623310",
+      "public_snapshot_id": "oakland-real-ad414e5e71b11e3359ab",
+      "source_schema_sha256": "9268a82ae3d2419fe515e1c101867d865257053513aae1ebc4dddaf7b94ac0bd",
+      "source_record_json": "{\"attributes\":{\"Address\":null,\"Amount_Total\":380,\"Construction_Type\":null,\"Construction_Value\":23800,\"Contact\":null,\"Date_Issued\":1779895273000,\"Date_Time_Completed\":null,\"Description\":null,\"Inspection_Type\":null,\"Inspector\":null,\"Name\":null,\"OBJECTID\":2623310,\"Parcel_Number\":\"0834128088\",\"Permit_Number\":\"PB260514\",\"Permit_Type\":\"Building\",\"Result\":null,\"Status\":\"CLOSED\",\"Work_Description\":\"RESIDENTIAL RE-ROOF\\nREV BY DM\\n\\nPERMIT CLOSED OUT PER REQUEST OF CONTRACTOR APPROVED PER DM 06/09/2026\",\"Work_Done_By_Owner\":null},\"geometry\":{\"x\":-83.37989338935107,\"y\":42.713036063335345}}",
+      "record_digest": "d416eedb70868f582e8b8bb4f8acd1edf248148cd173ca81f38f1938ed0e23f3",
+      "observed_at": "2026-10-28T06:17:34.594Z",
+      "property_id": "oakland-parcel-444063"
+    }
+  ],
+  "legacyClosedCanonicalRow": {
+    "property_id": "oakland-parcel-444063",
+    "permit_json": "{\"closedAt\":null,\"contractor\":{\"license\":null,\"rating\":null,\"reportedName\":null,\"verifiedCompanyId\":null},\"id\":\"independence-public-32ee373401dd1e04a2652308\",\"issuedAt\":\"2026-05-27\",\"jurisdiction\":\"Charter Township of Independence, Oakland County, Michigan\",\"kind\":\"roof_replacement\",\"matchEvidence\":{\"addressAgreement\":\"unknown\",\"basis\":\"exact_normalized_parcel\",\"candidateCount\":1,\"caveats\":[\"Exact current PIN and jurisdiction plus source point within250m of an official site coordinate; no fuzzy candidate selection.\",\"Source Address is null, so no address agreement or historical uninterrupted parcel identity is asserted.\",\"Name/Contact roles are unverified. Only literal CLOSED maps to closed with no closure date; all other states remain unknown and no continuous lifecycle is asserted.\"],\"confidence\":\"medium\",\"score\":0.9},\"openedAt\":null,\"permitNumber\":\"PB260514\",\"proposedWorkScope\":\"Source permit type is not roofing-specific; explicit proposed re-roof or roof replacement action described. Completion not established.\",\"provenance\":[{\"digest\":\"d416eedb70868f582e8b8bb4f8acd1edf248148cd173ca81f38f1938ed0e23f3\",\"kind\":\"real-minimized\",\"observedAt\":\"2026-10-28T06:17:34.594Z\",\"recordId\":\"2623310\",\"sourceId\":\"official-independence-public-permits\"}],\"reportedPermitType\":\"Building\",\"reportedStatus\":\"CLOSED\",\"status\":\"closed\",\"statusBasis\":\"explicit_closed\",\"statusObservedAt\":\"2026-10-28T06:17:34.594Z\"}",
+    "public_snapshot_id": "oakland-real-ad414e5e71b11e3359ab",
+    "source_id": "official-independence-public-permits",
+    "native_id": "2623310",
+    "record_digest": "d416eedb70868f582e8b8bb4f8acd1edf248148cd173ca81f38f1938ed0e23f3",
+    "observed_at": "2026-10-28T06:17:34.594Z"
+  }
+}
