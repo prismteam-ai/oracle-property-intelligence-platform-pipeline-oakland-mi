@@ -8,7 +8,7 @@ import {
 export * from "./source-observations.ts";
 import { OfficialParcelObservationSchema } from "./official-parcel-observation.ts";
 export * from "./official-parcel-observation.ts";
-export const CONTRACT_VERSION = "0.6.0" as const;
+export const CONTRACT_VERSION = "0.7.0" as const;
 export const EvidenceState = z.enum([
   "confirmed_present",
   "confirmed_empty",
@@ -298,6 +298,14 @@ export const PlaceReferenceSchema = z.object({
   indexDigest: z.string().regex(/^[a-f0-9]{64}$/),
 });
 export type PlaceReference = z.infer<typeof PlaceReferenceSchema>;
+export const PermitOpportunityModeSchema = z.enum([
+  "any_roofing_permit",
+  "confirmed_open",
+  "status_verification_needed",
+  "confirmed_closed",
+  "lifecycle_unknown",
+]);
+export type PermitOpportunityMode = z.infer<typeof PermitOpportunityModeSchema>;
 export const QuerySchema = z
   .object({
     snapshotId: z.string().min(1),
@@ -307,6 +315,8 @@ export const QuerySchema = z
     roofMinAgeYears: z.number().int().min(0).max(150).optional(),
     permitStatus: z.enum(["any", "open", "closed", "unknown"]).default("any"),
     minOpenDays: z.number().int().min(0).max(50000).default(0),
+    permitOpportunityMode: PermitOpportunityModeSchema.optional(),
+    minPermitObservationAgeYears: z.number().int().min(0).max(200).optional(),
     minConfidence: z.enum(["any", "high", "medium", "low"]).default("any"),
     includeUnknown: z.boolean().default(false),
     limit: z.number().int().min(1).max(200).default(50),
@@ -329,10 +339,40 @@ export const QuerySchema = z
     requiresVerifiedLicense: z.boolean().optional(),
     requiresBbbRating: z.boolean().optional(),
     sort: z
-      .enum(["distance", "roof_age_desc", "permit_open_days_desc"])
+      .enum([
+        "distance",
+        "roof_age_desc",
+        "permit_open_days_desc",
+        "permit_issue_age_desc",
+      ])
       .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((query, context) => {
+    const mode = query.permitOpportunityMode;
+    const incompatible = !mode
+      ? query.minPermitObservationAgeYears !== undefined ||
+        query.sort === "permit_issue_age_desc"
+      : (mode !== "confirmed_open" && query.minOpenDays > 0) ||
+        (mode === "status_verification_needed" &&
+          query.permitStatus !== "any" &&
+          query.permitStatus !== "unknown") ||
+        (mode === "confirmed_open" &&
+          query.permitStatus !== "any" &&
+          query.permitStatus !== "open") ||
+        (mode === "confirmed_closed" &&
+          query.permitStatus !== "any" &&
+          query.permitStatus !== "closed") ||
+        (mode === "lifecycle_unknown" &&
+          query.permitStatus !== "any" &&
+          query.permitStatus !== "unknown");
+    if (incompatible)
+      context.addIssue({
+        code: "custom",
+        message:
+          "Permit opportunity mode, age and lifecycle predicates conflict",
+      });
+  });
 export type Query = z.infer<typeof QuerySchema>;
 export type QueryInput = z.input<typeof QuerySchema>;
 export const SearchResponseSchema = z

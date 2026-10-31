@@ -18,6 +18,8 @@ Source predicates keep building-year proxy, native status, provider activity, is
 
 Model calls share the durable limits and dated headroom in the [evaluator guide](EVALUATOR_GUIDE.md). Empty/refused cases are not grounded model successes; retries and new sessions do not reset reservations.
 
+For the older-open permit prompt, the server first runs `confirmed_open` with the source-calendar year threshold. A strict-empty result can trigger one separate `status_verification_needed` read with the same place/radius/age constraints. That deterministic two-read fallback uses no model call and exposes separately labeled section queries, counts, citations and apply authority; the strict primary result stays empty. Explicit continuous-open requests keep their original interval requirement. The read-only search API and MCP `search_properties` share the optional 0.7.0 mode/age/issue-sort fields described in [permit opportunities](PERMIT_OPPORTUNITIES.md).
+
 ## External discovery boundary
 
 The public Elephant MCP repository returned `Repository not found` during the dated 2026-10-29 reference check. This records access/availability, not proof the service does not exist. Local MCP compatibility does not establish shared MCP synchronization, internal registry writes, Atlas registration or global discovery. [Publication](IPFS_PUBLICATION.md) separates local compatibility from those unperformed external effects.

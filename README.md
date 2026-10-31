@@ -4,6 +4,8 @@ Oracle turns Oakland County parcel and address sources into portable, source-bac
 
 Open the [Oracle workspace](https://dknck94i8grek.cloudfront.net) with the low-privilege evaluator capability in the approved PR access section. No AWS account or local installation is needed. The [evaluator guide](docs/EVALUATOR_GUIDE.md) gives the short walkthrough, access window, quotas and recovery steps. [Known limitations](docs/KNOWN_LIMITATIONS.md) explains the completed free-source outcome, including the unavailable current-active/long-open permit cohort. No paid source is required to reproduce the admitted runtime.
 
+For nearby aged roofs, keep the Novi example with **No permit filter**. For permit follow-up, use Troy: compare **Confirmed open / active** with the separate **Status verification needed** five-year preset, then inspect the real observation and provenance. Verification candidates are older records requiring follow-up, not confirmed-open permits. [Permit opportunities](docs/PERMIT_OPPORTUNITIES.md) explains the controls and shared 0.7.0 API/MCP queries.
+
 The [original employer assignment](docs/history/ASSIGNMENT_README.md) remains the contract. [Implementation](IMPLEMENTATION.md), [architecture](docs/ARCHITECTURE.md), the [sixteen-stage county onboarding map](docs/COUNTY_ONBOARDING_ALIGNMENT.md), [field authority](docs/DATA_FIELD_AUTHORITY_MATRIX.md) and the [documentation index](docs/README.md) describe the delivered system without replacing it.
 
 ## Run locally

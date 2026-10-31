@@ -23,6 +23,7 @@ import { SourceFilters, initialSourceFilters } from "./source-filters.tsx";
 import { OverviewPanel } from "./overview.tsx";
 import { ArtifactsPanel } from "./artifacts.tsx";
 import { EvidenceDetails } from "./details.tsx";
+import { PermitOpportunityBadges } from "./permit-opportunities.tsx";
 function App() {
   const [tab, setTab] = useState("overview"),
     [runs, setRuns] = useState<Run[]>([]),
@@ -39,6 +40,11 @@ function App() {
     ),
     [minDays, setMinDays] = useState(0);
   const [sourceFilters, setSourceFilters] = useState(initialSourceFilters);
+  const [permitOpportunityMode, setPermitOpportunityMode] = useState<
+    QueryInput["permitOpportunityMode"] | ""
+  >("");
+  const [minPermitObservationAgeYears, setMinPermitObservationAgeYears] =
+    useState(5);
   const [health, setHealth] = useState<Health | null>(null),
     [accessRequired, setAccessRequired] = useState(false),
     [accessCode, setAccessCode] = useState(""),
@@ -101,6 +107,14 @@ function App() {
       roofMinAgeYears: age,
       permitStatus: permits,
       minOpenDays: minDays,
+      ...(permitOpportunityMode
+        ? {
+            permitOpportunityMode,
+            ...(permitOpportunityMode === "status_verification_needed"
+              ? { minPermitObservationAgeYears }
+              : {}),
+          }
+        : {}),
       ...(sourceFilters.providerStatus !== "any"
         ? { providerPermitStatus: sourceFilters.providerStatus }
         : {}),
@@ -484,6 +498,61 @@ function App() {
                 />
               </label>
               <label>
+                Permit opportunity
+                <select
+                  aria-label="Permit opportunity"
+                  value={permitOpportunityMode}
+                  onChange={(e) => {
+                    invalidate();
+                    setPermitOpportunityMode(
+                      e.target.value as
+                        QueryInput["permitOpportunityMode"] | "",
+                    );
+                    setPermits("any");
+                    setMinDays(0);
+                    setSourceFilters((current) => ({
+                      ...current,
+                      providerStatus: "any",
+                      activity: "any",
+                      issueAge: 0,
+                    }));
+                  }}
+                >
+                  <option value="">No permit filter</option>
+                  <option value="any_roofing_permit">Any roofing permit</option>
+                  <option value="confirmed_open">
+                    Confirmed open / active
+                  </option>
+                  <option value="status_verification_needed">
+                    Status verification needed
+                  </option>
+                  <option value="confirmed_closed">
+                    Confirmed closed / final
+                  </option>
+                  <option value="lifecycle_unknown">Lifecycle unknown</option>
+                </select>
+              </label>
+              {permitOpportunityMode === "status_verification_needed" && (
+                <label>
+                  Minimum age since issue/status (years)
+                  <input
+                    aria-label="Minimum age since issue/status (years)"
+                    type="number"
+                    min="0"
+                    max="200"
+                    value={minPermitObservationAgeYears}
+                    onChange={(e) => {
+                      invalidate();
+                      setMinPermitObservationAgeYears(Number(e.target.value));
+                    }}
+                  />
+                  <small>
+                    Strict source-calendar age; these candidates are not
+                    confirmed open permits.
+                  </small>
+                </label>
+              )}
+              <label>
                 Permit status
                 <select
                   aria-label="Permit status"
@@ -641,6 +710,10 @@ function App() {
                         </small>
                       </td>
                       <td>
+                        <PermitOpportunityBadges
+                          property={p}
+                          query={binding?.query ?? null}
+                        />
                         {health?.mode === "real" && p.permits.length === 0 ? (
                           <>
                             Unknown<small>No sourced permit rows</small>

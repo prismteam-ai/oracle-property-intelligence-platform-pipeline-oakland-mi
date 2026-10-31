@@ -9,6 +9,7 @@ Start with the [evaluator guide](EVALUATOR_GUIDE.md) to use the hosted workspace
 - [Current source-specific classification decision](decisions/009-source-specific-data-boundaries.md)
 
 - [Architecture and decisions](ARCHITECTURE.md)
+- [Permit opportunities: lifecycle and verification](PERMIT_OPPORTUNITIES.md)
 - [Data coverage and source semantics](DATA_COVERAGE.md)
 - [Local development](LOCAL_DEVELOPMENT.md)
 - [Testing and evidence scope](TESTING.md)

@@ -1,16 +1,18 @@
-# Walkthrough readiness and effect boundary
+# Product walkthrough readiness and effect boundary
 
-The final walkthrough shows real official property identities, addresses, coordinates and source-permitted observations. Prior identity-masked footage is historical technical evidence, not the final evaluator artifact. The [field authority matrix](DATA_FIELD_AUTHORITY_MATRIX.md) governs source-specific restrictions; credentials and genuinely restricted raw material remain hidden.
+Prepare two concise product-first videos of the matching accepted hosted release: Oracle targets 4:00–5:45 with a 6:00 hard maximum; CRM targets 2:30–3:45 with a 4:00 hard maximum. Follow each repository transcript's shot order. Show real property evidence and ordinary user actions; internal counts, hashes, CI, quota/privacy machinery and onboarding prose are not narration.
 
-Before recording, bind one exact accepted source/contract/package/snapshot/runtime pair and rehearse the PR-contained low-privilege access instructions. Show county onboarding, run history/deltas, DuckDB/Parquet, manifests/CIDs/CAR, the strict Novi age example, available/null owner/postal findings, native permit limitations, CRM lead history and grounded agent/MCP. Keep ISSUED/open, issue-age/continuous-open, building-year/roof-installation and index-gap/ownership-history claims distinct.
+Oracle shows the pipeline/run summary, DuckDB query layer, manifest/public retrieval/history, the Novi aged-roof workflow, permit evidence, the two agent questions through the paired CRM client and read-only MCP. CRM shows pin/GPS/radius, roof and permit controls, synchronized results, real detail, lead management, the agent's explicit section application and disabled future modules.
 
-Produce a 6–9 minute local master, transcript/captions/script, contact sheet and critical frames. Preserve actual failures; verify complete decode, speech/action timing, audio, OCR/pixels and exact identities. No public-property mask or privacy subplot substitutes for the real-data proof. Metadata availability is not ingested-data evidence, and a local quality pass is not Human playback approval.
+During the permit step, use covered Troy and show **Confirmed open / active** first. If empty, switch immediately to **Status verification needed** at the same five-year issue/status-age threshold. Keep the distinction concise and say once: “These are not confirmed open permits; they are older permit records whose current lifecycle status requires municipal verification.” Read the actual native status, date/age basis, listed party and provenance. Municipal native null stays null; an issuance basis does not create an `ISSUED` label.
 
-Stop before any upload/GitHub effect until the live Human sends exactly:
+Preserve raw capture and failures. Verify complete decode, audio, speech/action timing, captions, pixels/OCR and release identity separately from the product presentation. Source-permitted official facts remain visible; credentials and genuinely restricted source material retain their specific controls. Local technical QA is not Human playback approval.
 
-`APPROVE P11 V1.1 VIDEO AND DRAFT PR EFFECTS`
+Stop after the local videos and PR bodies. Upload/GitHub effects require the live Human's exact phrase:
 
-Only then may the separately scoped later plan upload the exact approved unlisted video, verify signed-out playback, non-force push accepted commits and create two draft PRs. Slowking waits for actual video/PR/runtime/CI inputs. Keep PRs draft; no Ready transition or employer message is performed by preparation. New real-data IPFS publication has its own exact-byte approval and is not included in this phrase.
+`APPROVE P12B VIDEOS AND DRAFT PR EFFECTS`
+
+Only then may the separately scoped later plan upload the exact approved videos, verify signed-out playback, non-force push accepted commits and create both draft PRs. Slowking follows actual video/PR/access/CI readiness. Keep PRs draft; no Ready transition, employer message or official submission is authorized by local preparation. New real-data IPFS publication remains outside this video/PR approval.
 
 ## Historical prior checklist — superseded for current data/media policy
 

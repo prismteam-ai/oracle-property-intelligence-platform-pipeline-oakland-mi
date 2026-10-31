@@ -1,4 +1,10 @@
 import {
+  permitOpportunityBindings,
+  OPPORTUNITY_CTE,
+  OPPORTUNITY_FILTER_SQL,
+  OPPORTUNITY_MATCH_SQL,
+} from "./permit-opportunities.ts";
+import {
   loadPropertyEvidence,
   type PropertyEvidence,
 } from "./property-evidence.ts";
@@ -642,6 +648,7 @@ export class RealSnapshot {
     const statusRequired =
       q.permitStatus !== "any" || q.minOpenDays > 0 || needsPermitEvidence(q);
     const params = {
+      ...(await permitOpportunityBindings(this.connection, q)),
       lat: q.lat,
       lng: q.lng,
       minLat: Math.max(-90, q.lat - latMargin),
@@ -673,17 +680,20 @@ export class RealSnapshot {
       offset,
       prioritize:
         q.sort === "permit_open_days_desc" ||
-        (!q.sort && (q.permitStatus === "open" || q.minOpenDays > 0)),
+        (!q.sort &&
+          (q.permitStatus === "open" ||
+            q.permitOpportunityMode === "confirmed_open" ||
+            q.minOpenDays > 0)),
       sortRoof: q.sort === "roof_age_desc",
       requiresContractor: Boolean(q.requiresContractor),
       requiresVerifiedLicense: Boolean(q.requiresVerifiedLicense),
       requiresBbbRating: Boolean(q.requiresBbbRating),
     };
-    const cte = `WITH candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(${EFFECTIVE_OPEN_DAYS_SQL}) FROM permits x WHERE x.property_id=p.id AND ${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR ${EFFECTIVE_OPEN_DAYS_SQL} >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL}) AS priority FROM properties p JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE true ${RECORDED_DEED_FILTER_SQL} AND ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR (${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${EFFECTIVE_OPEN_DAYS_SQL} >= $days)) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))`;
+    const cte = `WITH ${OPPORTUNITY_CTE}, candidates AS (SELECT a.id,a.lat,a.lng,${distanceSql} AS distance FROM site_addresses a WHERE a.lat BETWEEN $minLat AND $maxLat AND ($allLng OR (NOT $wrapped AND a.lng BETWEEN $minLng AND $maxLng) OR ($wrapped AND (a.lng >= $minLng OR a.lng <= $maxLng)))), ranked AS (SELECT l.property_id,c.lat,c.lng,c.distance,row_number() OVER(PARTITION BY l.property_id ORDER BY c.distance,c.id) AS rn FROM candidates c JOIN parcel_address_links l ON l.address_id=c.id WHERE c.distance <= $radius), matches AS (SELECT p.*,op.issue_age AS issue_priority,op.issue_confidence AS issue_confidence,op.open_days AS selected_open_priority,CASE WHEN roof.built_year IS NULL THEN NULL ELSE greatest(0,CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year) END AS roof_priority,n.lat AS matched_lat,n.lng AS matched_lng,n.distance,(SELECT max(${EFFECTIVE_OPEN_DAYS_SQL}) FROM permits x WHERE x.property_id=p.id AND ${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR ${EFFECTIVE_OPEN_DAYS_SQL} >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL} ${OPPORTUNITY_FILTER_SQL}) AS priority FROM properties p LEFT JOIN opportunity_properties op ON op.property_id=p.id JOIN ranked n ON n.property_id=p.id AND n.rn=1 LEFT JOIN owner_derivatives o ON o.property_id=p.id LEFT JOIN roof_evidence roof ON roof.property_id=p.id LEFT JOIN latest_reported_sales sale ON sale.property_id=p.id WHERE true ${RECORDED_DEED_FILTER_SQL} AND ($reportedSaleAge IS NULL OR (sale.sale_date IS NOT NULL AND sale.sale_date <= CAST(substr(p.observed_at,1,10) AS DATE) AND sale.sale_date < CAST(substr(p.observed_at,1,10) AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL 1 YEAR)) AND ($roof IS NULL OR ($includeUnknown AND roof.built_year IS NULL) OR (CAST(substr(p.observed_at,1,4) AS INTEGER)-roof.built_year)>$roof) AND ($minConfidence='any' OR ($minConfidence='low' AND roof.built_year IS NOT NULL)) AND ($owner='any' OR coalesce(o.owner_region,'unknown')=$owner) AND (NOT $statusRequired OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND ((CAST($opportunityMode AS VARCHAR) IS NOT NULL AND ${OPPORTUNITY_MATCH_SQL}) OR (CAST($opportunityMode AS VARCHAR) IS NULL AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR ${EFFECTIVE_PERMIT_STATUS_SQL}=$status) AND ($days=0 OR (${EFFECTIVE_PERMIT_STATUS_SQL}='open' AND ${EFFECTIVE_OPEN_DAYS_SQL} >= $days)) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))))`;
     const native = await (
       await this.connection.run(
         cte +
-          " SELECT *,count(*) OVER() AS total FROM matches ORDER BY CASE WHEN $sortRoof THEN roof_priority ELSE NULL END DESC NULLS LAST,CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset",
+          " SELECT *,count(*) OVER() AS total FROM matches ORDER BY CASE WHEN $sortRoof THEN roof_priority ELSE NULL END DESC NULLS LAST,CASE WHEN $sortIssueAge THEN issue_priority ELSE NULL END DESC NULLS LAST,CASE WHEN $sortIssueAge THEN issue_confidence ELSE NULL END DESC NULLS LAST,CASE WHEN $prioritize THEN coalesce(CASE WHEN CAST($opportunityMode AS VARCHAR) IS NULL THEN priority ELSE selected_open_priority END,-1) ELSE -1 END DESC,distance,id LIMIT $limit OFFSET $offset",
         params,
       )
     ).getRowObjectsJson();

@@ -1,12 +1,12 @@
 {
-  "version": "0.6.0",
-  "sha256": "ca821d42b8017a61fb839647dc60f93e1446e4ebabf72bfefd9e2d713b97b513",
+  "version": "0.7.0",
+  "sha256": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
   "files": {
-    "index.ts": "ca821d42b8017a61fb839647dc60f93e1446e4ebabf72bfefd9e2d713b97b513",
+    "index.ts": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
     "official-parcel-observation.ts": "214ad6f6627ff236f7805fb8697bc8c0f50de82f04b91d3a8e6f5fed351f4ffc",
-    "query-predicates.ts": "40fb1e0d2856357412c190440470f52bdd54ca5fcf3bcce22268ef0bb0b340aa",
+    "query-predicates.ts": "c46b396016f1fa5bf98eea9d684bbd8dc7a8a9d4ee7c9427d63dca97fbee69be",
     "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
   },
-  "moduleGraphSha256": "e9fec23c888c8078c468c947e6ee983255136ddb3e05a273e0ff44dd601d5141",
+  "moduleGraphSha256": "957c375f0563e67a8f00303ae30c05b7a18a331ba9efd972330fb49085e1158f",
   "sha256Meaning": "compatibility_entry_file_sha256"
 }

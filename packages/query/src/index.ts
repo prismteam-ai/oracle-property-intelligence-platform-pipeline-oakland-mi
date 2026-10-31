@@ -1,9 +1,5 @@
 import { resolveQueryPlace } from "../../places/src/index.ts";
-import {
-  permitEvidenceMatches,
-  needsPermitEvidence,
-  hasMinimumVerifiedTenure,
-} from "./predicates.ts";
+import { needsPermitEvidence, hasMinimumVerifiedTenure } from "./predicates.ts";
 import { createHash } from "node:crypto";
 import {
   CONTRACT_VERSION,
@@ -16,12 +12,9 @@ import {
 } from "../../contracts/src/index.ts";
 import {
   distanceMeters,
-  observedPermitStatus,
-  observedPermitOpenDays,
   reportedSaleOlderThan,
   compareQueryRows,
-  permitSourceObservationMatches,
-  roofingCandidateMatches,
+  permitMatchesQuery,
 } from "../../contracts/src/query-predicates.ts";
 export {
   distanceMeters,
@@ -136,16 +129,8 @@ export class SnapshotReader {
           q.minOpenDays > 0 ||
           needsPermitEvidence(q)
         ) {
-          const permit = p.permits.some(
-            (x) =>
-              roofingCandidateMatches(x, q) &&
-              permitEvidenceMatches(x, q) &&
-              permitSourceObservationMatches(x, q) &&
-              (q.permitStatus === "any" ||
-                observedPermitStatus(x) === q.permitStatus) &&
-              (q.minOpenDays === 0 ||
-                (observedPermitOpenDays(x, p.roof.asOf) ?? -1) >=
-                  q.minOpenDays),
+          const permit = p.permits.some((x) =>
+            permitMatchesQuery(x, q, p.roof.asOf),
           );
           if (!permit) return [];
         }

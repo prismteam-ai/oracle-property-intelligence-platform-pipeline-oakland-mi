@@ -590,6 +590,59 @@ test("protected canonical permits retain metadata, exclude issuance from open fi
       });
       expect(result.rows.map((x) => x.id)).toEqual(["oakland-parcel-3"]);
       expect(result.rows[0]?.permits[0]?.statusObservedAt).toBe(observedAt);
+      // Derived primary modes consume the same admitted canonical JSON before count/pagination.
+      for (const [mode, expectedId] of [
+        ["status_verification_needed", "oakland-parcel-1"],
+        ["confirmed_open", "oakland-parcel-3"],
+        ["confirmed_closed", null],
+        ["lifecycle_unknown", "oakland-parcel-1"],
+      ] as const) {
+        const response = await reader.search({
+          snapshotId: reader.snapshotId,
+          lat: 42.66,
+          lng: -83.29,
+          radiusMeters: 5000,
+          permitOpportunityMode: mode,
+          minPermitObservationAgeYears: 5,
+          limit: 1,
+        });
+        expect(response.total).toBe(expectedId === null ? 0 : 1);
+        expect(response.rows.map((row) => row.id)).toEqual(
+          expectedId === null ? [] : [expectedId],
+        );
+        if (expectedId !== null) {
+          const cursor = Buffer.from(
+            JSON.stringify({
+              snapshotId: reader.snapshotId,
+              queryHash: response.queryHash,
+              offset: 99,
+            }),
+          ).toString("base64url");
+          expect(
+            await reader.search({
+              snapshotId: reader.snapshotId,
+              lat: 42.66,
+              lng: -83.29,
+              radiusMeters: 5000,
+              permitOpportunityMode: mode,
+              minPermitObservationAgeYears: 5,
+              limit: 1,
+              cursor,
+            }),
+          ).toMatchObject({ total: 1, rows: [] });
+        }
+      }
+      expect(
+        (
+          await reader.search({
+            snapshotId: reader.snapshotId,
+            lat: 42.66,
+            lng: -83.29,
+            radiusMeters: 5000,
+            permitOpportunityMode: "any_roofing_permit",
+          })
+        ).total,
+      ).toBe(2);
       const publicReader = await RealSnapshot.open(out);
       try {
         expect(

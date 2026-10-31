@@ -1,6 +1,8 @@
+import { PermitOpportunityDetails } from "./permit-opportunities.tsx";
 import type {
   Property,
   SearchResponse,
+  QueryInput,
 } from "../../../packages/contracts/src/index.ts";
 import type { Health } from "./model.ts";
 import { roofBasis } from "./model.ts";
@@ -21,7 +23,7 @@ export function EvidenceDetails({
   selected: Property;
   health: Health | null;
   result: SearchResponse | null;
-  binding: { generation: number } | null;
+  binding: { generation: number; query?: QueryInput } | null;
   closeEvidence: () => void;
 }) {
   return (
@@ -201,6 +203,7 @@ export function EvidenceDetails({
             </section>
           ),
         )}
+        <PermitOpportunityDetails property={selected} query={binding?.query} />
         {selected.roof.caveats.map((c) => (
           <p className="notice compact" key={c}>
             {c}

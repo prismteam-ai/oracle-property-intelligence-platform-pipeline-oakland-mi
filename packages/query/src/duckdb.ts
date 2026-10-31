@@ -1,4 +1,10 @@
 import {
+  permitOpportunityBindings,
+  OPPORTUNITY_CTE,
+  OPPORTUNITY_FILTER_SQL,
+  OPPORTUNITY_MATCH_SQL,
+} from "./permit-opportunities.ts";
+import {
   SOURCE_OBSERVATION_FILTER_SQL,
   RECORDED_DEED_FILTER_SQL,
   ROOFING_CANDIDATE_SQL,
@@ -154,10 +160,10 @@ export class DuckSnapshot {
         );
       }
     const confidence = { any: 0, high: 3, medium: 2, low: 1 };
-    const sql = `WITH matches AS (
-      SELECT id,payload,age,${distanceSql} AS distance,
-      (SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL}) AS priority
-      FROM properties p WHERE lat IS NOT NULL AND confidence >= $confidence
+    const sql = `WITH ${OPPORTUNITY_CTE}, matches AS (
+      SELECT id,payload,age,op.issue_age AS issue_priority,op.issue_confidence AS issue_confidence,op.open_days AS selected_open_priority,${distanceSql} AS distance,
+      (SELECT max(x.open_days) FROM permits x WHERE x.property_id=p.id AND x.status='open' AND ${ROOFING_CANDIDATE_SQL} AND ($status='any' OR x.status=$status) AND ($days=0 OR x.open_days >= $days) ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL} ${OPPORTUNITY_FILTER_SQL}) AS priority
+      FROM properties p LEFT JOIN opportunity_properties op ON op.property_id=p.id WHERE lat IS NOT NULL AND confidence >= $confidence
       ${RECORDED_DEED_FILTER_SQL}
       AND ($roof IS NULL OR age > $roof OR ($unknown AND age IS NULL))
       AND ($owner='any' OR coalesce(json_extract_string(payload,'$.ownership.ownerRegion'),'unknown')=$owner)
@@ -169,15 +175,19 @@ export class DuckSnapshot {
         AND reported_sale <= CAST(json_extract_string(payload,'$.roof.asOf') AS DATE)
         AND reported_sale < CAST(json_extract_string(payload,'$.roof.asOf') AS DATE) - CAST($reportedSaleAge AS INTEGER)*INTERVAL '1 year'))
       AND (($status='any' AND $days=0 AND NOT $evidenceRequired)
-        OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND ${ROOFING_CANDIDATE_SQL}
+        OR EXISTS(SELECT 1 FROM permits x WHERE x.property_id=p.id AND (
+          (CAST($opportunityMode AS VARCHAR) IS NOT NULL AND ${OPPORTUNITY_MATCH_SQL}) OR
+          (CAST($opportunityMode AS VARCHAR) IS NULL AND ${ROOFING_CANDIDATE_SQL}
           AND ($status='any' OR x.status=$status)
           AND ($days=0 OR (x.status='open' AND x.open_days >= $days))
-          ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))
+          ${PERMIT_EVIDENCE_SQL} ${SOURCE_OBSERVATION_FILTER_SQL})))))
       SELECT payload,distance,count(*) OVER() AS total FROM matches WHERE distance <= $radius
       ORDER BY CASE WHEN $sortRoof THEN age ELSE NULL END DESC NULLS LAST,
-        CASE WHEN $prioritize THEN coalesce(priority,-1) ELSE -1 END DESC,distance,id
+        CASE WHEN $sortIssueAge THEN issue_priority ELSE NULL END DESC NULLS LAST,CASE WHEN $sortIssueAge THEN issue_confidence ELSE NULL END DESC NULLS LAST,
+        CASE WHEN $prioritize THEN coalesce(CASE WHEN CAST($opportunityMode AS VARCHAR) IS NULL THEN priority ELSE selected_open_priority END,-1) ELSE -1 END DESC,distance,id
       LIMIT $limit OFFSET $offset`;
     const result = await this.connection.run(sql, {
+      ...(await permitOpportunityBindings(this.connection, query)),
       lat: query.lat,
       lng: query.lng,
       confidence: confidence[query.minConfidence],
@@ -203,7 +213,9 @@ export class DuckSnapshot {
       prioritize:
         query.sort === "permit_open_days_desc" ||
         (!query.sort &&
-          (query.permitStatus === "open" || query.minOpenDays > 0)),
+          (query.permitStatus === "open" ||
+            query.permitOpportunityMode === "confirmed_open" ||
+            query.minOpenDays > 0)),
       sortRoof: query.sort === "roof_age_desc",
       evidenceRequired: needsPermitEvidence(query),
       requiresContractor: Boolean(query.requiresContractor),
