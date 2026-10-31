@@ -16,7 +16,7 @@ Start with the [evaluator guide](EVALUATOR_GUIDE.md) to use the hosted workspace
 - [Deployment and rollback](DEPLOYMENT.md)
 - [Evaluator access and walkthrough](EVALUATOR_GUIDE.md)
 - [Agent and MCP](AGENT_AND_MCP.md)
-- [IPFS and local CLI/Atlas compatibility](IPFS_PUBLICATION.md)
+- [Current public CID, portable DuckDB and publication history](IPFS_PUBLICATION.md)
 - [Costs, retention and teardown](COST_MODEL.md)
 - [Security and privacy](SECURITY_PRIVACY.md)
 - [Known limitations](KNOWN_LIMITATIONS.md)
