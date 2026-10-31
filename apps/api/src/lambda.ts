@@ -1,3 +1,4 @@
+import { reportApiFailure } from "../../../packages/hosted-runtime/src/api-errors.ts";
 import {
   compiledIdentity,
   assertRuntimeRegion,
@@ -137,17 +138,18 @@ async function handle(event: V2Event) {
     const cookie = out.headers["Set-Cookie"];
     if (cookie) delete out.headers["Set-Cookie"];
     return { ...out, ...(cookie ? { cookies: [cookie] } : {}) };
-  } catch {
+  } catch (error) {
     prepared = undefined;
+    const failure = reportApiFailure(error, "runtime");
     return {
-      statusCode: 503,
+      statusCode: failure.status,
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
       },
       body: JSON.stringify({
-        code: "SNAPSHOT_UNAVAILABLE",
-        message: "Verified runtime unavailable",
+        code: failure.code,
+        message: failure.message,
       }),
     };
   }

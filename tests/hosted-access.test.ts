@@ -103,6 +103,6 @@ describe("review access", () => {
         windowSeconds: 60,
         nowMs: 0,
       }),
-    ).rejects.toThrow("unavailable");
+    ).rejects.toThrow("offline");
   });
 });

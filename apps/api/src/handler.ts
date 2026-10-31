@@ -1,3 +1,7 @@
+import {
+  decodeInputPath,
+  reportApiFailure,
+} from "../../../packages/hosted-runtime/src/api-errors.ts";
 import { assessmentEvidence } from "../../../packages/hosted-runtime/src/assessment-evidence.ts";
 import { sourceContext } from "../../../packages/hosted-runtime/src/source-context.ts";
 import { serveMcpFetch } from "../../../packages/mcp-adapter/src/server.ts";
@@ -7,7 +11,6 @@ import { type SessionStore } from "../../../packages/hosted-runtime/src/sessions
 import { createHash } from "node:crypto";
 import {
   CONTRACT_VERSION,
-  DomainError,
   QuerySchema,
   type Property,
   type SearchResponse,
@@ -231,7 +234,7 @@ export function createApi(options: ApiOptions) {
         return send(
           200,
           await s.detail(
-            decodeURIComponent(url.pathname.slice("/api/properties/".length)),
+            decodeInputPath(url.pathname.slice("/api/properties/".length)),
             url.searchParams.get("snapshotId") ?? "",
           ),
         );
@@ -277,18 +280,11 @@ export function createApi(options: ApiOptions) {
         return send(200, s.manifest);
       return send(404, { code: "INVALID_INPUT", message: "Route not found" });
     } catch (error) {
-      if (error instanceof AccessError)
-        return send(error.status, {
-          code: error.status === 429 ? "RATE_LIMITED" : "NOT_AUTHORIZED",
-          message: error.message,
-        });
-      if (error instanceof DomainError)
-        return send(error.code === "SNAPSHOT_UNAVAILABLE" ? 409 : 400, {
-          code: error.code,
-          message: error.message,
-        });
-      // Never echo request, database, filesystem or provider exception details.
-      return send(400, { code: "INVALID_INPUT", message: "Request rejected" });
+      const failure = reportApiFailure(error);
+      return send(failure.status, {
+        code: failure.code,
+        message: failure.message,
+      });
     }
   };
 }

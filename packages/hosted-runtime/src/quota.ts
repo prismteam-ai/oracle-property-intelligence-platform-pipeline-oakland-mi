@@ -79,9 +79,11 @@ export class DynamoQuotaStore implements QuotaStore {
           ReturnValues: "UPDATED_NEW",
         }),
       );
+      const consumed = out.Attributes?.consumed;
+      if (!Number.isSafeInteger(consumed) || Number(consumed) < 0)
+        throw new Error("Invalid quota store response");
       return {
-        remaining:
-          input.limit - Number(out.Attributes?.consumed ?? input.limit),
+        remaining: input.limit - Number(consumed),
         resetAt: k.resetAt,
       };
     } catch (e) {
@@ -90,7 +92,7 @@ export class DynamoQuotaStore implements QuotaStore {
           429,
           "Request allowance reached; retry after the window resets",
         );
-      throw new AccessError(503, "Quota service unavailable");
+      throw e;
     }
   }
 }
