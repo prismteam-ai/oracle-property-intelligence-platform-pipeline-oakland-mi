@@ -1,10 +1,23 @@
 /** Rebuild an ordinary offline DB from already hash-verified public Parquets only. */
-import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readlink,
+  rm,
+  access,
+} from "node:fs/promises";
+import { createConnection } from "node:net";
 import { constants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { PROPERTY_VIEW_SQL, sha256 } from "../../county/src/model.ts";
+import {
+  PROPERTY_VIEW_SQL,
+  sha256,
+  stableJson,
+} from "../../county/src/model.ts";
 import { quote } from "../../query/src/real-utils.ts";
 import { publicFileDigest } from "./current-public-car.ts";
 import { PORTABLE_QUERY_SQL } from "./current-public-snapshot.ts";
@@ -24,8 +37,9 @@ const physicalRelations = [
   "recorded_deed_observations",
   "official_inline_observations",
   "permit_signals",
+  "official_source_intake_dispositions",
 ];
-const expectedRelations = [
+export const PUBLIC_DATABASE_RELATIONS = [
   ...physicalRelations,
   "source_row_dispositions",
   "properties",
@@ -37,11 +51,13 @@ const allowedEnvironment = new Set([
   "TZ",
   "TMPDIR",
   "MALLOC_PERTURB_",
+  "PWD",
 ]);
 export async function rebuildCurrentPublicDatabase(options: {
   directory: string;
   indexSha256: string;
   outputDirectory: string;
+  requireIsolation?: boolean;
 }) {
   if (Object.keys(process.env).some((key) => !allowedEnvironment.has(key)))
     throw new Error(
@@ -49,18 +65,78 @@ export async function rebuildCurrentPublicDatabase(options: {
     );
   if (!/^[a-f0-9]{64}$/.test(options.indexSha256))
     throw new Error("Expected public artifact index digest required");
+  let isolation:
+    | {
+        networkNamespace: string;
+        directNetworkDenied: string;
+        absentInputs: string[];
+      }
+    | undefined;
+  if (options.requireIsolation) {
+    if (process.env.PWD !== "/app")
+      throw new Error("Unexpected isolated working directory");
+    const forbidden = [
+      "/home/al",
+      "/root",
+      "/repos",
+      "/mnt",
+      "/app/.git",
+      "/app/data",
+      "/app/private",
+      "/app/.env",
+    ];
+    for (const file of forbidden) {
+      try {
+        await access(file);
+        throw new Error("Public worker can access an excluded input root");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    }
+    const directNetworkDenied = await new Promise<string>((resolve, reject) => {
+      const socket = createConnection({ host: "1.1.1.1", port: 443 });
+      socket.setTimeout(1000);
+      socket.once("connect", () => {
+        socket.destroy();
+        reject(new Error("Public worker network is not isolated"));
+      });
+      socket.once("timeout", () => {
+        socket.destroy();
+        reject(new Error("Network isolation proof timed out"));
+      });
+      socket.once("error", (error: NodeJS.ErrnoException) => {
+        socket.destroy();
+        if (error.code !== "ENETUNREACH")
+          reject(new Error("Network namespace denial not proven"));
+        else resolve(error.code);
+      });
+    });
+    isolation = {
+      networkNamespace: await readlink("/proc/self/ns/net"),
+      directNetworkDenied,
+      absentInputs: forbidden,
+    };
+  }
   const indexBytes = await readFile(
     path.join(options.directory, "artifact-index.json"),
   );
   if (sha256(indexBytes) !== options.indexSha256)
     throw new Error("Public index hash mismatch");
   const index = JSON.parse(indexBytes.toString()) as {
+    version: string;
     files: { name: string; sha256: string; bytes: number }[];
   };
-  if (!Array.isArray(index.files) || index.files.length > 64)
+  if (
+    ![
+      "p13-public-payload-index-v1",
+      "p13-public-build-input-index-v1",
+    ].includes(index.version) ||
+    !Array.isArray(index.files) ||
+    index.files.length > 64
+  )
     throw new Error("Bounded public index required");
   const inputs: { name: string; sha256: string; bytes: number }[] = [];
-  for (const relation of expectedRelations) {
+  for (const relation of PUBLIC_DATABASE_RELATIONS) {
     const name = relation.replaceAll("_", "-") + ".parquet";
     const expected = index.files.filter((file) => file.name === name);
     if (
@@ -95,7 +171,13 @@ export async function rebuildCurrentPublicDatabase(options: {
   const verificationDirectory = await mkdtemp(
     path.join(options.outputDirectory, "relation-check-"),
   );
-  const verified: { name: string; sha256: string; bytes: number }[] = [];
+  const verified: {
+    name: string;
+    sha256: string;
+    bytes: number;
+    rows: string;
+  }[] = [];
+  let catalogProof: Record<string, unknown>;
   try {
     const version = (
       await (
@@ -120,14 +202,14 @@ export async function rebuildCurrentPublicDatabase(options: {
       `CREATE TABLE source_row_profiles AS SELECT CAST(row_number() OVER(ORDER BY source_id,observed_at,source_schema_sha256) AS INTEGER) AS profile_id,* FROM (SELECT DISTINCT source_id,observed_at,source_schema_sha256 FROM ${dispositions}) ORDER BY profile_id`,
     );
     await connection.run(
-      `CREATE TABLE source_row_entities AS SELECT p.profile_id,e.native_id,e.property_id,e.record_digest FROM ${dispositions} e JOIN source_row_profiles p USING(source_id,observed_at,source_schema_sha256) ORDER BY p.profile_id,e.native_id`,
+      `CREATE TABLE source_row_entities AS SELECT p.profile_id,e.native_id,e.property_id,e.record_digest FROM ${dispositions} e JOIN source_row_profiles p ON p.source_id=e.source_id AND p.observed_at=e.observed_at AND p.source_schema_sha256 IS NOT DISTINCT FROM e.source_schema_sha256 ORDER BY p.profile_id,e.native_id`,
     );
     await connection.run(
       "CREATE VIEW source_row_dispositions AS SELECT p.source_id,e.native_id,e.property_id,e.record_digest,p.observed_at,p.source_schema_sha256 FROM source_row_entities e JOIN source_row_profiles p USING(profile_id)",
     );
     await connection.run(PROPERTY_VIEW_SQL);
     await connection.run(PORTABLE_QUERY_SQL);
-    for (const relation of expectedRelations) {
+    for (const relation of PUBLIC_DATABASE_RELATIONS) {
       const name = relation.replaceAll("_", "-") + ".parquet";
       const output = path.join(verificationDirectory, name);
       await connection.run(
@@ -140,9 +222,66 @@ export async function rebuildCurrentPublicDatabase(options: {
           "Standalone database logical relation differs from public source Parquet: " +
             relation,
         );
-      verified.push({ name, ...actual });
+      const count = (
+        await (
+          await connection.run(`SELECT count(*) AS rows FROM ${relation}`)
+        ).getRowObjectsJson()
+      )[0]!.rows;
+      verified.push({ name, ...actual, rows: String(count) });
       await rm(output);
     }
+    const catalogTables = await (
+      await connection.run(
+        "SELECT table_name,sql FROM duckdb_tables() WHERE NOT internal ORDER BY table_name",
+      )
+    ).getRowObjectsJson();
+    const catalogViews = await (
+      await connection.run(
+        "SELECT view_name,sql FROM duckdb_views() WHERE NOT internal ORDER BY view_name",
+      )
+    ).getRowObjectsJson();
+    const catalogMacros = await (
+      await connection.run(
+        "SELECT function_name,function_type,parameters,macro_definition FROM duckdb_functions() WHERE database_name=current_database() AND function_type IN ('macro','table_macro') ORDER BY function_name",
+      )
+    ).getRowObjectsJson();
+    const columns = await (
+      await connection.run(
+        "SELECT table_name,column_name,column_index,data_type,is_nullable FROM duckdb_columns() WHERE NOT internal ORDER BY table_name,column_index",
+      )
+    ).getRowObjectsJson();
+    if (
+      stableJson(catalogTables.map((row) => row.table_name)) !==
+        stableJson(
+          [
+            ...physicalRelations,
+            "source_row_entities",
+            "source_row_profiles",
+          ].sort(),
+        ) ||
+      stableJson(catalogViews.map((row) => row.view_name)) !==
+        stableJson([
+          "latest_reported_sales",
+          "properties",
+          "roof_evidence",
+          "source_row_dispositions",
+        ]) ||
+      stableJson(catalogMacros.map((row) => row.function_name)) !==
+        stableJson([
+          "deed_gaps_within",
+          "owners_within",
+          "permits_within",
+          "properties_within",
+          "roofs_within",
+        ])
+    )
+      throw new Error("Standalone public schema/catalog whitelist mismatch");
+    catalogProof = {
+      tables: catalogTables,
+      views: catalogViews,
+      macros: catalogMacros,
+      columns,
+    };
     await connection.run("CHECKPOINT");
   } finally {
     connection.closeSync();
@@ -157,9 +296,12 @@ export async function rebuildCurrentPublicDatabase(options: {
     seedSource: fileURLToPath(seed),
     physicalDatabaseRecomputeDeterminismClaimed: false,
     cleanEnvironmentKeys: Object.keys(process.env).sort(),
+    isolation,
     inputData:
       "Only hash-verified public Parquets; no original provider/private/AWS source files",
     logicalRelationParity: verified,
+    fullCatalog: catalogProof,
+    fullCatalogSha256: sha256(stableJson(catalogProof)),
     coreQueriesRequireExternalFiles: false,
     sourceNetworkRequests: 0,
     publicationEffects: 0,

@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import type { DuckDBConnection } from "@duckdb/node-api";
+import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildCurrentPublicSnapshot } from "../packages/publication/src/current-public-snapshot.ts";
@@ -13,6 +13,13 @@ import {
 import { loadRealSnapshot } from "../packages/query/src/real-loader.ts";
 import { sha256 } from "../packages/county/src/model.ts";
 import { currentPublicFixture } from "./current-public.fixture.ts";
+import {
+  createPrivateSourceIntakeRow,
+  SOURCE_INTAKE_COLUMNS,
+  TROY_SOURCE_FIELDS,
+} from "../packages/county/src/private-source-intake.ts";
+import { rebuildCurrentPublicDatabaseIsolated } from "../packages/publication/src/current-public-isolation.ts";
+import { finalizeCurrentPublicSnapshot } from "../packages/publication/src/current-public-finalize.ts";
 
 test("synthetic current-public fixture is byte-identical, self-contained, source-qualified and tamper-evident", async () => {
   const fixture = await currentPublicFixture();
@@ -280,7 +287,7 @@ test("standalone clean worker reads public Parquets only and verifies every logi
   );
   const report = JSON.parse(result.stdout);
   expect(report.physicalDatabaseRecomputeDeterminismClaimed).toBe(false);
-  expect(report.logicalRelationParity).toHaveLength(14);
+  expect(report.logicalRelationParity).toHaveLength(15);
   expect(report.cleanEnvironmentKeys).toEqual([
     "LANG",
     "LC_ALL",
@@ -291,3 +298,132 @@ test("standalone clean worker reads public Parquets only and verifies every logi
   ]);
   expect(report.publicationEffects).toBe(0);
 });
+
+test("official native intake identities survive unmatched disposition and unknown source schema", async () => {
+  const fixture = await currentPublicFixture();
+  const snapshotId = JSON.parse(
+    await readFile(path.join(fixture.base, "artifact-manifest.json"), "utf8"),
+  ).snapshotId;
+  const values = ["synthetic-closed", "synthetic-held"].map((id, i) =>
+    createPrivateSourceIntakeRow(
+      {
+        ...Object.fromEntries(TROY_SOURCE_FIELDS.map((name) => [name, ""])),
+        "Permit Number": id,
+      },
+      {
+        publicSnapshotId: snapshotId,
+        observedAt: "2026-10-28T08:00:00.000Z",
+        receiptDigest: "b".repeat(64),
+        matchedPropertyId: i === 0 ? "oakland-parcel-1" : null,
+        joinStatus: i === 0 ? "matched" : "unmatched",
+      },
+    ),
+  );
+  const sourceFile = path.join(fixture.root, "source-intake.parquet");
+  const instance = await DuckDBInstance.create(":memory:");
+  const connection = await instance.connect();
+  try {
+    await connection.run(
+      `CREATE TABLE intake(${SOURCE_INTAKE_COLUMNS.map((name) => name + " VARCHAR").join(",")})`,
+    );
+    await connection.run(
+      `INSERT INTO intake SELECT ${SOURCE_INTAKE_COLUMNS.map((name) => `json_extract_string(value,'$.${name}')`).join(",")} FROM json_each($values)`,
+      { values: JSON.stringify(values) },
+    );
+    await connection.run("COPY intake TO $file (FORMAT PARQUET)", {
+      file: sourceFile,
+    });
+  } finally {
+    connection.closeSync();
+    instance.closeSync();
+  }
+  const directory = path.join(fixture.root, "with-held-intake");
+  const built = await buildCurrentPublicSnapshot({
+    ...fixture.options,
+    snapshotOptions: {
+      ...fixture.options.snapshotOptions,
+      protectedSourceIntakeFile: sourceFile,
+      protectedSourceIntakeSha256: sha256(await readFile(sourceFile)),
+    },
+    outputDirectory: directory,
+  });
+  expect(built.counts.source_row_dispositions).toBe(2);
+  expect(built.counts.official_source_intake_dispositions).toBe(2);
+  const report = JSON.parse(
+    await readFile(path.join(directory, "reconciliation-report.json"), "utf8"),
+  );
+  expect(report.nativeIdentity).toEqual([
+    {
+      source_id: "official-troy-issued-permits",
+      records: "2",
+      unique_native_ids: "2",
+      matched: "1",
+      held_or_unmatched: "1",
+    },
+  ]);
+  expect(report.officialIntakeDispositionCounts).toEqual([
+    {
+      source_id: "official-troy-issued-permits",
+      join_status: "matched",
+      records: "1",
+    },
+    {
+      source_id: "official-troy-issued-permits",
+      join_status: "unmatched",
+      records: "1",
+    },
+  ]);
+});
+
+test.runIf(process.env.PRISM_RUN_PUBLICATION_ISOLATION_TEST === "1")(
+  "public-only OS isolation proves network denial and excluded input absence",
+  async () => {
+    const fixture = await currentPublicFixture();
+    const directory = path.join(fixture.root, "public");
+    await buildCurrentPublicSnapshot({
+      ...fixture.options,
+      outputDirectory: directory,
+    });
+    const index = await readFile(path.join(directory, "artifact-index.json"));
+    const report = await rebuildCurrentPublicDatabaseIsolated({
+      directory,
+      indexSha256: sha256(index),
+      outputDirectory: path.join(fixture.root, "isolated"),
+    });
+    expect(report.originalPrivateInputsMounted).toBe(false);
+    expect(report.hostAndWorkerNetworkNamespacesDiffer).toBe(true);
+    expect(report.isolation?.directNetworkDenied).toBe("ENETUNREACH");
+    expect(report.logicalRelationParity).toHaveLength(15);
+    expect(
+      report.mountedPublicInputNames.every(
+        (name) => name === "artifact-index.json" || name.endsWith(".parquet"),
+      ),
+    ).toBe(true);
+    const proofFile = path.join(fixture.root, "canonical-proof.json");
+    await writeFile(proofFile, JSON.stringify(report));
+    const finalized = await finalizeCurrentPublicSnapshot({
+      sourceDirectory: directory,
+      canonicalDatabaseFile: report.actualDatabasePath,
+      canonicalProofFile: proofFile,
+      publicInputIndexFile: path.join(directory, "artifact-index.json"),
+      outputDirectory: path.join(fixture.root, "final"),
+      recipe: {
+        sourceCommit: "a".repeat(40),
+        sourceTree: "b".repeat(40),
+        sourceFilesSha256: { "synthetic-fixture.ts": "c".repeat(64) },
+        publicInputFreezeSha256: "d".repeat(64),
+      },
+    });
+    expect(finalized.canonicalDatabaseUnchanged).toBe(true);
+    expect(finalized.publication.verification.twoFrozenByteWraps.pass).toBe(
+      true,
+    );
+    expect(
+      (await readdir(finalized.localPaths.uploadDirectory)).sort(),
+    ).toEqual(finalized.publication.files.map((file) => file.name).sort());
+    expect(
+      (await queryCurrentPublicDatabase(finalized.localPaths.uploadDirectory))
+        .readOnly,
+    ).toBe(true);
+  },
+);

@@ -148,6 +148,12 @@ const projections: readonly Projection[] = [
       "SELECT property_id,CAST(claim_window_start AS VARCHAR) AS claim_window_start,CAST(observed_through AS VARCHAR) AS observed_through,CAST(last_deed_date AS VARCHAR) AS last_deed_date,canonical_json FROM private_transfer_observations",
     order: "property_id,observed_through,claim_window_start",
   },
+  {
+    name: "official_source_intake_dispositions",
+    select:
+      "SELECT source_id,native_id,source_record_digest,observed_at,matched_property_id,join_status,source_receipt_digest,json_extract_string(source_fields_json,'$.\"Permit Number\"') AS source_permit_number,json_extract_string(source_fields_json,'$.\"Permit Type\"') AS source_permit_type,json_extract_string(source_fields_json,'$.\"Parcel #\"') AS source_parcel,json_extract_string(source_fields_json,'$.Address') AS source_site_address,json_extract_string(source_fields_json,'$.\"Date Issued\"') AS reported_issue_date,json_extract_string(source_fields_json,'$.\"Work Description\"') AS reported_work_description,json_extract_string(source_fields_json,'$.Applicant') AS reported_applicant,json_extract_string(source_fields_json,'$.\"Applicant Address\"') AS reported_applicant_address,json_extract_string(source_fields_json,'$.\"Applicant City State Zip\"') AS reported_applicant_city_state_zip,json_extract_string(source_fields_json,'$.Lot') AS reported_lot,json_extract_string(source_fields_json,'$.Subdivision') AS reported_subdivision,json_extract_string(source_fields_json,'$.Value') AS reported_value,CAST(NULL AS VARCHAR) AS reported_current_lifecycle_status,'issued_report_event_not_current_lifecycle_status' AS status_basis FROM private_source_intake",
+    order: "source_id,native_id",
+  },
 ];
 const distance =
   "12742017.6*asin(sqrt(least(1.0,pow(sin(radians(a.lat-center_lat)/2),2)+cos(radians(center_lat))*cos(radians(a.lat))*pow(sin(radians(a.lng-center_lng)/2),2))))";
@@ -186,6 +192,7 @@ async function validateSources(
     "permits",
     "protected_enrichment",
     "private_reported_owner_observations",
+    "private_source_intake",
   ]) {
     for (const row of await rows(db, `SELECT DISTINCT source_id FROM ${table}`))
       if (!allowed.has(String(row.source_id)))
@@ -461,6 +468,9 @@ export async function buildCurrentPublicSnapshot(
           (item) =>
             `SELECT source_id,native_id,property_id,record_digest,observed_at,source_schema_sha256 FROM ${source}.main.${FULL_SOURCE_DEFINITIONS[item.role].table}`,
         );
+        dispositions.push(
+          "SELECT source_id,native_id,matched_property_id AS property_id,source_record_digest AS record_digest,observed_at,CAST(NULL AS VARCHAR) AS source_schema_sha256 FROM private_source_intake",
+        );
         const dispositionSql = dispositions.length
           ? dispositions.join(" UNION ALL ")
           : "SELECT CAST(NULL AS VARCHAR) source_id,CAST(NULL AS VARCHAR) native_id,CAST(NULL AS VARCHAR) property_id,CAST(NULL AS VARCHAR) record_digest,CAST(NULL AS VARCHAR) observed_at,CAST(NULL AS VARCHAR) source_schema_sha256 WHERE false";
@@ -468,7 +478,7 @@ export async function buildCurrentPublicSnapshot(
           `CREATE TABLE ${target}.main.source_row_profiles AS SELECT CAST(row_number() OVER(ORDER BY source_id,observed_at,source_schema_sha256) AS INTEGER) AS profile_id,* FROM (SELECT DISTINCT source_id,observed_at,source_schema_sha256 FROM (${dispositionSql})) ORDER BY profile_id`,
         );
         await db.run(
-          `CREATE TABLE ${target}.main.source_row_entities AS SELECT p.profile_id,e.native_id,e.property_id,e.record_digest FROM (${dispositionSql}) e JOIN ${target}.main.source_row_profiles p USING(source_id,observed_at,source_schema_sha256) ORDER BY p.profile_id,e.native_id`,
+          `CREATE TABLE ${target}.main.source_row_entities AS SELECT p.profile_id,e.native_id,e.property_id,e.record_digest FROM (${dispositionSql}) e JOIN ${target}.main.source_row_profiles p ON p.source_id=e.source_id AND p.observed_at=e.observed_at AND p.source_schema_sha256 IS NOT DISTINCT FROM e.source_schema_sha256 ORDER BY p.profile_id,e.native_id`,
         );
         tableNames.push("source_row_dispositions");
         const publicRecords = full
@@ -520,9 +530,13 @@ export async function buildCurrentPublicSnapshot(
               "SELECT (SELECT count(*) FROM properties) AS canonical_properties,(SELECT count(*)-count(DISTINCT id) FROM properties) AS duplicate_canonical_ids,(SELECT count(*) FROM parcel_address_links) AS links,(SELECT count(*) FROM properties p WHERE NOT EXISTS(SELECT 1 FROM parcel_address_links l WHERE l.property_id=p.id)) AS properties_without_address,(SELECT count(*) FROM site_addresses WHERE lat IS NULL OR lng IS NULL) AS addresses_without_coordinates,(SELECT count(*) FROM (SELECT pin FROM parcels WHERE pin IS NOT NULL GROUP BY pin HAVING count(*)>1)) AS multi_parcel_pins",
             )
           )[0],
+          officialIntakeDispositionCounts: await rows(
+            db,
+            "SELECT source_id,join_status,count(*) AS records FROM official_source_intake_dispositions GROUP BY source_id,join_status ORDER BY source_id,join_status",
+          ),
           representativeJoins: await rows(
             db,
-            "SELECT p.id,p.source_id,p.native_id,p.pin,a.source_id AS address_source,a.native_id AS address_native_id,l.match_basis FROM properties p JOIN parcel_address_links l ON l.property_id=p.id JOIN site_addresses a ON a.id=l.address_id ORDER BY p.id,a.id LIMIT 5",
+            "SELECT id,source_id,native_id,pin,address_source,address_native_id,match_basis FROM (SELECT p.id,p.source_id,p.native_id,p.pin,a.source_id AS address_source,a.native_id AS address_native_id,l.match_basis,row_number() OVER(PARTITION BY l.match_basis ORDER BY p.id,a.id) AS representative_rank FROM properties p JOIN parcel_address_links l ON l.property_id=p.id JOIN site_addresses a ON a.id=l.address_id) WHERE representative_rank<=3 ORDER BY match_basis,id,address_native_id",
           ),
           roofConflicts: (
             await rows(

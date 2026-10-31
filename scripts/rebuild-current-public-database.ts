@@ -14,6 +14,7 @@ else
         directory: argument("--directory"),
         indexSha256: argument("--index-sha256"),
         outputDirectory: argument("--output-directory"),
+        requireIsolation: args.includes("--require-os-isolation"),
       }),
     ),
   );
