@@ -342,7 +342,9 @@ function App() {
             {!health
               ? "Connecting to snapshot"
               : health.mode === "real"
-                ? "Official public records"
+                ? health.dataMode === "protected-real"
+                  ? "Working source records"
+                  : "Official public records"
                 : "Synthetic demonstration"}
           </strong>
           <p>
@@ -376,7 +378,9 @@ function App() {
             {!health
               ? "CONNECTING · MODE PENDING"
               : health.mode === "real"
-                ? "REAL · OFFICIAL SOURCE"
+                ? health.dataMode === "protected-real"
+                  ? "REAL · WORKING DATA"
+                  : "REAL · OFFICIAL SOURCE"
                 : "SYNTHETIC · DEMONSTRATION"}
           </span>
         </header>
@@ -385,7 +389,9 @@ function App() {
             {!health
               ? "Loading verified snapshot"
               : health.mode === "real"
-                ? "Official parcel and site-address evidence"
+                ? health.dataMode === "protected-real"
+                  ? "Admitted working dataset · separately published public projection"
+                  : "Official parcel and site-address evidence"
                 : "Demonstration dataset"}
           </strong>
           <span>
@@ -835,7 +841,11 @@ function App() {
           <span>
             Assessment · {health?.stage ?? "local"} ·{" "}
             {health?.region ?? "us-east-2"} ·{" "}
-            {health?.dataMode ?? health?.mode ?? "loading"}
+            {health?.dataMode === "protected-real"
+              ? "working data"
+              : health?.dataMode === "real-public"
+                ? "public data"
+                : (health?.mode ?? "loading")}
           </span>
         </footer>
       </main>

@@ -25,5 +25,12 @@ export function assessmentEvidence(
     snapshot,
     publication,
     currentPublication,
+    workingCoverageScope: {
+      path: "/api/coverage",
+      scope: "historical_working_intake",
+      publicationDescriptionAuthority: "/api/evidence#/currentPublication",
+      supersededForCurrentPublication: true,
+      historicalValuesUnchanged: true,
+    },
   };
 }

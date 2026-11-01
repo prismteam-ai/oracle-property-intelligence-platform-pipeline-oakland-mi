@@ -18,6 +18,28 @@ export function OverviewPanel({
   currentPublication?: CurrentPublicationEvidence;
 }) {
   const latest = runs.at(-1);
+  const coverageNotes = coverage.map((c) => (
+    <article key={c.source}>
+      <div className="coverage-title">
+        <h3>{c.source}</h3>
+        <span className={c.state === "fixture_only" ? "badge teal" : "badge"}>
+          {c.state === "fixture_only"
+            ? "Fixture"
+            : c.count === null
+              ? "Not measured"
+              : c.state === "complete_selected_layers"
+                ? "Complete selected layers"
+                : "Partial"}
+        </span>
+      </div>
+      <p>{c.scope}</p>
+      <ul>
+        {c.limitations.map((limitation) => (
+          <li key={limitation}>{limitation}</li>
+        ))}
+      </ul>
+    </article>
+  ));
   return (
     <>
       <section className="metrics" aria-label="Run metrics">
@@ -179,36 +201,62 @@ export function OverviewPanel({
         <div className="panel coverage">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">SOURCE BOUNDARIES</span>
-              <h2>Coverage, with caveats</h2>
+              <span className="eyebrow">SOURCE COVERAGE</span>
+              <h2>
+                {currentPublication
+                  ? "Current eligible public projection"
+                  : "Coverage, with caveats"}
+              </h2>
             </div>
           </div>
-          {coverage.map((c) => (
-            <article key={c.source}>
-              <div className="coverage-title">
-                <h3>{c.source}</h3>
-                <span
-                  className={
-                    c.state === "fixture_only" ? "badge teal" : "badge"
-                  }
-                >
-                  {c.state === "fixture_only"
-                    ? "Fixture"
-                    : c.count === null
-                      ? "Not measured"
-                      : c.state === "complete_selected_layers"
-                        ? "Complete selected layers"
-                        : "Partial"}
-                </span>
-              </div>
-              <p>{c.scope}</p>
+          {currentPublication ? (
+            <>
+              <p>
+                The current public snapshot includes admitted official raw
+                fields, reported owner and postal observations, original Troy
+                Applicant/source fields, and reviewed derivatives. The 131
+                separately licensed provider observations remain in the working
+                dataset and are excluded from this public projection.
+              </p>
               <ul>
-                {c.limitations.map((l) => (
-                  <li key={l}>{l}</li>
-                ))}
+                <li>
+                  Building year is a roof-age proxy, not a roof installation
+                  date.
+                </li>
+                <li>
+                  No qualified source-confirmed open or continuously long-open
+                  permit cohort was found.
+                </li>
+                <li>
+                  Listed parties and license associations do not establish a
+                  verified job contractor. BBB ratings remain unavailable.
+                </li>
+                <li>
+                  Source points are not roof surveys. Missing coordinates and
+                  conflicting joins remain in the reconciliation report.
+                </li>
+                <li>
+                  Qualified current-PIN deed-index gaps do not establish
+                  continuous legal ownership.
+                </li>
               </ul>
-            </article>
-          ))}
+              <p className="muted">
+                The notes below describe earlier V9 working intake and the
+                pre-P13 publication boundary. Their exclusions for official
+                owner, postal, Applicant and raw source fields are superseded
+                for the current public projection. They remain unchanged for
+                historical audit.
+              </p>
+              <details className="historical-coverage">
+                <summary>
+                  Historical working-intake notes — retained for audit
+                </summary>
+                {coverageNotes}
+              </details>
+            </>
+          ) : (
+            coverageNotes
+          )}
         </div>
       </section>
       <section className="snapshot-strip">

@@ -4,6 +4,8 @@ Open [Oracle](https://dknck94i8grek.cloudfront.net) and enter the low-privilege 
 
 The approved PR supplies the live links, application-only capability, dated retained-through limits, model headroom and playable video. No private email exchange is needed to begin. A sign-in session lasts one hour; capability lifetime, runtime/map expiry and quota are separate finite limits. Use the latest release receipt rather than an older date in source history.
 
+The current publication panel and the `currentPublication` field in `/api/evidence` describe the eligible P13 download. `/api/coverage` retains the earlier V9 working-intake notes unchanged; the interface labels and collapses them for historical audit. Their old owner/postal/Applicant publication exclusions are superseded for the current eligible public projection. Source lifecycle, role, coordinate and join limitations still apply.
+
 ## Evaluator workflow
 
 1. In Oracle, inspect the run summary, source coverage, capture dates and immutable run history.
