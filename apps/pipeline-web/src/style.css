@@ -569,6 +569,37 @@ td small {
 .artifact-grid h3 {
   margin: 12px 0;
 }
+.current-publication {
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+.current-publication .section-heading,
+.source-category-summary .section-heading {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.current-publication .section-heading > div,
+.source-category-summary .section-heading > div {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+.source-category-summary time {
+  font-size: 11px;
+}
+.current-publication code,
+.artifact-panel code {
+  font-size: 11px;
+  line-height: 1.7;
+  word-break: break-all;
+}
+.current-publication .two-columns > article {
+  min-width: 0;
+}
+.current-publication p,
+.current-publication li {
+  font-size: 13px;
+  line-height: 1.7;
+}
 details {
   margin-top: 28px;
   border-top: 1px solid #e1e6d9;

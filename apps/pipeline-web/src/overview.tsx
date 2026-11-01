@@ -1,4 +1,5 @@
 import type { Run, Coverage, Health } from "./model.ts";
+import type { CurrentPublicationEvidence } from "./current-artifacts.tsx";
 export function OverviewPanel({
   health,
   runs,
@@ -6,6 +7,7 @@ export function OverviewPanel({
   snapshot,
   loading,
   onExplore,
+  currentPublication,
 }: {
   health: Health | null;
   runs: Run[];
@@ -13,6 +15,7 @@ export function OverviewPanel({
   snapshot: string;
   loading: boolean;
   onExplore: () => void;
+  currentPublication?: CurrentPublicationEvidence;
 }) {
   const latest = runs.at(-1);
   return (
@@ -27,7 +30,7 @@ export function OverviewPanel({
           </small>
         </div>
         <div>
-          <span>RECORDED RUNS</span>
+          <span>WORKING DATA RUNS</span>
           <strong>{runs.length.toString().padStart(2, "0")}</strong>
           <small>Incremental state preserved</small>
         </div>
@@ -46,9 +49,64 @@ export function OverviewPanel({
         <div>
           <span>PUBLIC REPLICAS</span>
           <strong>2</strong>
-          <small>Historical public base · verified October 27</small>
+          <small>
+            {currentPublication
+              ? "Current public projection · exact file readbacks"
+              : "Historical public base · verified October 27"}
+          </small>
         </div>
       </section>
+      {currentPublication && (
+        <section
+          className="panel source-category-summary"
+          aria-label="Uploaded source categories"
+        >
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">CURRENT PUBLIC RUN</span>
+              <h2>{currentPublication.runId}</h2>
+              <time dateTime={currentPublication.publishedAt}>
+                Published{" "}
+                {new Date(currentPublication.publishedAt).toLocaleString(
+                  "en-US",
+                  { timeZone: "UTC" },
+                )}{" "}
+                UTC
+              </time>
+              <p>
+                A later immutable publication of the admitted official sources.
+                Collection dates, held rows and source limitations remain
+                explicit.
+              </p>
+            </div>
+            <a
+              href="/assessment-reconciliation-report.json"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download reconciliation report ↗
+            </a>
+          </div>
+          <div className="artifact-grid">
+            {currentPublication.sourceCategories.map((category) => (
+              <article key={category.name}>
+                <span className="eyebrow">{category.name}</span>
+                <h3>{category.observed}</h3>
+              </article>
+            ))}
+          </div>
+          <details>
+            <summary>Source basis and availability</summary>
+            <ul>
+              {currentPublication.sourceCategories.map((category) => (
+                <li key={category.name}>
+                  <strong>{category.name}.</strong> {category.basis}
+                </li>
+              ))}
+            </ul>
+          </details>
+        </section>
+      )}
       <section className="two-columns">
         <div className="panel">
           <div className="section-heading">

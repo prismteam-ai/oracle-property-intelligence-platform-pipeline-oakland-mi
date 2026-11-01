@@ -22,6 +22,9 @@ import {
 import { SourceFilters, initialSourceFilters } from "./source-filters.tsx";
 import { OverviewPanel } from "./overview.tsx";
 import { ArtifactsPanel } from "./artifacts.tsx";
+import type { CurrentPublicationEvidence } from "./current-artifacts.tsx";
+import currentPublicationData from "../../../packages/hosted-runtime/src/current-public-evidence.json";
+const currentPublication = currentPublicationData as CurrentPublicationEvidence;
 import { EvidenceDetails } from "./details.tsx";
 import { PermitOpportunityBadges } from "./permit-opportunities.tsx";
 function App() {
@@ -345,7 +348,7 @@ function App() {
           <p>
             Verified immutable snapshot.
             <br />
-            Public base replicated · private enrichment stays protected.
+            Current public snapshot replicated by two independent operators.
           </p>
           {crmUrl && <a href={crmUrl}>Open Roofing CRM ↗</a>}
         </div>
@@ -432,6 +435,7 @@ function App() {
             snapshot={snapshot}
             loading={loading}
             onExplore={() => setTab("query")}
+            currentPublication={currentPublication}
           />
         )}
         {tab === "query" && (
@@ -820,7 +824,12 @@ function App() {
             </div>
           </section>
         )}
-        {tab === "artifacts" && <ArtifactsPanel manifest={manifest} />}
+        {tab === "artifacts" && (
+          <ArtifactsPanel
+            manifest={manifest}
+            currentPublication={currentPublication}
+          />
+        )}
         <footer>
           <span>PRISM / PROPERTY INTELLIGENCE</span>
           <span>

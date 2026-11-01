@@ -1,0 +1,301 @@
+{
+  "state": "CURRENT_ROOT_PUBLISHED_TWO_OPERATOR_READBACK_PASS",
+  "runId": "p13-current-official-public-20261031",
+  "publishedAt": "2026-10-31T23:12:22.689492+00:00",
+  "rootCid": "bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4",
+  "snapshotId": "oakland-public-0d1c8c725f574db6d60c",
+  "files": [
+    {
+      "bytes": 5982,
+      "cid": "bafkreiaqa4udzz4h4rf5ml53fcr3ootu5a3o27xziliz5ycoy7f4y6dbtu",
+      "codec": "raw",
+      "name": "artifact-index.json",
+      "sha256": "1007283ce787e44bd62fbb28a3b73a74e836ed7ef942d19ee04ec7cbcc78619d"
+    },
+    {
+      "bytes": 58977,
+      "cid": "bafkreibglliztra65q4u3bnv7wl42sn5l4g5cqrqumpmpy64fswjq6l2ou",
+      "codec": "raw",
+      "name": "assessor-observations.parquet",
+      "sha256": "265ad199c41eec394d85b5fd97cd49bd5f0dd14230a31ec7e3dc2cac98797a75"
+    },
+    {
+      "bytes": 31383,
+      "cid": "bafkreic7k5nqaprstpcrqsgq6suuwb5h47xg23srhrasr6ozvfsmthrtne",
+      "codec": "raw",
+      "name": "canonical-database-proof.json",
+      "sha256": "5f575b003e329bc51848d0f4a94b07a7e7ee6d6e513c4128f9d9a964c99e3369"
+    },
+    {
+      "bytes": 3720,
+      "cid": "bafkreidtbhrvnnzqfygl6emyxyeohhxz6l4mhsakjydpiev43dl3lngxx4",
+      "codec": "raw",
+      "name": "coverage.json",
+      "sha256": "7309e356b7302e0cbf1198be08e39ef9f2f8c3c80a4e06f412bcd8d7b5b4d7bf"
+    },
+    {
+      "bytes": 15759,
+      "cid": "bafkreigtvilyikylexhn7bvacqqlilmxz34rzzoxk4u4iy6w4kclpo3aqu",
+      "codec": "raw",
+      "name": "independent-rebuild-proof.json",
+      "sha256": "d3aa17842b0b25cedf86a01420b42d97cef91ce5d75729c463d6e284b7bb6085"
+    },
+    {
+      "bytes": 211300352,
+      "cid": "bafybeifzdfzftxxiaw22tfdfnr56nbvsz3hhe62u7szv2ijl6kngmxlb7y",
+      "codec": "dag-pb",
+      "name": "oakland-public.duckdb",
+      "sha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88"
+    },
+    {
+      "bytes": 3263,
+      "cid": "bafkreidi7p5j6dhzgux4fltfd3fv3mkc2nekcdyf2mg5ziixdjdtfr7zqm",
+      "codec": "raw",
+      "name": "official-inline-observations.parquet",
+      "sha256": "68fbfa9f0cf9352fc2ae651ecb5db142d348a10f05d30ddca1171a4732c7f983"
+    },
+    {
+      "bytes": 20148653,
+      "cid": "bafybeig5pvtfivuctkdqw4i3ct3od27yhkzfd7fot3uals46hfr7ffdmbe",
+      "codec": "dag-pb",
+      "name": "official-parcel-observations.parquet",
+      "sha256": "18cb6f905ff2c5828f1e70067af46e13a2fd71f1b8399db5392c28d87753aa9d"
+    },
+    {
+      "bytes": 658828,
+      "cid": "bafybeicfrtvlvmuiu3ijkhj6soy663hrd42ppx7uomf7u6wrnw2mxe7gqm",
+      "codec": "dag-pb",
+      "name": "official-source-intake-dispositions.parquet",
+      "sha256": "d19afada7cd19e5ad212b48cae6961c20d323760de0374655c865cc4f4763f28"
+    },
+    {
+      "bytes": 80140250,
+      "cid": "bafybeicwgzapbasy6zriagjqsfze3z25pdgnmqfazw5ycyy7lu3hllewu4",
+      "codec": "dag-pb",
+      "name": "official-source-records.parquet",
+      "sha256": "c31b5234683c6e317baf6de51496b1902e2d17e439981c8fcfbbce7b6cfcf3c2"
+    },
+    {
+      "bytes": 233876,
+      "cid": "bafkreieeiijulsn4rkvwxcnemrjw24mbiv4h4rbpvblly5bpeelzvvchzm",
+      "codec": "raw",
+      "name": "owner-derivatives.parquet",
+      "sha256": "84421345c9bc8aab6b89a464536d718145787e442fa856bc742f21179ad447cb"
+    },
+    {
+      "bytes": 1523,
+      "cid": "bafkreibcpe6dqqy5ppdscx2qrvmi5jtg2vfyetkqgc4us4wwa6mxastpum",
+      "codec": "raw",
+      "name": "owner-location-provenance.parquet",
+      "sha256": "22793c38431d7bc7215f508d588ea666d54b824d5030b94972d60799704a6fa3"
+    },
+    {
+      "bytes": 1584306,
+      "cid": "bafybeicsvwiazfxphowr67uz55sfgoxpyjlofweaaafq6zqimh6jgf2nsu",
+      "codec": "dag-pb",
+      "name": "parcel-address-links.parquet",
+      "sha256": "a63742f3676f3acae6fbe4b673a447c41887e97daca74ce4a7ead2e379e3903c"
+    },
+    {
+      "bytes": 22192529,
+      "cid": "bafybeihsw23jdpiyzx3bbmn4lm3uvynbuecrt4oz6bkzkl75lzafnuw4cm",
+      "codec": "dag-pb",
+      "name": "parcels.parquet",
+      "sha256": "3034a4ecb58ba0be6d61883b4f34dc5c75f72a1c2721f209916bfa48edb19521"
+    },
+    {
+      "bytes": 1208779,
+      "cid": "bafybeieuozt4qfai3xrnqaiseyiifgywbfqocft24pqzwqaqv542hp7ksi",
+      "codec": "dag-pb",
+      "name": "permit-signals.parquet",
+      "sha256": "5590f84a4aba8eb65a2053aabfb2a97c5cf7f2cda175e0df8b414d14827da2fd"
+    },
+    {
+      "bytes": 5317566,
+      "cid": "bafybeih67n2h5caoarktnaioke4tqbm6j3duhisecfa2o4gjwwgtwzfx2e",
+      "codec": "dag-pb",
+      "name": "permits.parquet",
+      "sha256": "56fbf6b5f063dddcd365c2ef676f9e29f648938545d66f4a38b698b39d6c541e"
+    },
+    {
+      "bytes": 3058,
+      "cid": "bafkreihn7roqtwzvgcvrdgbas7gktg6g66ysu7emfqn47q5tn4mredfayi",
+      "codec": "raw",
+      "name": "portable-queries.sql",
+      "sha256": "edfc5d09db3530ab11982097cca99bc6f7b12a7c8c2c1bcfc3b36f19120ca0c2"
+    },
+    {
+      "bytes": 22201643,
+      "cid": "bafybeicwjofjsapnhmdrzuo7vxhmwkkd2vty7l3xwdefdpu7zabjnqic3a",
+      "codec": "dag-pb",
+      "name": "properties.parquet",
+      "sha256": "9a166b2af0092de681a33887240f74814ab3860731242365d913e1d6eea9ce74"
+    },
+    {
+      "bytes": 2116,
+      "cid": "bafkreiecwd4zdquj5zbbvotkl6524dqdy2otmcvjv2qseu2522fqggbet4",
+      "codec": "raw",
+      "name": "public-build-input-index.json",
+      "sha256": "82b0f991c289ee421aba6a5fbbae0e03c69d360aa9aea122535dd68b0318249f"
+    },
+    {
+      "bytes": 25463,
+      "cid": "bafkreif2gmbks5nt37esknajekwejboioeo6pciga4y7ky7qltfdblhaum",
+      "codec": "raw",
+      "name": "reconciliation-report.json",
+      "sha256": "ba3302a975b3dfc925340922ac4485c8711de789060731f563f05cca30ace0a3"
+    },
+    {
+      "bytes": 4715,
+      "cid": "bafkreihbqk5aq5ztu6lw7rsx7lnyda5m2xwgmkieajwmv2qdefmq67pinu",
+      "codec": "raw",
+      "name": "recorded-deed-observations.parquet",
+      "sha256": "e182ba087733a7976fc657fadb8183acd5ec662904026ccaea0321590f7de86d"
+    },
+    {
+      "bytes": 250203,
+      "cid": "bafkreicyfjlrvf534q3uawjj4nte4dswgmqmikdsdla4atcbk2qvafcsve",
+      "codec": "raw",
+      "name": "reported-owner-observations.parquet",
+      "sha256": "582a571a97bbe437405929e3664e0e563320c428721ac1c04c4156a1501452a9"
+    },
+    {
+      "bytes": 14983,
+      "cid": "bafkreiguq26pc6ynyvvpassekqe6bwip4zvgctbnx3xfcajrmakgjavzdy",
+      "codec": "raw",
+      "name": "runs.json",
+      "sha256": "d486bcf17b0dc56af04a445409e0d90fe66a614c2dbeee51013160146482b91e"
+    },
+    {
+      "bytes": 1317,
+      "cid": "bafkreihcy4vwrxnk26reuf77ntrf7qdhxxg66fgfzekwq2zdw5sbumqlpy",
+      "codec": "raw",
+      "name": "sample.json",
+      "sha256": "e2c72b68ddaad7a24a17ff6ce25fc067bdcdef14c5c915686b23b7641a320b7e"
+    },
+    {
+      "bytes": 2403,
+      "cid": "bafkreihojh5aqpog5izhpmqqpbw46wupekeeaevtxdp7fzidztml4d5o4e",
+      "codec": "raw",
+      "name": "schema.json",
+      "sha256": "ee49fa083dc6ea3277b210786dcf5a8f22884012b3b8dff2e503ccd8be0faee1"
+    },
+    {
+      "bytes": 30051524,
+      "cid": "bafybeicic42k2xpic5clvehow45csob2i3bldinhw7rvwhr3mtvzqyakce",
+      "codec": "dag-pb",
+      "name": "site-addresses.parquet",
+      "sha256": "a2b08e71a855ad05baa5e09f9098b1527236b2d9293ba72ef97f3366280a1408"
+    },
+    {
+      "bytes": 9938,
+      "cid": "bafkreibhdsqa74tnfovls5gpmt65ctri5kmuhjts75ydjoixyedorl7nay",
+      "codec": "raw",
+      "name": "source-profiles.json",
+      "sha256": "271ca00ff26d2baab974cf64fdd14e28ea9943a672ff7034b917c106e8afed06"
+    },
+    {
+      "bytes": 2977,
+      "cid": "bafkreid4xz33r2nhjmxdnj4jxwwdevildfqakr67ggrzhom3ubi3g7kjsm",
+      "codec": "raw",
+      "name": "source-recipe.json",
+      "sha256": "7cbe77b8e9a74b2e36a789bdac32550b19600547df31a393b99ba051b37d4993"
+    },
+    {
+      "bytes": 40739383,
+      "cid": "bafybeias53v4qecmptmxhcf6fvbobgdktcnbnwsuf7n6uhgixyj4kf6py4",
+      "codec": "dag-pb",
+      "name": "source-row-dispositions.parquet",
+      "sha256": "6410b2aeb26e738f1bf36c051fd7d698cc887090a9a572773d85074c5a56c836"
+    }
+  ],
+  "payloadBytes": 436215469,
+  "priorRoots": [
+    "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+    "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna"
+  ],
+  "car": {
+    "url": "https://github.com/th3Wh1t3Rabbit/oracle-property-intelligence-platform-pipeline-oakland-mi/releases/download/assessment-public-snapshot-2026-10-31/snapshot.car",
+    "bytes": 436105690,
+    "sha256": "872d67a43e2e6c531e8020c55c1c191bca1d122e9aec2d6babe5705e0e0ecd52"
+  },
+  "readback": {
+    "operators": ["Filebase", "Pinata"],
+    "verifiedAt": "2026-10-31T23:22:34.339312+00:00"
+  },
+  "sourceCategories": [
+    {
+      "name": "Property",
+      "observed": "490,799 canonical properties",
+      "basis": "490,775 parcel records and 24 address-only entities; selected county layers, with native identities preserved."
+    },
+    {
+      "name": "Permit",
+      "observed": "39,282 normalized observations",
+      "basis": "Independence, Troy and Rochester Hills source records/events; joined and held identities remain in the report."
+    },
+    {
+      "name": "Ownership",
+      "observed": "3,747 reported-name observations",
+      "basis": "Municipal source labels, plus official parcel/postal observations and 13 bounded current-PIN deed-index windows. Complete ownership continuity is unestablished."
+    },
+    {
+      "name": "Contractor / license",
+      "observed": "907 license associations",
+      "basis": "Ten LARA identifiers, medium-confidence applicant-business name matches; 13 linked rows are Inactive. Job-contractor identity and current eligibility remain unverified."
+    },
+    {
+      "name": "BBB / rating",
+      "observed": "No observed ratings",
+      "basis": "No rating was available in the admitted sources. Missing values remain unavailable; live BBB integration is outside the CRM assignment."
+    },
+    {
+      "name": "Business / listed party",
+      "observed": "746 reported business names",
+      "basis": "Source Applicant-role evidence. All 7,500 Troy intake rows retain their original fields; 4,752 normalized observations contain a reported business indicator."
+    },
+    {
+      "name": "Coordinates",
+      "observed": "559,695 source point pairs",
+      "basis": "Official site-address points cover 463,196 canonical properties; six address rows lack coordinates. Points are not surveyed roof locations."
+    }
+  ],
+  "permitReconciliation": {
+    "sourceViewRows": 49284,
+    "uniqueMunicipalRecords": 33014,
+    "publishedPermitObservations": 39282,
+    "explanation": "31,525 joined Independence records + 6,842 Troy records + 915 joined Rochester Hills ISSUED report events = 39,282. Repeated view representations, APPLIED events and held associations are counted separately; broader construction-job deduplication is unestablished."
+  },
+  "consumer": {
+    "databaseSha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88",
+    "databaseBytes": 211300352,
+    "verifiedAt": "2026-10-31T23:19:37.362Z",
+    "queryResults": [
+      {
+        "name": "Novi roofs older than 15",
+        "count": 648,
+        "basis": "Five miles from the official City center; labeled building-year proxy."
+      },
+      {
+        "name": "Troy confirmed open, older than five years",
+        "count": 0,
+        "basis": "No source-confirmed positive in the admitted cohort."
+      },
+      {
+        "name": "Troy status-verification candidates",
+        "count": 4225,
+        "basis": "A separate five-mile cohort with older issue/status observations; current openness needs checking."
+      },
+      {
+        "name": "Troy regional mailing class",
+        "count": 1,
+        "basis": "Recorded mailing-state classification, with its source basis."
+      },
+      {
+        "name": "Troy qualified ten-year deed gaps",
+        "count": 5,
+        "basis": "Documented current-PIN index windows through October 19, 2026; complete parcel lineage is unestablished."
+      }
+    ]
+  }
+}

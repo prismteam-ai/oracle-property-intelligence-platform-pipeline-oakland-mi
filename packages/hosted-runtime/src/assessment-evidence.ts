@@ -1,5 +1,6 @@
 import type { RuntimeIdentity } from "./release";
 import publication from "./public-run-evidence.json" with { type: "json" };
+import currentPublication from "./current-public-evidence.json" with { type: "json" };
 const measuredHash = (value: string | undefined) =>
   /^[a-f0-9]{64}$/.test(value ?? "") ? value : null;
 /** Public reviewer metadata only. Never serialize generic environment or protected records. */
@@ -23,5 +24,6 @@ export function assessmentEvidence(
     },
     snapshot,
     publication,
+    currentPublication,
   };
 }
