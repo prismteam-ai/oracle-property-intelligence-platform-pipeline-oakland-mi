@@ -1,0 +1,26 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {}
+  },
+  "globalDependencies": [
+    "packages/**/src/**",
+    "vite.config.ts",
+    "tsconfig.json"
+  ],
+  "globalEnv": [
+    "PRISM_RELEASE_STAGE",
+    "PRISM_DEPLOY_REGION",
+    "VITE_CRM_URL",
+    "AWS_REGION",
+    "AWS_DEFAULT_REGION"
+  ]
+}

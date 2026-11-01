@@ -1,0 +1,15 @@
+node_modules
+dist
+cdk.out
+coverage
+test-results
+playwright-report
+pnpm-lock.yaml
+docs/history/ASSIGNMENT_README.md
+
+dist-lambda/
+oracle-lambda.zip
+ci-results/
+data/
+# Exact published payload bytes, checked by current-public-evidence.test.ts.
+apps/pipeline-web/public/assessment-reconciliation-report.json

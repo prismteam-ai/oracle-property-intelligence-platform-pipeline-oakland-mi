@@ -1,0 +1,133 @@
+{
+  "publicationProfile": "run-history-v2",
+  "rootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+  "priorRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+  "publicSnapshotId": "oakland-real-e08111dc398302e141d3",
+  "datasetDigest": "e08111dc398302e141d38807c6e79b10a22b562bcc324d62416a9c13b4faa8d8",
+  "carSha256": "069137cc3d1190fce1a396788d3fef0f53f32c9cdf50c2874b2c2a24e11e4d73",
+  "carBytes": 53864111,
+  "history": [
+    {
+      "runId": "run-01",
+      "kind": "full-baseline",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 1050476,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 0
+      }
+    },
+    {
+      "runId": "run-02",
+      "kind": "complete-content-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    },
+    {
+      "runId": "run-03",
+      "kind": "full-public-field-incremental-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-e08111dc398302e141d3",
+      "datasetRootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    }
+  ],
+  "sourceFactDelta": {
+    "added": 0,
+    "changed": 0,
+    "deleted": 0,
+    "unchanged": 1050476
+  },
+  "publicationVerification": "Exact root retained by Filebase and Pinata on Free plans; every file matched size/SHA256 through both public operators",
+  "metadataExplanation": "New provenance, contract0.3.0 and run history; no changed county facts",
+  "publicManifestPath": "/assessment-publication-manifest.json",
+  "operatorGatewayProofPath": "/assessment-gateway-proof.json",
+  "ipns": {
+    "name": "k51qzi5uqu5dhw010uk4t6axj2dnlofvyptarqfp74cuq1f74rzuzssv4zkf8h",
+    "path": "/ipns/k51qzi5uqu5dhw010uk4t6axj2dnlofvyptarqfp74cuq1f74rzuzssv4zkf8h",
+    "resolvedCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+    "resolutionObservedAt": "2026-10-28T02:22:31.597905+00:00",
+    "providerUiDefaultValidity": "48h",
+    "validityUiObservedAt": "2026-10-28T02:23:18.273827+00:00",
+    "extendedValidityRequestStatus": "504h requests rejected withHTTP422",
+    "signedRecordExpiryIndependentlyVerified": false,
+    "validityBeyondNovember17Verified": false,
+    "automaticRenewalConfigured": false,
+    "meaning": "Historical recorded resolution only; no renewal mechanism or verified long-term expiry. Use immutable published CID1/CID2 identities; run4 remains unpublished.",
+    "status": "retired-historical-observation-only",
+    "authoritativeCurrentPointer": false
+  },
+  "publicationClassification": "immutable assessment-product snapshots; not an Atlas-conformant publication",
+  "publishedHistory": [
+    {
+      "runId": "run-01",
+      "kind": "full-baseline",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 1050476,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 0
+      }
+    },
+    {
+      "runId": "run-02",
+      "kind": "complete-content-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-71c0ba7aafadd0e4301b",
+      "datasetRootCid": "bafybeieujobn76aabzjlznxpc5ovwy7fmgjhzuy47zhrcm2a4z54o5ujzu",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    },
+    {
+      "runId": "run-03",
+      "kind": "full-public-field-incremental-reconciliation",
+      "complete": true,
+      "snapshotId": "oakland-real-e08111dc398302e141d3",
+      "datasetRootCid": "bafybeidznfhsehieurdha25cvat3mpwlhsu4k6z6tjm7lgns4irc6coyna",
+      "deltas": {
+        "added": 0,
+        "changed": 0,
+        "deleted": 0,
+        "unchanged": 1050476
+      }
+    }
+  ],
+  "activeWorkingSnapshot": {
+    "runId": "run-04",
+    "snapshotId": "oakland-real-ad414e5e71b11e3359ab",
+    "datasetDigest": "ad414e5e71b11e3359ab921a22f0227b84468324a797ff5e919882ab53501176",
+    "publicArtifactManifestSha256": "d3f82cc0b00eb8345f94c7e5ffb21e37fd928bc9c5af771d005e6f700d879bbb",
+    "localPreparedRootCid": "bafybeia7uiqaupc6gax5i7wlpga6ylabffauhj2asyl4ge6bauts4ubm6q",
+    "publicationState": "local-prepared-unpublished",
+    "stagingDelivery": "private authenticated AWS read plane",
+    "sourceFacts": {
+      "added": 0,
+      "changed": 0,
+      "deleted": 0,
+      "unchanged": 1050476
+    },
+    "freshness": "Only the selected public parcel/address fields and geometry were refreshed. Protected county attributes retain their actual earlier observation times."
+  }
+}

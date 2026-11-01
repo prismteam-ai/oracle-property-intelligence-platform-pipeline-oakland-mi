@@ -1,0 +1,349 @@
+{
+  "version": "p13-public-only-clean-consumer-proof-v1",
+  "status": "PASS_PUBLIC_GET_DOWNLOAD_AND_ORDINARY_READ_ONLY_QUERIES",
+  "startedAt": "2026-10-31T23:19:28.676Z",
+  "source": {
+    "rootCid": "bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4",
+    "indexUrl": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/artifact-index.json",
+    "indexSha256": "1007283ce787e44bd62fbb28a3b73a74e836ed7ef942d19ee04ec7cbcc78619d",
+    "operator": "Filebase public default IPFS gateway"
+  },
+  "runtime": {
+    "node": "v24.22.1",
+    "environmentKeys": ["LANG", "LC_ALL", "PATH", "TMPDIR", "TZ"],
+    "credentialEnvironmentKeysPresent": [],
+    "oracleApiUsed": false,
+    "localhostServiceUsed": false,
+    "originalCandidateDataFallbackUsed": false,
+    "originalCanonicalFileOpened": false
+  },
+  "ownedDirectoryInitiallyExisted": false,
+  "requests": [
+    {
+      "number": 1,
+      "url": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/artifact-index.json",
+      "method": "GET",
+      "credentials": "omit",
+      "headersProvided": false,
+      "redirectMode": "error",
+      "startedAt": "2026-10-31T23:19:28.677Z",
+      "startMs": 151.772892,
+      "status": 200,
+      "responseUrl": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/artifact-index.json",
+      "headersReceivedAt": "2026-10-31T23:19:29.046Z",
+      "headersElapsedMs": 369.475538,
+      "declaredContentLength": "5982",
+      "downloadedBytes": 5982
+    },
+    {
+      "number": 2,
+      "url": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/oakland-public.duckdb",
+      "method": "GET",
+      "credentials": "omit",
+      "headersProvided": false,
+      "redirectMode": "error",
+      "startedAt": "2026-10-31T23:19:29.053Z",
+      "startMs": 527.878277,
+      "status": 200,
+      "responseUrl": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/oakland-public.duckdb",
+      "headersReceivedAt": "2026-10-31T23:19:29.536Z",
+      "headersElapsedMs": 482.788285,
+      "declaredContentLength": "211300352",
+      "downloadedBytes": 211300352,
+      "bodyCompletedAt": "2026-10-31T23:19:35.386Z"
+    }
+  ],
+  "automaticRetries": false,
+  "automaticFallback": false,
+  "publicDownload": {
+    "indexUrl": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/artifact-index.json",
+    "indexSha256": "1007283ce787e44bd62fbb28a3b73a74e836ed7ef942d19ee04ec7cbcc78619d",
+    "databaseUrl": "https://ipfs.filebase.io/ipfs/bafybeiafqikyxrfknfcfsocbi6dsfn6zo66jky6jvm2bqefwm6t72brhe4/oakland-public.duckdb",
+    "bytes": 211300352,
+    "sha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88",
+    "authenticated": false,
+    "automaticRetry": false
+  },
+  "downloadCompletedAt": "2026-10-31T23:19:35.386Z",
+  "downloadElapsedMs": 6709.951727,
+  "downloadedDatabaseBeforeQueries": {
+    "bytes": 211300352,
+    "sha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88"
+  },
+  "ordinaryConsumer": {
+    "version": "p13-clean-public-duckdb-consumer-v1",
+    "database": {
+      "bytes": 211300352,
+      "sha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88"
+    },
+    "databaseVersion": [
+      {
+        "version": "v2.0.0"
+      }
+    ],
+    "sourceNetworkRequiredDuringQueries": false,
+    "oracleApiRequired": false,
+    "awsCredentialsRequired": false,
+    "readOnly": true,
+    "results": {
+      "noviRoofs": {
+        "sql": "SELECT count(*) AS matches FROM roofs_within(42.4806,-83.4755,8046.72,15)",
+        "rows": [
+          {
+            "matches": "648"
+          }
+        ]
+      },
+      "noviOfficialCityRoofs": {
+        "sql": "SELECT count(*) AS matches FROM roofs_within(42.4810994939,-83.4950218553,8046.72,15)",
+        "rows": [
+          {
+            "matches": "648"
+          }
+        ]
+      },
+      "noviRows": {
+        "sql": "SELECT id,pin,built_year,roof_proxy_age_years,roof_age_basis,distance_meters FROM roofs_within(42.4806,-83.4755,8046.72,15) ORDER BY distance_meters,id LIMIT 5",
+        "rows": [
+          {
+            "id": "oakland-parcel-154931",
+            "pin": "2222202019",
+            "built_year": 1995,
+            "roof_proxy_age_years": 31,
+            "roof_age_basis": "reported_building_year_not_roof_inspection",
+            "distance_meters": 580.0031909258279
+          },
+          {
+            "id": "oakland-parcel-158837",
+            "pin": "2215454006",
+            "built_year": 1962,
+            "roof_proxy_age_years": 64,
+            "roof_age_basis": "reported_building_year_not_roof_inspection",
+            "distance_meters": 594.4519753248718
+          },
+          {
+            "id": "oakland-parcel-154935",
+            "pin": "2222202011",
+            "built_year": 1950,
+            "roof_proxy_age_years": 76,
+            "roof_age_basis": "reported_building_year_not_roof_inspection",
+            "distance_meters": 608.9933851414049
+          },
+          {
+            "id": "oakland-parcel-154864",
+            "pin": "2222251006",
+            "built_year": 1964,
+            "roof_proxy_age_years": 62,
+            "roof_age_basis": "reported_building_year_not_roof_inspection",
+            "distance_meters": 760.5255067785051
+          },
+          {
+            "id": "oakland-parcel-154958",
+            "pin": "2222201006",
+            "built_year": 1995,
+            "roof_proxy_age_years": 31,
+            "roof_age_basis": "reported_building_year_not_roof_inspection",
+            "distance_meters": 835.2989579320831
+          }
+        ]
+      },
+      "strictTroyOpen": {
+        "sql": "SELECT count(*) AS matches FROM permits_within(42.5790196146,-83.1483459216,8046.72,'confirmed_open',5,0)",
+        "rows": [
+          {
+            "matches": "0"
+          }
+        ]
+      },
+      "troyVerification": {
+        "sql": "SELECT count(*) AS matches FROM permits_within(42.5790196146,-83.1483459216,8046.72,'status_verification_needed',5,0)",
+        "rows": [
+          {
+            "matches": "4225"
+          }
+        ]
+      },
+      "outOfAreaOwners": {
+        "sql": "SELECT count(*) AS matches FROM owners_within(42.4806,-83.4755,8046.72,'out_of_area')",
+        "rows": [
+          {
+            "matches": "0"
+          }
+        ]
+      },
+      "troyRegionalOwners": {
+        "sql": "SELECT count(*) AS matches FROM owners_within(42.5790196146,-83.1483459216,8046.72,'regional')",
+        "rows": [
+          {
+            "matches": "1"
+          }
+        ]
+      },
+      "qualifiedDeedGaps": {
+        "sql": "SELECT count(*) AS matches FROM deed_gaps_within(42.4806,-83.4755,8046.72,10)",
+        "rows": [
+          {
+            "matches": "0"
+          }
+        ]
+      },
+      "qualifiedTroyDeedGaps": {
+        "sql": "SELECT count(*) AS matches FROM deed_gaps_within(42.5790196146,-83.1483459216,8046.72,10)",
+        "rows": [
+          {
+            "matches": "5"
+          }
+        ]
+      },
+      "officialSourceCounts": {
+        "sql": "SELECT source_id,count(*) AS rows FROM source_row_dispositions GROUP BY source_id ORDER BY source_id",
+        "rows": [
+          {
+            "source_id": "official-independence-public-permits",
+            "rows": "33014"
+          },
+          {
+            "source_id": "official-oakland-site-address-full-attributes",
+            "rows": "559701"
+          },
+          {
+            "source_id": "official-oakland-tax-parcel-full-attributes",
+            "rows": "490775"
+          },
+          {
+            "source_id": "official-rochester-hills-building-permit-reports",
+            "rows": "4180"
+          },
+          {
+            "source_id": "official-troy-issued-permits",
+            "rows": "7500"
+          },
+          {
+            "source_id": "official-troy-real-property-assessing-ui",
+            "rows": "1"
+          }
+        ]
+      },
+      "reviewedInlineObservations": {
+        "sql": "SELECT property_id,source_id,native_id,record_digest,observation_json FROM official_inline_observations ORDER BY native_id",
+        "rows": [
+          {
+            "property_id": "oakland-parcel-451882",
+            "source_id": "official-independence-public-permits",
+            "native_id": "2622164",
+            "record_digest": "180989711883e41475ad868e6f30c368df3989d270b398e8f022e0f5e42c0ec5",
+            "observation_json": "{\"mentionedBusiness\":{\"bbbRatingAvailable\":false,\"licenseVerified\":false,\"name\":\"CRAFTSMAN EXTERIORS\",\"quote\":\"9/15/25 CRAFTSMAN EXTERIORS SUBMITTED AN ADDITIONAL PROJECT FOR SIDING.\",\"role\":\"business_mentioned_in_siding_note_job_contractor_unverified\"},\"observedAt\":\"2026-10-28T06:17:33.382Z\",\"permitNumber\":\"PB250524\",\"propertyId\":\"oakland-parcel-451882\",\"recordDigest\":\"180989711883e41475ad868e6f30c368df3989d270b398e8f022e0f5e42c0ec5\",\"recordId\":\"2622164\",\"reportedStatus\":\"EXPIRED\",\"sourceField\":\"Work_Description\",\"sourceId\":\"official-independence-public-permits\",\"version\":\"independence-inline-source-observations-v1\"}"
+          },
+          {
+            "property_id": "oakland-parcel-444063",
+            "source_id": "official-independence-public-permits",
+            "native_id": "2623310",
+            "record_digest": "d416eedb70868f582e8b8bb4f8acd1edf248148cd173ca81f38f1938ed0e23f3",
+            "observation_json": "{\"closeout\":{\"basis\":\"explicit_dated_permit_closeout_not_roof_completion\",\"date\":\"2026-06-09\",\"quote\":\"PERMIT CLOSED OUT PER REQUEST OF CONTRACTOR APPROVED PER DM 06/09/2026\"},\"observedAt\":\"2026-10-28T06:17:34.594Z\",\"permitNumber\":\"PB260514\",\"propertyId\":\"oakland-parcel-444063\",\"recordDigest\":\"d416eedb70868f582e8b8bb4f8acd1edf248148cd173ca81f38f1938ed0e23f3\",\"recordId\":\"2623310\",\"reportedStatus\":\"CLOSED\",\"sourceField\":\"Work_Description\",\"sourceId\":\"official-independence-public-permits\",\"version\":\"independence-inline-source-observations-v1\"}"
+          }
+        ]
+      },
+      "sourceBacking": {
+        "sql": "SELECT source_id,native_id,record_digest,observed_at FROM source_row_dispositions ORDER BY source_id,native_id LIMIT 5",
+        "rows": [
+          {
+            "source_id": "official-independence-public-permits",
+            "native_id": "2615388",
+            "record_digest": "9a5dec9a5de0d829dd04000b4db5f92a006ef5677fa7e819eb7ac4d4b5405a12",
+            "observed_at": "2026-10-28T06:17:26.490Z"
+          },
+          {
+            "source_id": "official-independence-public-permits",
+            "native_id": "2615389",
+            "record_digest": "072d51ce41180ef736a23be245400f07388099de1ad3906a794a403206f76d4a",
+            "observed_at": "2026-10-28T06:17:26.490Z"
+          },
+          {
+            "source_id": "official-independence-public-permits",
+            "native_id": "2615390",
+            "record_digest": "46701c082c263a8b7b252c02ffa1ae755c1a58d3bd78331594d5e029d0fa7c20",
+            "observed_at": "2026-10-28T06:17:26.490Z"
+          },
+          {
+            "source_id": "official-independence-public-permits",
+            "native_id": "2615391",
+            "record_digest": "29846e159938c092af648285ed7b628a50a2ada2bc3f7015c84bb067167fe08c",
+            "observed_at": "2026-10-28T06:17:26.490Z"
+          },
+          {
+            "source_id": "official-independence-public-permits",
+            "native_id": "2615392",
+            "record_digest": "ea5afbd2b3b3f26cb6edd8858bdb977bedbedeadcb93adf91a7096abfea880ba",
+            "observed_at": "2026-10-28T06:17:26.490Z"
+          }
+        ]
+      }
+    }
+  },
+  "ordinaryQueryCompletedAt": "2026-10-31T23:19:37.099Z",
+  "additionalOfficialCitySample": {
+    "sql": "SELECT id,pin,built_year,roof_proxy_age_years,roof_age_basis,distance_meters FROM roofs_within(42.4810994939,-83.4950218553,8046.72,15) ORDER BY distance_meters,id LIMIT 5",
+    "rows": [
+      {
+        "id": "oakland-parcel-158885",
+        "pin": "2215376023",
+        "built_year": 1980,
+        "roof_proxy_age_years": 46,
+        "roof_age_basis": "reported_building_year_not_roof_inspection",
+        "distance_meters": 374.3456848015338
+      },
+      {
+        "id": "oakland-parcel-158887",
+        "pin": "2215376021",
+        "built_year": 1988,
+        "roof_proxy_age_years": 38,
+        "roof_age_basis": "reported_building_year_not_roof_inspection",
+        "distance_meters": 451.1833880330335
+      },
+      {
+        "id": "oakland-parcel-155187",
+        "pin": "2222126001",
+        "built_year": 1985,
+        "roof_proxy_age_years": 41,
+        "roof_age_basis": "reported_building_year_not_roof_inspection",
+        "distance_meters": 507.778599095808
+      },
+      {
+        "id": "oakland-parcel-155181",
+        "pin": "2222126007",
+        "built_year": 1991,
+        "roof_proxy_age_years": 35,
+        "roof_age_basis": "reported_building_year_not_roof_inspection",
+        "distance_meters": 516.2297564566276
+      },
+      {
+        "id": "oakland-parcel-158672",
+        "pin": "2216451018",
+        "built_year": 2003,
+        "roof_proxy_age_years": 23,
+        "roof_age_basis": "reported_building_year_not_roof_inspection",
+        "distance_meters": 539.3349107340805
+      }
+    ],
+    "center": {
+      "name": "Novi official city center",
+      "lat": 42.4810994939,
+      "lng": -83.4950218553
+    },
+    "radiusMeters": 8046.72,
+    "minimumAgeYears": 15,
+    "qualification": "Reported building-year proxy, not roof installation or inspection; illustrates the original official-city-center request."
+  },
+  "downloadedDatabaseAfterQueries": {
+    "bytes": 211300352,
+    "sha256": "1779349628f90d65a4e4d176626850ecf083f89ae4b173527ba54bc35676ab88"
+  },
+  "helperSampleCenterQualification": "ordinaryConsumer.results.noviRows uses the preserved legacy illustrative center42.4806,-83.4755. Objective-aligned count is ordinaryConsumer.results.noviOfficialCityRoofs648; additionalOfficialCitySample uses42.4810994939,-83.4950218553.",
+  "canonicalHashUnchanged": true,
+  "noOracleApiOrAwsCredentialsRequired": true,
+  "publicOnlyQueryProvenance": true,
+  "futureUptimeClaimed": false,
+  "completedAt": "2026-10-31T23:19:37.362Z",
+  "totalElapsedMs": 8685.793754,
+  "helperSourceSha256": "35ef8b04ba9f0ced1f959778202a617b55bd2059d99100860f455d3d3a4ac6af"
+}

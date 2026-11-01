@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-29T03:41:50.021Z",
+  "status": "PASS_LOCAL_BOUNDED_CURRENT_OFFICIAL_CLI",
+  "officialCliCommit": "44bb182b9f7f904662e9b33e1fde70bdeab62322",
+  "cliInvocationProfile": "Unmodified official Git build through supported handle* service-injection APIs; not stock npm artifact or stock command invocation",
+  "node": "v24.22.1",
+  "lexiconManifestSha256": "7084b9334e66eb525d729e2d399f7216960abf30900081aaed194210be760640",
+  "inputProperties": 100,
+  "inputFiles": 700,
+  "inputInventorySha256": "ee6eb03601e662058720eddab7fb9b117c49b3aecb981e4f03951cd97aa57971",
+  "historicalConversionReceiptSha256": "c527055e13cd202a28061c6987a882f2d3bf7326fe824aa839725e3c65293b43",
+  "newSourceAcquisition": false,
+  "newSourceTransformation": false,
+  "carChecks": {
+    "blocks": 702,
+    "properties": 100,
+    "groups": 200,
+    "errors": {
+      "integrity": 0,
+      "root": 0,
+      "index": 0,
+      "graph": 0,
+      "lexicon": 0,
+      "orphans": 0
+    }
+  },
+  "countyRoot": "baguqeeraxtzq56c2qf2woos7b7ktbc3xc7l5i3ng2prn7ahuzpvmrkypiwtq",
+  "tablesRoot": "baguqeerai35z2cgk7w5b6d6suo5ogdw6qw3f4gpumfpcdzmrfdh7opz4mqta",
+  "tables": 6,
+  "atlasDraftSha256": "04e9406fe0481ac709087b13f078745e84944cabeb9ac2112f8bed92c061e5d5",
+  "atlasDraftValidation": "PASS_LOCAL_GENERATED_ATLAS_REGISTRY_VALIDATION",
+  "addressColumns": [
+    "cid",
+    "property_cid",
+    "data_group_cid",
+    "request_identifier"
+  ],
+  "omittedAddressFields": [
+    "unnormalized_address",
+    "city_name",
+    "state_code",
+    "postal_code",
+    "source_http_request"
+  ],
+  "losslessAddressTable": false,
+  "historicalReadback": {
+    "finishedAt": "2026-10-29T03:41:36.150223+00:00",
+    "requests": 36,
+    "bytes": 215359762,
+    "operators": ["Filebase", "Pinata"],
+    "allFilesBothOperatorsVerified": true
+  },
+  "currentPublicRoot": "bafybeia7uiqaupc6gax5i7wlpga6ylabffauhj2asyl4ge6bauts4ubm6q",
+  "currentPublicCarSha256": "15fdf09f9ef09a1ff3b891d314292b0a0e16646e3e0545743269ba8f7cd2bbe2",
+  "newPublicUpload": false,
+  "atlasRegistryMutation": false,
+  "globalIpnsMutation": false,
+  "sharedMcpSync": false,
+  "scope": "Bounded100-property public-input compatibility check; not county-complete source acquisition or complete-table fidelity. Final privacy and release binding are separate receipts in the immutable release packet; this local check does not certify them."
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@prism/oracle-publication",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./local": "./src/local.ts",
+    "./run-history": "./src/run-history.ts",
+    "./run-manifest": "./src/run-manifest.ts"
+  }
+}

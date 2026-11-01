@@ -1,0 +1,12 @@
+{
+  "version": "0.7.0",
+  "sha256": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
+  "files": {
+    "index.ts": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
+    "official-parcel-observation.ts": "214ad6f6627ff236f7805fb8697bc8c0f50de82f04b91d3a8e6f5fed351f4ffc",
+    "query-predicates.ts": "c46b396016f1fa5bf98eea9d684bbd8dc7a8a9d4ee7c9427d63dca97fbee69be",
+    "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
+  },
+  "moduleGraphSha256": "957c375f0563e67a8f00303ae30c05b7a18a331ba9efd972330fb49085e1158f",
+  "sha256Meaning": "compatibility_entry_file_sha256"
+}

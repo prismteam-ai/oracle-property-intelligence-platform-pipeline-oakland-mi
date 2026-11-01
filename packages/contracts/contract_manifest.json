@@ -1,0 +1,20 @@
+{
+  "version": "0.7.0",
+  "sha256": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
+  "sha256Meaning": "compatibility_entry_file_sha256",
+  "entryFile": "src/index.ts",
+  "moduleGraphSha256": "957c375f0563e67a8f00303ae30c05b7a18a331ba9efd972330fb49085e1158f",
+  "moduleGraphAlgorithm": "sha256(UTF-8 JSON.stringify of filename-to-sha256 object, filename keys sorted ascending; no whitespace)",
+  "files": {
+    "index.ts": "9346ca18c41a8324cb99c59f9d93968f7a1fce3725282f0fc9f7e68f072142ec",
+    "official-parcel-observation.ts": "214ad6f6627ff236f7805fb8697bc8c0f50de82f04b91d3a8e6f5fed351f4ffc",
+    "query-predicates.ts": "c46b396016f1fa5bf98eea9d684bbd8dc7a8a9d4ee7c9427d63dca97fbee69be",
+    "source-observations.ts": "4b48c4d32dde7e0d339c063523ba386a4c42adf727cf85d8ff98d0f37c6df327"
+  },
+  "producer": "oracle-property-intelligence-platform-pipeline-oakland-mi/packages/contracts",
+  "generatedConsumer": "roofing-crm/packages/contracts",
+  "frozen_utc": "2026-10-30T05:23:48.763261+00:00",
+  "prior_version": "0.5.0",
+  "prior_entry_sha256": "f34d6ef44f5f4b52334fc155d7c8299b034d684c22e10f0b1f1a7daa64979d32",
+  "revision_reason": "Add optional source-profile/terms-bound official parcel observation: raw nullable source name fields and postal string, null/absence states, original observation provenance and tied owner-location derivation. No name/address/contact parsing, legal-title inference or automatic publication approval. Existing restricted provider contracts retained unchanged."
+}

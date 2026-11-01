@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "status": "EXTERNAL_ORGANIZATION_DEPENDENCY_BLOCKED",
+  "externalRegistrationApplied": false,
+  "externalRepository": null,
+  "namespace": "PrismAssessment",
+  "region": "us-east-2",
+  "environment": "review",
+  "services": ["prism-oracle-review", "prism-oracle-alerts"],
+  "dimensions": ["service"],
+  "metrics": [
+    "RequestCount",
+    "RequestLatency",
+    "RequestError",
+    "AuthFailure",
+    "RateLimitFailure",
+    "QueryLatency",
+    "QueryResultCount",
+    "SnapshotValidated",
+    "SnapshotUnavailable",
+    "SourceCoverageProperties",
+    "SourceCoverageAddresses",
+    "SourceFreshnessKnownCohorts",
+    "SourceFreshnessUnknownCohorts",
+    "SourceDataThroughAgeUpperBoundSeconds"
+  ],
+  "dashboard": "prism-oracle-assessment-review",
+  "alarmCount": 5,
+  "owner": "candidate-controlled-assessment",
+  "registrationInstructions": "Map these exact names to the organization registry after its repository/schema/access is supplied. This source file is a prepared registration specification, not a claim of internal deployment.",
+  "privacy": "No dynamic property/session/person identifiers or source/model text in dimensions or payloads.",
+  "sourceFreshnessLimitation": "Reported data-through dates yield a conservative UTC-midnight age upper bound for known source groups. Unknown public/legacy/cohort freshness is counted separately; capture timestamps never substitute for source data-through. This is not countywide universal freshness."
+}
